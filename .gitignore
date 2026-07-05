@@ -1,0 +1,9 @@
+# Whitelist repo: version ONLY the rulebook (CLAUDE.md, harness, memory).
+# Everything else in ~/.claude (settings, sessions, caches, tokens) stays untracked.
+*
+!.gitignore
+!CLAUDE.md
+!harness/
+!harness/**
+!memory/
+!memory/**
