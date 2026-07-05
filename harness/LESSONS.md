@@ -14,3 +14,16 @@ Append-only between compressions. Compress at >150 lines / >20 entries.
   or a scratchpad.
 - Status: applied-on 2026-07-05 (hook repointed to the permanent script;
   verified: JSON valid, script runs, exit 0 on small transcript)
+
+## 2026-07-05 — Context monitor nagged forever after /compact (size proxy never reset)
+- What happened: once fixed, the Stop-hook monitor fired on EVERY session stop.
+  The transcript JSONL is append-only ACROSS compactions, so raw file size only
+  grows; after the first /compact the 1MB threshold stayed permanently exceeded.
+- Root cause: raw `wc -c` used as the context proxy; compaction shrinks the
+  context but not the file.
+- Rule change needed: NONE — script fix: measure bytes AFTER the last
+  `"subtype":"compact_boundary"` marker (grep -b offset). Embedded copies of the
+  marker in message content are JSON-escaped, so they can't false-match.
+- Status: applied-on 2026-07-05 (verified: live transcript with 2 boundaries →
+  exit 0 post-compact at ~310KB effective; tiny transcript → exit 0; backup at
+  `~/.claude/backups/compact-context-monitor.sh.2026-07-05.bak`)
