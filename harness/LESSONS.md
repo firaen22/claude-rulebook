@@ -27,3 +27,11 @@ Append-only between compressions. Compress at >150 lines / >20 entries.
 - Status: applied-on 2026-07-05 (verified: live transcript with 2 boundaries →
   exit 0 post-compact at ~310KB effective; tiny transcript → exit 0; backup at
   `~/.claude/backups/compact-context-monitor.sh.2026-07-05.bak`)
+- FOLLOW-UP (same day): the boundary fix cured post-compact nagging but NOT the
+  every-turn re-nag while you stay over threshold without compacting — the Stop
+  hook has no memory between turns, so it re-fired on every completed task. Added a
+  debounce: per-transcript state file (`~/.claude/.context-monitor-state/<sha>`)
+  stores the effective size at last warning; re-warn only after a compact resets
+  effective size OR it grows another REWARN_STEP (500KB). Verified across a 7-case
+  lifecycle (first-warn / debounced-silence / below-step-silence / rewarn /
+  compact-reset / fresh-warn) — all 7 exit codes correct.
