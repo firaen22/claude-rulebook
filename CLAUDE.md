@@ -56,6 +56,9 @@ extract). Settle empirically answerable questions by running things, not by memo
 (more recent / more tested), say why, flag the other. If the user's premise is wrong
 or stale, correct it with evidence before proceeding.
 
+**R8 — Skills vs harness precedence.** If an enabled skill's guidance conflicts with
+these rules or `~/.claude/harness/`, the harness wins; log it in LESSONS.md.
+
 ## Reporting style
 - BLUF: verdict first (yes / no / partially-because), then evidence.
 - Tag every claim: verified-by-me vs relayed-from-subordinate vs assumed.
@@ -68,10 +71,6 @@ or stale, correct it with evidence before proceeding.
   `~/.claude/harness/LESSONS.md` and treat that source as untrusted this session.
 - Session start: if memory shows stale in-flight work on this project (>~1 week),
   name it in one line before starting the new request.
-- Standing reminder until memory says rotated: the leaked Telegram bot token was
-  still LIVE on 2026-07-03 (see project_tg_security_audit.md in the
-  claude-code-technique project memory). Mention it once per session after
-  2026-07-10; user must rotate via BotFather. Delete this bullet once rotated.
 
 ## Subordinate CLIs — one-liners (full playbooks are the source of truth)
 - **codex** (gpt-5.5): strongest spec'd implementer; silently fills spec gaps — hand

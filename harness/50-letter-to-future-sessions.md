@@ -82,7 +82,8 @@ harness first.
   self-contradicting-reviewer rule, injection logging, "just proceed" autonomous
   floor). Method note for future re-tests: probe with scenarios + pre-written
   expected answers; patch only measured gaps, not imagined ones.
-- Open environment item: TG bot token rotation (see #1 above) — user action.
+- TG bot token rotation: DECLINED by user 2026-07-05 ("let it go") — accepted risk,
+  standing reminder removed from CLAUDE.md, do not re-raise. (#1 above is history.)
 - 2026-07-05 (user asked for "any improvement"): improvement audit ran. (a) Found
   and FIXED a broken Stop hook — it pointed at /tmp/hook-debug.sh, wiped by macOS;
   repointed to `~/.claude/compact-context-monitor.sh` (first LESSONS.md entry).
@@ -96,6 +97,14 @@ harness first.
   11 plugin MCP servers (design/finance/legal packs) sit connected-but-
   unauthenticated = pure context weight; plus duplicate agent-skills plugin
   enablement flagged. User decides; don't re-suggest every session.
+- 2026-07-05 (later): user APPROVED items 1–3, declined 4. Applied: R8 precedence
+  rule added to CLAUDE.md (skills vs harness → harness wins); orphaned
+  `agent-skills@firaen22-agent-skills` plugin + marketplace entry removed from
+  settings.json (local-marketplace copy on disk is the real one, untouched); TG
+  token reminder deleted per user decision. The 11 unauthenticated `@inline` packs
+  (design/finance/legal) are injected by the Claude DESKTOP APP, not any file in
+  ~/.claude — pruning them = user toggles the connectors/extensions in the desktop
+  app or claude.ai settings; nothing more any session can do from here.
 
 ## Closing
 
