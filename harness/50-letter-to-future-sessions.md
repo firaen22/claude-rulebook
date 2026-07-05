@@ -83,7 +83,19 @@ harness first.
   floor). Method note for future re-tests: probe with scenarios + pre-written
   expected answers; patch only measured gaps, not imagined ones.
 - Open environment item: TG bot token rotation (see #1 above) — user action.
-- Not yet done: one-time suggestion to user to prune unused MCP connectors (#2).
+- 2026-07-05 (user asked for "any improvement"): improvement audit ran. (a) Found
+  and FIXED a broken Stop hook — it pointed at /tmp/hook-debug.sh, wiped by macOS;
+  repointed to `~/.claude/compact-context-monitor.sh` (first LESSONS.md entry).
+  (b) `permissions.ask` pins added in settings.json for the four money/message
+  tools (brokerage create/delete order, travelelite purchase, send_imessage) —
+  doc-verified: `ask` auto-denies in headless runs, and all 6 scheduled tasks were
+  checked to use NONE of the pinned tools, so automations are unaffected.
+  (c) `~/.claude` is now a whitelist git repo (tracks ONLY CLAUDE.md + harness/ +
+  memory/); every future rule edit is diffable — `git -C ~/.claude log/diff`.
+  (d) MCP-prune suggestion DELIVERED to user (supersedes the "not yet done" item):
+  11 plugin MCP servers (design/finance/legal packs) sit connected-but-
+  unauthenticated = pure context weight; plus duplicate agent-skills plugin
+  enablement flagged. User decides; don't re-suggest every session.
 
 ## Closing
 
