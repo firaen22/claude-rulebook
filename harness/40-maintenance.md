@@ -16,6 +16,10 @@ if it drifts from reality OR if it bloats. This file governs both.
 | `50-letter-to-future-sessions.md` | Handoff section only | §Handoff is a live scratch area — update freely. The letter body is frozen like the diagnosis. |
 | `~/.claude/harness/LESSONS.md` | YES — this is YOUR file | See §3. Create it on first lesson. |
 | Memory files (`.../memory/*.md`) | YES | Existing memory rules apply (update-in-place, no duplicates, delete wrong ones). |
+| ~~`~/.claude/skills/subordinates/SKILL.md`~~ `~/.claude/skills/delegation-and-review/SKILL.md` (merged 2026-07-07) | YES | Process + dispatch quick-card — a CACHE over `10-orchestration.md`, `30-delegation-templates.md` and the subordinate playbooks, not a source of truth. See §5 write-back rule; ~~keep it ≤~150 lines~~ soft ceiling ~200 per §4 since the merge (depth still belongs in playbooks/harness). |
+| `~/.claude/skills/operational-rigor/SKILL.md` | YES wording; NO thresholds | CACHE over global CLAUDE.md R0–R8 + `20-judgment-rubrics.md`. §5 write-back applies; numeric thresholds change only with the source (user sign-off). |
+| `~/.claude/skills/ground-truth-gates/` (SKILL.md + scripts) | YES | CACHE over the ground-truth-harness-pattern doc (claude-code-technique project). Any edit to `scripts/` re-runs the pass AND fail probes before claiming run-verified. |
+| `~/.claude/skills/skill-authoring/SKILL.md` | YES | CACHE over `00-DIAGNOSIS.md`, this file, and the letter's degradation modes. §5 write-back applies. |
 
 **Before ANY edit to ANY harness file:**
 1. `cp <file> ~/.claude/backups/<name>.$(date +%Y-%m-%d-%H%M).bak` (backups dir
@@ -75,3 +79,13 @@ tool changed/vanished, update `10-orchestration.md` §0 + the relevant playbook,
 with the date and the probe output as evidence. Never delete the old line —
 strike it through with the replacement beside it, so the next reader sees the
 change happened rather than silently different advice.
+
+**Quick-card write-back:** whenever an edit to a subordinate playbook or a new
+finding changes DISPATCH BEHAVIOR (invocation syntax, a trap and its fix, model
+choice, a routing or verification rule), update the matching line in
+~~`~/.claude/skills/subordinates/SKILL.md`~~ `~/.claude/skills/delegation-and-review/SKILL.md`
+(merged 2026-07-07) in the same session. The same rule covers the other three
+skill caches registered in §1 when their harness sources change. The card is a cache;
+a stale cache silently overrides the corrected playbook because it loads first.
+Evidence, N counts, and history stay in the playbooks — the card gets only the
+changed operational line.
