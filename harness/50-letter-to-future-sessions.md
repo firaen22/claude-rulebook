@@ -105,6 +105,16 @@ harness first.
   (design/finance/legal) are injected by the Claude DESKTOP APP, not any file in
   ~/.claude — pruning them = user toggles the connectors/extensions in the desktop
   app or claude.ai settings; nothing more any session can do from here.
+- 2026-07-06 (improvement pass 2): context-monitor debounced (state file in
+  `~/.claude/.context-monitor-state/`; warns once per crossing, re-warns per
+  +500KB, compact resets). `mcp__Control_your_Mac__osascript` pinned to ask —
+  AppleScript could send iMessage/email and bypass the other outward pins; no
+  scheduled task uses it (verified by grep). Orphaned one-shot task dir
+  `continue-the-refactor` archived to backups. FLAGGED to user, undecided:
+  `shopcom-catalog-update` (monthly Shop.com scrape → Obsidian) exists on disk
+  but is NOT registered — silently dead; re-register only if user confirms.
+  Known context weight: agent-skills SessionStart hook injects ~8.7KB every
+  session (user's prized set — R8 covers conflicts; don't touch uninvited).
 
 ## Closing
 
