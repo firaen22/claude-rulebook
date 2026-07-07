@@ -54,6 +54,9 @@ Append-only between compressions. Compress at >150 lines / >20 entries.
   the command before choosing which checks/ to run.
 - Status: applied-on 2026-07-07 — hook fixed (target-repo resolution via
   `git -C`/`cd` parse + quote/heredoc stripping before the match), installed
-  locally, 13-path test suite ALL PASS incl. replays of all 4 real misfires;
+  locally, 16-path test suite ALL PASS incl. replays of all 4 real misfires
+  (16 not 13: my first fix was itself blocked by a commit MESSAGE mentioning
+  "git -C <dir>" poisoning the dir parse — dir extraction must also run on
+  quote-stripped text; 3 regression cases added);
   upstream PR opened on F-e-u-e-r/opus-pack. The Write-tool-script workaround
   is no longer needed for commits outside a red-gated repo.
