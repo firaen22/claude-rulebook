@@ -52,11 +52,31 @@ Append-only between compressions. Compress at >150 lines / >20 entries.
   trigger text; documented in 40-maintenance §1). Upstream candidate fix (an
   opus-pack issue, not yet filed — user's call): parse the commit's cwd from
   the command before choosing which checks/ to run.
-- Status: applied-on 2026-07-07 — hook fixed (target-repo resolution via
-  `git -C`/`cd` parse + quote/heredoc stripping before the match), installed
-  locally, 16-path test suite ALL PASS incl. replays of all 4 real misfires
-  (16 not 13: my first fix was itself blocked by a commit MESSAGE mentioning
-  "git -C <dir>" poisoning the dir parse — dir extraction must also run on
-  quote-stripped text; 3 regression cases added);
-  upstream PR opened on F-e-u-e-r/opus-pack. The Write-tool-script workaround
-  is no longer needed for commits outside a red-gated repo.
+- Status: applied-on 2026-07-07, round 2 of 3 — hook fixed (target-repo
+  resolution via `git -C`/`cd` parse + quote/heredoc stripping before the
+  match), 16-path suite ALL PASS. A fresh-context adversarial review of this
+  round (asked to try to break it, not just confirm the suite) returned
+  FIX-FIRST: 6 more defects (F1 bare `-C` not anchored to `git` — `make -C`/
+  `tar -C` hijack target-repo resolution, exactly the "wrong repo" bug this
+  hook exists to prevent; F2 the two-pass sed quote-strip mis-pairs on
+  apostrophes/escaped quotes — blocked a legitimate non-commit command LIVE
+  during the review itself; F3 gates ran with the hook's own cwd, not the
+  target repo root, breaking relative-path checks/run-all.sh; F4 single-quoted
+  `-C`/`cd` args invisible; F5 heredoc truncation dropped everything after the
+  first `<<`, silently allowing a real commit later in the same command; F6
+  `git help commit`/`git log --grep commit` misread as commits). Root cause:
+  hand-rolled sed/grep text heuristics cannot reliably reconstruct shell
+  quoting/structure. Round 3 fix: replaced all of it with Python's `shlex`
+  (quote-aware tokenizer, no code execution) plus a real heredoc-body
+  stripper that tracks actual open/close delimiters. Verified with a 34-case
+  suite (16 + 2 per F1/F4, 3 for F2, 1 for F3, 2 for F5, 2 for F6, 6 sanity
+  checks for legitimate forms) — all pass — plus a direct replay of the
+  command that was live-blocked mid-review. Merged into fork main
+  (firaen22/opus-pack `a8ef21f`) and installed locally (now two files:
+  gate-before-commit.sh + parse-commit-command.py — the hook depends on
+  python3, same fail-closed posture as missing jq). Upstream PR #2 pushed.
+  Rule for next time: an "ALL PASS" suite the author wrote themselves is
+  necessary but not sufficient for a text-parsing hook — a review that
+  explicitly tries to break it, not just replay the known cases, kept finding
+  more; the same "try to break it" pass should run again before the next
+  round of trust.
