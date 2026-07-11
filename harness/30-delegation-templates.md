@@ -149,6 +149,9 @@ an empty report with no evidence of work is a REJECT of the review itself.
 ## Dispatch checklist (30 seconds, every time)
 - [ ] All {{fields}} filled — no template braces left.
 - [ ] Edge behavior specced (T2/T3) or edge-probing required (T5).
+- [ ] Every interface/signature/path in the spec was READ from source this
+      session (quote file:line), not recalled — an imagined interface is how a
+      plausible-but-wrong spec reaches the executor, which then fills the gap.
 - [ ] Reporting contract present (conclusions + paths, long output → file).
 - [ ] I know exactly what command I will run to verify the result myself.
 - [ ] Executor per routing table; escalation state noted if this is a retry

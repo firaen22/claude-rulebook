@@ -80,3 +80,44 @@ Append-only between compressions. Compress at >150 lines / >20 entries.
   explicitly tries to break it, not just replay the known cases, kept finding
   more; the same "try to break it" pass should run again before the next
   round of trust.
+- 2026-07-07 (link-generator): REPRODUCED two documented traps in one session — (1) opencode big-pickle stalled (exit 124, 0-byte out, no on-disk edits) on a ~200-line file-edit task; retry on nvidia/openai/gpt-oss-120b succeeded first try, clean spec-compliant edit. (2) agy silent-hang reproduced with numbered-header contract prompt (合約一/二…) even with escape hatch + --add-dir; killed at ~15min/0 bytes, retried as pure prose paragraphs. Frequency data: big-pickle 1/1 stall on file-edit, gpt-oss-120b 2/2 success (edit + module+harness 12/12).
+  ADDENDUM same session: the agy PROSE retry ALSO timed out (2x300s, 0 bytes) — hang not attributable to numbered headers alone; suspect --add-dir on a repo with node_modules, or agy service degradation that day. Next time: pipe the single file's content inline instead of --add-dir, or skip agy.
+
+## 2026-07-07 — Coverage-gap audit baseline forgot the tool-description surface
+- What happened: the Fable→Opus/Sonnet gap audit (diff 61 Fable techniques vs the
+  successor skills/harness/CLAUDE.md/memory corpus) flagged 9 candidate gaps. 2 of
+  them — Workflow pipeline-vs-barrier discipline and schema-forced structured
+  returns — are NOT real gaps: the Workflow tool DESCRIPTION teaches both, and it
+  co-loads with the tool every session a model can use it.
+- Root cause: the gap-diff's coverage baseline was the user's persistent FILES
+  only. It omitted the always-loaded tool/skill descriptions, so techniques the
+  harness already teaches through the tool surface read as "missing".
+- Rule change needed: NONE — convention: when auditing what a future session will
+  or won't know, the coverage baseline is (persistent files) PLUS (tool + skill
+  descriptions that auto-load in that session), not files alone. Otherwise you
+  manufacture phantom gaps for anything the tooling already documents.
+- Status: applied-on 2026-07-07 (7 genuine gaps written into operational-rigor /
+  delegation-and-review / 30-delegation-templates + a new
+  delegation-and-review/references/discovery-sweep.md; the 2 phantom gaps
+  correctly skipped; each edit grep-verified, both skills held under the ~250
+  cache threshold).
+
+## 2026-07-09 — agy WROTE to the real repo during a read-only "review the spec" dispatch
+- What happened: dispatched agy×2 (Gemini) as an ADVERSARIAL SPEC REVIEWER ("list
+  inputs that break these rules") with --dangerously-skip-permissions, from a
+  scratch cwd, with NO --add-dir to the project. agy ignored the review framing,
+  chose to IMPLEMENT, and wrote src/utils/whatsapp.ts to the ABSOLUTE real-repo
+  path (plus its own ~/.gemini scratch), overwriting my reference impl. The
+  harness flagged the external change; content was functionally identical so no
+  harm, but it was an uncontained write to a live repo with secrets.
+- Root cause: --dangerously-skip-permissions grants full file-write, and agy (like
+  the gpt-oss/opencode "roams absolute paths" note in the opencode playbook) acts
+  on ABSOLUTE paths regardless of cwd. A "review only" verb does NOT stop it from
+  writing. Read-only framing is not containment.
+- Rule: for pure-analysis agy dispatches, INLINE the material in the prompt so no
+  file tool is needed and DROP --dangerously-skip-permissions (or accept it will
+  roam+write and git-audit after). Never assume a review prompt prevents writes.
+- Status: reproduced 2026-07-09; reference file restored + `git status` audited
+  clean. The firefire's real deliverable (codex/opencode/NIM scratch outputs graded
+  20/20 each vs the KAT) was unaffected, and agy's finding still landed (all
+  adversarial edges were pre-documented out-of-scope limitations).

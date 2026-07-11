@@ -19,7 +19,7 @@ flagged a security anti-pattern; all free models executed it blindly).
   keep codex/opus/you as the judgment layer. Free models execute footguns without blinking.
 
 Operational guardrails (non-negotiable, see Benchmark findings below):
-1. Run opencode models SEQUENTIALLY (shared SQLite db → lock under parallel).
+1. Default SEQUENTIAL (shared SQLite db → "database is locked" under naive parallel — re-confirmed 2026-07-03). **Parallel IS possible**: give each instance its own `XDG_DATA_HOME` with auth.json copied in (see Benchmark findings #1) — verified 3-way parallel file-edits, all on-disk correct, 15s wall.
 2. Run in an ISOLATED scratch dir (`--dangerously-skip-permissions` = full read+write; it roams).
 3. `timeout 180`-wrap every call (free models hang).
 4. Prefer native `opencode/*` (Zen) over `openrouter/*:free` (rate-limits + hangs).
@@ -69,7 +69,8 @@ Re-verified 2026-06-27 @ opencode v1.17.8 (4 probes × 5 models × 2 reps, deter
 | Edge-defense / self-verify (FLAKY) | `opencode/nemotron-3-ultra-free` | ✅ ONLY model to guard `size<=0`; self-tests. BUT infra-flaky on the NIM backend (exit-1 no-edit + Nvidia `ResourceExhausted` this run) — **never a default**; always timeout-wrap + revert-on-failure. |
 | AVOID (headless) | `openrouter/qwen/qwen3-coder:free` | 429 rate-limit / silent hang |
 | AVOID (any tier) | `openrouter/nousresearch/hermes-3-llama-3.1-405b:free` | verified 2026-07-03: agent path hard-fails ("No endpoints found that support tool use") AND one-shot direct-curl 429'd — no viable tier. Revisit only with paid Hermes-4 or own OR key (tool-use blocker would still cap it at one-shot) |
-| List all free | `opencode models \| grep -E '\-free$\|big-pickle' \| grep '^opencode/'` | as of 2026-06-27 the free pool is exactly these 5 |
+| NEW all-rounder (benched 2026-07-03) | `opencode/hy3-free` | ✅ 9/10 on the 4-probe harness (P1 edit 2/2, P2 cap 2/2, P3 catch 2/2 w/ concrete counterexample + volunteered the empty-array edge, P4 no-FP 2/2; edge `chunk(arr,0)` 0/2 — pool blind spot applies), ~10s avg, zero flakiness in 8 runs. Same tier as big-pickle/deepseek/mimo; review quality notably rich |
+| List all free | `opencode models \| grep -E '\-free$\|big-pickle' \| grep '^opencode/'` | as of 2026-07-03 the free pool is 6: the 5 above + hy3-free |
 
 > ⚠️ **Pool-wide edge blind spot (re-verified):** free models nail the happy path but do NOT defend *unstated* degenerate inputs. P2 probe: 9/10 wrote a `chunk()` that **infinite-loops on `size=0`** (no guard), *even though an example was given*. Only nemotron guarded it (1/2). → **Spec `size<=0` / negative / NaN / empty explicitly, or put those cases in your own verification** — same defensive-spec discipline already required for [[workflow-codex-subordinate]] / agy. This is the WHAT-vs-WHETHER rule's sharper edge: they execute the happy path, they won't *judge* what a degenerate input should do.
 >
@@ -80,9 +81,19 @@ Re-verified 2026-06-27 @ opencode v1.17.8 (4 probes × 5 models × 2 reps, deter
 4-probe battery (impl-from-spec / bug-hunt / reasoning / ambiguity). Raw capability was
 near-ceiling for ALL models — the real differentiation was OPERATIONAL:
 
-1. **Run opencode models SEQUENTIALLY, never in parallel.** All `opencode run` instances
-   share one SQLite db (`~/.local/share/opencode/opencode.db`) → "database is locked"
-   failures when fanned out. codex/agy have independent stores (parallel-safe).
+1. **Naive parallel fails; isolated parallel WORKS (verified 2026-07-03).** All `opencode run`
+   instances share one SQLite db (`~/.local/share/opencode/opencode.db`) → "database is locked"
+   when fanned out naively (control re-confirmed 2026-07-03: 2 parallel runs, one died on the lock).
+   **Workaround — per-instance data-dir isolation:**
+   ```bash
+   mkdir -p "$ISO/opencode" && cp ~/.local/share/opencode/auth.json "$ISO/opencode/"
+   XDG_DATA_HOME="$ISO" opencode run --dangerously-skip-permissions -m <model> "<prompt>"
+   ```
+   Verified: 3 models (big-pickle, mimo, hy3) in parallel on file-edit tasks in separate work dirs —
+   all exit 0, all edits on-disk correct, 15s wall vs ~30s+ sequential. Caveats: (a) each isolated
+   dir has its OWN session store — `-c`/`-s` resume doesn't cross dirs; (b) tested at 3-way only;
+   Zen backend rate limits at higher fan-out unmeasured; (c) NIM-backed models stay capped by the
+   API key's 40 RPM regardless of local parallelism. codex/agy have independent stores (parallel-safe natively).
 2. **`--dangerously-skip-permissions` = full file READ + WRITE in cwd.** opencode agent-models
    roam the working dir (read sibling files, other outputs, secrets) and write arbitrary
    files. ALWAYS run in an isolated scratch dir; never in a repo with secrets. Contrast:
