@@ -405,12 +405,11 @@ what happened (concrete), root cause (a MECHANISM), rule change needed, status.
   genuinely new trigger was added since — that gap is the new baseline,
   not unpaid debt to keep chasing. Re-baselining is gated, not
   self-judgment: (1) produce the pass's word-diff artifact (§5's edit-safety
-  step 2) —
-  no artifact, no accounting; (2) test every remaining line against a
-  live trigger; (3) any line traces to none → the debt STANDS. Only when
-  the artifact exists AND every line is live, record the new count as the
-  floor — skipping straight to a floor claim is the phantom-debt
-  inversion. Cases: `references/distilling-rules.md`.
+  step 2) — no artifact, no accounting; (2) test every remaining line
+  against a live trigger; (3) any line traces to none → the debt STANDS.
+  Only when the artifact exists AND every line is live, record the new
+  count as the floor — skipping straight to a floor claim is the
+  phantom-debt inversion. Cases: `references/distilling-rules.md`.
 - No scheduled tidying — compression on threshold-hit, and never "tidy" rules
   files as a side quest during other work (R3).
 - **Check the target file's own glossary before reusing its vocabulary.**
@@ -464,8 +463,7 @@ what happened (concrete), root cause (a MECHANISM), rule change needed, status.
 
 1. Backup first, under a **path-derived** name — the bare basename clobbers
    (`SKILL.md` is the tree's most common filename; two same-minute backups
-   silently overwrote one another 2026-08-26). With `f` the path relative to
-   `~/.claude`:
+   silently overwrote one another 2026-08-26). With `f` the path relative to `~/.claude`:
    `cp ~/.claude/"$f" ~/.claude/backups/"$(echo "$f" | tr / -).$(date +%Y-%m-%d-%H%M).bak"`
 2. Edit; then read the file back — check the edit landed and broke nothing
    adjacent. For a condense or extraction pass, structural checks are not
@@ -473,11 +471,13 @@ what happened (concrete), root cause (a MECHANISM), rule change needed, status.
    against the backup and trace every dropped clause to a surviving copy (a
    reference file or the remaining inline text); a clause found in no file is
    a lost rule.
-   - Two cuts go wrong in ways a word-diff cannot show — a compression that
-     deletes load-bearing rebuttal prose, and a restructure that paraphrases
-     probe-tuned sentences while moving them. Open
-     `references/distilling-rules.md` §Compression and restructuring passes
-     BEFORE any condense, extraction, split, or re-home pass.
+   - Three cuts go wrong in ways a word-diff cannot show — a compression that
+     deletes load-bearing rebuttal prose, a restructure that paraphrases
+     probe-tuned sentences while moving them, and a reword that breaks a
+     BINDING (subject↔number, scope↔claim, before/after) while every word
+     survives. Open `references/distilling-rules.md` §Compression and
+     restructuring passes BEFORE any condense, extraction, split, re-home,
+     or rewording pass.
 3. Never rename/move a file that CLAUDE.md points at.
 4. Respect the permission tiers: frozen files (00-DIAGNOSIS, letter body) are
    never edited; CLAUDE.md files and ANY numeric threshold need the user;

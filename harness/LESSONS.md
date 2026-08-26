@@ -132,4 +132,13 @@ the rule edit and ask in-session.
   necessary for extractions but is never sufficient for rewording. External lens
   stays mandatory for compression commits (this is the existing "self-review is no
   substitute" line — 3/3 rounds confirm it).
-- Status: noted
+- Probe (2026-08-27, same day): pre-registered synthetic probe (6-clause fixture,
+  4 planted bindings, real word-budget pressure after two design-review rounds —
+  codex and grok both found the first fixture draft satisfiable by line-joining
+  alone, 0 bindings at risk). Bare arm 3/4 clean, 1/4 real FAIL (dropped a tier's
+  numbers while keeping the adjacent tier's — the exact subject↔number break from
+  the production escapes). Ruled arm (rule text appended) 2/2 clean. n small,
+  effect consistent with the 3 production escapes above — PROVISIONAL, not proof.
+- Status: applied-on 2026-08-27 — folded into skill-authoring SKILL.md §5 step 2
+  ("three cuts" bullet) with full text + evidence in
+  `references/distilling-rules.md` §Compression and restructuring passes.

@@ -128,6 +128,29 @@ extraction, split, or re-home pass on a rules file.
   otherwise invisible to review: the reviewer sees fluent text, not the
   tuned sentence it silently replaced. ❌ "improved the wording while
   moving it" — an untested regression on a tuned sentence.
+- **A reword needs a BINDINGS pass, not just a word-diff — a binding can
+  break while every word survives.** After compressing or rewording any
+  rule text (not just moving it — this is the reword failure mode the two
+  cuts above don't cover), re-read each new sentence and name who/what
+  every number, qualifier, and condition now attaches to, then check each
+  against the original. Four binding shapes recur: subject↔number (a
+  count detaches from its subject and drifts to an adjacent one),
+  scope↔claim (a qualifier that scoped a superlative gets dropped, making
+  the claim false against nearby data), condition↔condition (two
+  independent conditions silently merge into one), and before↔after (a
+  sequencing constraint inverts or vanishes). Evidence: three consecutive
+  2026-08-27 production compressions (3ade6e2, 4ab2a56, 514a227), each
+  passed by grep/token-diff, each carrying a real binding loss caught only
+  by external review (LESSONS.md 2026-08-27). A same-day synthetic probe
+  (bare vs. ruled subagents compressing a 6-clause fixture with 4 planted
+  bindings under real word-budget pressure — see the probe methodology
+  below) reproduced the exact failure: bare arm 3/4 clean, 1/4 dropped a
+  tier's numbers while keeping the adjacent tier's (the subject↔number
+  break); ruled arm (rule text appended to the prompt) 2/2 clean. Small n,
+  consistent with the production pattern — treat as PROVISIONAL, not
+  proof, and re-open only if a ruled compression still drops a binding.
+  Word-diff remains necessary for extractions (it catches ambiguity, not
+  content simply going missing) but is never sufficient for a reword.
 
 ## Install-time citation retargets — probe evidence (kernel: SKILL.md §2)
 
