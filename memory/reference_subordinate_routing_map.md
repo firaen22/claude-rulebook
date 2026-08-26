@@ -24,17 +24,11 @@ re-probed 2026-08-23 and hand-verified in source. Spelling the edge out costs on
 grok then guards 11/11.
 **Corollary: the "spec the edges" rule has been over-generalized and retracted TWICE**
 (08-04, 08-15) — say "no tier is reliable", never "no model can".
-**R-A stands as of 2026-08-25, but with one partial exception and one measurement rule:**
-- `agy gemini-3.7-flash-low` guards 15/20 on a fresh-day repeat of the frozen probe
-  (prior 14/20, p=1.000; `-medium` 4/20 the same day, same prompts). Best non-free
-  edge behavior measured on any tier — still 75%, still below the K1 ≥4/5-per-paraphrase
-  bar (P1_terse 1/4 even for `-low`), so it does NOT exempt anything from R-A.
-- **Never compare an edge-guard number against a prior measured on a DIFFERENT prompt
-  phrasing.** Same-day, same model, `-medium` scored 9/10 on a new phrasing and 4/20 on
-  the frozen old set (p=0.0004) — pure instrument difficulty. This retracts the
-  cross-prior comparisons in the 2026-08-25 fleet probe (agy/grok/NIM/opencode); their
-  cross-TIER ranking, which shared one prompt, survives. Same-instrument or no comparison.
-  → [[finding-geminimd-and-fleet-probe-2026-08-25]] Result 5.
+**R-A stands as of 2026-08-25.** Partial exception: `agy 3.7-flash-low` at 15/20 — best
+measured anywhere, still below the K1 bar, exempts nothing. Measurement rule: **never
+compare an edge-guard number against a prior measured on a different prompt phrasing**
+(same model, same day: 9/10 new phrasing vs 4/20 frozen set, p=0.0004) — same-instrument
+or no comparison. Numbers: [[finding-geminimd-and-fleet-probe-2026-08-25]] Result 5.
 
 **R-B — No tier's self-report is evidence. Grade on disk.** grok returned schema-valid
 `{file_created: true}` with `num_turns:1` and zero tool calls (3/10); opencode agents narrate
@@ -127,83 +121,45 @@ Default chain for a non-trivial build:
 3. Cheapest tier that clears the bar implements, edges now STATED.
 4. Fresh-context acceptance review (R1) — never the implementer, never self.
 
-**Steps 1-3 MEASURED 2026-08-25** (first end-to-end test, previously reasoned-only): same
-implementer (`muse-spark-1.2-contributor-free`, this table's own §2 pick), same model,
-same grader, only the upstream ambiguity/edge text differs — **CHAIN 5/5 GUARD vs
-BASELINE 0/5 GUARD** on the unstated `size<=0` edge (Fisher p≈0.008). All 5 codex lists
-named the target edge — the chain worked because it manufactured the missing spec, not by
-accident. N=5/arm, PROVISIONAL, single task shape (one pure function, one classic edge).
-→ [[finding-chain-vs-direct-2026-08-25]]
+**Steps 1-3 MEASURED** — CHAIN 5/5 vs BASELINE 0/5 GUARD, same implementer/grader, only
+the upstream edge-list differs; the chain manufactures the missing spec. N=5/arm,
+single task shape, PROVISIONAL. → [[finding-chain-vs-direct-2026-08-25]]
 
-**Step 4 MEASURED THREE TIMES 2026-08-25, all SATURATED — and the replication is what
-makes it a finding.** Run 1 (8 defects / 41 lines, billing): 15/15 reviews scored 8/8
-([[finding-step4-seeded-review-2026-08-25]]). Run 2 (3 defects / 195 lines, access
-control — **12.7× lower density**): 15/15 scored 3/3
-([[finding-step4-sparse-density-2026-08-25]]). Run 3 (4 defects / 140 lines, scheduling,
-instrument written by an **independent hypothesis-blind author**): 14/14 non-empty scored
-4/4 ([[finding-step4-independent-ledger-2026-08-25]]). Saturating across three domains,
-three densities and an outside author is not an easy-instrument artifact — **step-4
-seeded recall is ROBUST, and step 4 earns its place in the chain.** All three runs: zero
-tier differentiation on seeded recall (codex = agy = free), which is what retracts §2's
-"NOT agy post-impl" as a blanket rule — see the scope note on that row.
-
-**Seeded recall is still the wrong metric, but the tier gap on the right metric is now
-REFUTED, not merely unproven.** Run 2's Rule-3 pass found 7 real defects where the ledger
-claimed 3 — and one soundness-gate REFERENCE carried a missed bug while scoring 13/13 —
-which produced a post-hoc split of codex 6.2 total-verified-real/run vs agy 4.2 ≈ free
-4.0. Run 3 pre-registered exactly that question with the metric narrowed to UNSEEDED
-defects and the ledger authored by someone other than the experimenter: **codex 0.6 vs
-free 0.4 vs agy 0.0, gap 0.2, inside the frozen ≤0.5 "H1 fails" band.** Do not cite
-6.2/4.2/4.0 — it is withdrawn. What survives: a tie on a seeded ledger is weak evidence
-of reviewer equivalence, and **no tier ranking for step 4 is established in either
-direction.** Route step 4 on cost. N=5/arm throughout, PROVISIONAL.
+**Step 4 MEASURED THREE TIMES, all saturated across three domains, densities and an
+independent author — seeded recall is ROBUST and step 4 earns its place.** Zero tier
+differentiation on seeded recall (this retracts §2's "NOT agy post-impl" as a blanket
+rule — see that row's scope note), and the pre-registered unseeded-defect replication
+REFUTED the codex discovery edge (gap 0.2 vs frozen 0.5; the earlier 6.2/4.2/4.0 split
+is withdrawn — do not cite it). **Route step 4 on cost.** Three findings:
+[[finding-step4-seeded-review-2026-08-25]], [[finding-step4-sparse-density-2026-08-25]],
+[[finding-step4-independent-ledger-2026-08-25]].
 
 ## 5. What is NOT established (do not claim these)
 
-- The §4 chain's steps 1-3 are no longer purely reasoned — see the citation in §4 above
-  ([[finding-chain-vs-direct-2026-08-25]], N=5/arm, single task shape). Step 4 is now
-  measured three times and holds — see §4. What is still NOT established for step 4: any
-  tier ranking, in either direction. All three runs tied on seeded recall; the one axis
-  that appeared to separate them (unseeded real-defect discovery) was post-hoc, and the
-  pre-registered independent-author replication **failed to reproduce it** (gap 0.2 vs a
-  frozen 0.5 threshold — [[finding-step4-independent-ledger-2026-08-25]]). Route step 4
-  on cost. Caveat before anyone re-opens this: that instrument contained only ONE unseeded
-  defect, so it cannot distinguish "no edge" from "no resolving power" — a re-test needs
-  ≥4 independent unseeded defects, still independently authored.
-- **Crediting a review for naming the topic is not the same as crediting it for a claim
-  that verifies.** In run 3, executing each file's OWN cited example (rather than accepting
-  the topic match) removed two codex files whose examples produced byte-identical output to
-  both references. That single granularity change moved codex 5/5 → 3/5, the gap 0.6 → 0.2,
-  and the verdict INDETERMINATE → FAILS. Rule 3 applies per claim, not per topic.
-- **A seeded ledger is not the defect count.** Three separate experiments in this corpus
-  have now had the harness author's ground truth turn out incomplete, with reviewer
-  "false positives" verifying as real (EXP-6 9→12; the 08-25 billing rounding-order find;
-  the 08-25 sparse run 3→7, where a soundness-gate REFERENCE also carried a missed bug
-  while passing 13/13). Rule 3 (execute every extra before scoring it a false positive)
-  is load-bearing, not ceremony — and padding tests added to bound unintended defects
-  bounded nothing, because missed defects live off the tested surface by construction.
-- Only SEVEN same-task-set comparisons exist across the fleet. The 7th (2026-08-25,
-  agy/grok/NIM/opencode on one edge probe + one honesty probe,
-  [[finding-geminimd-and-fleet-probe-2026-08-25]]) is **cross-TIER valid only** — all four
-  shared one prompt, so the ranking holds (agy 9/10 > NIM 8/10 > opencode 5/10 > grok 0/10),
-  but every comparison it made against a STORED prior is retracted: that prompt turned out
-  to be an easier instrument than the priors were measured on (Result 5). It did establish
-  **0 fabrication in 54/54 honesty reps across all four** — the first honesty measurement on
-  grok/NIM/opencode, though with the escape clause present, so it measures "takes the out",
-  not baseline. The six older ones: grok/codex/agy (N=12/arm,
-  3 of 4 tasks saturated); codex-vs-agy Round 2 (N=60, TIE — Round 1's "codex=correctness,
-  agy=architecture" split was a LENS artifact and is RETRACTED); free-NIM vs codex vs agy
-  tight-spec (N=57, parity); judgment-to-refuse (N=12); routing-vs-single; grok vs
-  opencode-free vs NIM one-window five-way (N=2/arm, [[finding-fiveway-bench-2026-08-23]]).
-  Everything else here is single-arm capability plus reasoning.
-- **08-23 same-window five-way bench closed this**: `muse-spark-1.2-contributor-free` (free)
-  10/10 beat `grok-4.6` default-config 9/10, grok-isolated/NIM/opencode-control all 8/10 —
-  free pool wins on this task set ([[finding-fiveway-bench-2026-08-23]]). Same run found
-  grok-default guarded 1/2 unstated edges vs grok-isolated's 0/2 (⛔ RETRACTED 08-25: the
-  N=6 default-config repeat scored 0/6 — the 1/2 was noise, [[finding-grok-defaultconfig-p2-2026-08-25]];
-  isolate for capability benches regardless) and NIM-served `nemotron-3-ultra-550b` scored
-  edge 0/2, the OPPOSITE of Zen-free `nemotron-3-ultra-free`'s 2/2 — do not carry a Zen-free
-  score onto a same-named NIM id.
+- No step-4 tier ranking, in either direction (see §4). Re-opening it needs an instrument
+  with ≥4 independently-authored unseeded defects — the run-3 instrument had ONE, so it
+  cannot distinguish "no edge" from "no resolving power".
+- **Rule 3 applies per CLAIM, not per topic** — execute the review's own cited example;
+  topic-crediting alone flipped run 3's verdict (5/5 → 3/5, INDETERMINATE → FAILS).
+  → [[finding-step4-independent-ledger-2026-08-25]]
+- **A seeded ledger is not the defect count.** Three experiments had the author's ground
+  truth turn out incomplete with reviewer "false positives" verifying as real — Rule 3
+  (execute every extra before scoring it false) is load-bearing, and padding tests bound
+  nothing because missed defects live off the tested surface.
+  → [[finding-step4-sparse-density-2026-08-25]]
+- Only SEVEN same-task-set comparisons exist; everything else is single-arm plus
+  reasoning. The 7th is cross-TIER valid only (ranking agy > NIM > opencode > grok holds;
+  every stored-prior comparison in it is retracted per the R-A instrument rule) and
+  established 0 fabrication in 54/54 honesty reps, escape clause present
+  ([[finding-geminimd-and-fleet-probe-2026-08-25]]). The six older: 3-way head-to-head;
+  codex-vs-agy Round 2 (TIE — Round 1's correctness/architecture split RETRACTED as a
+  lens artifact); free-NIM tight-spec parity; judgment-to-refuse; routing-vs-single;
+  one-window five-way ([[finding-fiveway-bench-2026-08-23]]).
+- Free pool won the 08-23 five-way (muse-spark 10/10 over both grok configs); the same
+  run's grok default-config 1/2 "lift" is ⛔ RETRACTED (0/6 on the N=6 repeat), and
+  NIM-served `nemotron-3-ultra-550b` scored the OPPOSITE of its Zen-free namesake — never
+  carry a Zen-free score onto a same-named NIM id. [[finding-fiveway-bench-2026-08-23]],
+  [[finding-grok-defaultconfig-p2-2026-08-25]].
 - No tool has been measured on multi-file, long-horizon, or ambiguous-spec work. The
   parity claims explicitly do NOT extend there.
 - Free-pool scores are point-in-time SERVING facts, not model properties (big-pickle's edge
@@ -214,22 +170,13 @@ direction.** Route step 4 on cost. N=5/arm throughout, PROVISIONAL.
   `muse-spark`'s 4/4 "standing exception" above scored 5/10 on the 08-25 prompt — flagged,
   NOT overwritten, because that comparison is instrument-crossed; (b) a re-probe only
   supersedes a prior if it reuses that prior's prompt set byte-for-byte.
-- **PAID ≠ DEAD ≠ INCAPABLE.** A fast rc!=0 with 0 bytes reads exactly like an outage but
-  may be `No payment method` — read stderr before recording a model as not-serving. TWO
-  billing-refusal shapes are documented: Zen `opencode/deepseek-v4-flash` / `muse-spark-1.2`
-  fail rc=1, 0 bytes, stderr-only; Zen paid `grok-4.6`/`grok-4.5` exit **0** with the error
-  only on stdout. Match on the `Error:`/`No payment method` string, never on rc alone. A THIRD
-  transient shape: NIM HTTP 529 `{"type":"Overloaded"}` — retry ≥3× with backoff before recording
-  anything (deepseek-v4-flash-0731 went 529 → 200/PONG on retry, 08-25). NIM HTTP 503 and
-  transport-level `RemoteDisconnected` are ALSO transient on this endpoint, not just 529 —
-  confirmed same day (nemotron-3-ultra-550b-a55b 503→LIVE, deepseek-v4-flash-0731
-  XPORT→LIVE). The distinguishing test is persistence across ≥2 attempts, not the shape:
-  4 other ids stayed `RemoteDisconnected` on a dedicated retry and are genuinely unroutable
-  right now — see [[reference-nim-via-opencode]] FULL CATALOG SWEEP. Also: NIM catalog 404
-  (listed in `/v1/models` but no backing function) behaves like 410-EOL operationally —
-  don't route it — but is a distinct shape (55/95 ids in the 08-25 full sweep). An id
-  ending `-free` and its bare twin are DIFFERENT PRODUCTS on different tiers
-  ([[finding-pool-reprobe-2026-08-23]]).
+- **PAID ≠ DEAD ≠ INCAPABLE.** Before any death certificate: match on the
+  `Error:`/`No payment method` STRING never on rc (two billing shapes: rc=1 stderr-only,
+  and Zen-paid grok's rc=0 with the error on stdout); retry ≥3× with backoff (NIM
+  529/503/`RemoteDisconnected` are all transient — the test is persistence across ≥2
+  attempts, not the shape); treat NIM catalog-404 as don't-route; and an id ending
+  `-free` vs its bare twin are DIFFERENT PRODUCTS. Shapes and case log:
+  [[finding-pool-reprobe-2026-08-23]], [[reference-nim-via-opencode]] FULL CATALOG SWEEP.
 - Cost comparisons are inferred, not measured — NOTHING is CLI-metered in dollars any more
   (grok CLI moved to the SuperGrok subscription 2026-08-25; the metered grok is the separate
   `openrouter/x-ai/grok-4.6` product).
