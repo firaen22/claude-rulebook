@@ -102,12 +102,20 @@ to `--json-schema` produced `structuredOutput: null`, `num_turns: 2`, and
 holding schema-shaped **placeholder values** (`"pending"`, `"running"`) — the
 shape of an answer with no answer in it.
 
-Triage, in order:
-1. `wc -c` the output. A few hundred bytes on a task you expected paragraphs from
-   is the signature, not a parse failure.
-2. `jq '.num_turns, .structuredOutput, .structuredOutputError'` on the whole file.
-   `num_turns` ≤ 2 on a multi-file task = it never worked. This generalises the
-   tool-use short-circuit guard above from side effects to ANALYSIS.
+Triage, in order. **Size alone does not separate the two causes — a mis-parsed
+short answer and pure narration are both small. READ the bytes.**
+1. `wc -c "FILE"; head -c 400 "FILE"` — narration announces steps it never took
+   ("Next I'll locate the repo, read the changed files"). Intent ≠ a short answer.
+2. `jq '.num_turns, .structuredOutput, .structuredOutputError' "FILE"` — **the
+   filename is load-bearing.** Omit it and `jq` reads stdin: at EOF it prints
+   NOTHING and exits 0, which a script reads as "clean." Verified 2026-08-27.
+   - **Decisive:** `structuredOutput` null / `structuredOutputError` set / the
+     required fields carrying placeholder strings.
+   - **Suspicion only:** low `num_turns`. The proven guard is `== 1` on a
+     tool-requiring task (§Tool-use short-circuit, the NEXT heading below);
+     `<= 2` on an analysis task is a prompt to go look, not a verdict — a
+     genuine run can finish in two turns, and a pure-judgement run with
+     everything inline legitimately finishes in ONE (verified 2026-08-27).
 3. Only then suspect your parser (whole-buffer `jq`, PONG probe).
 
 **Never read a schema-shaped object as evidence of work — a `"pending"` string in
@@ -144,7 +152,7 @@ settled. Does not matter: the rule is the same either way.)
 **The headline rule: grok does not volunteer guards, but it delivers them when asked.**
 0/28 unstated → 11/11 stated. Consistent with non-volunteering rather than incapacity (the probes measure stated-vs-unstated behavior, not the internal cause). Spec every edge explicitly.
 
-**Settled — do not re-run this probe family.** The unstated-edge miss is deterministic under isolated HOME AND default config; 08-25 added 10 fresh reps, all byte-identical to the same naive loop. Caveat carried, not re-derived: those reps used an *easier* prompt than the 0/16 leg, so it is direction-safe pooling, not same-instrument replication. Numbers, the instrument-confound, and the retraction of the earlier 1/2 default-config "lift": [[finding-geminimd-and-fleet-probe-2026-08-25]].
+**Settled enough to route on; the one replication still worth running is same-instrument.** The unstated-edge miss is deterministic on this probe family under isolated HOME (08-25 added 10 fresh reps, two 0/5 passes, all byte-identical to the same naive loop — read-back explicit for pass 1, partial-count for pass 2) AND, on a SEPARATE N=6 repeat, under default config. Caveat carried, not re-derived: those reps used an *easier* prompt than the 0/16 leg, so it is direction-safe pooling, not same-instrument replication. Numbers, the instrument-confound, and the retraction of the earlier 1/2 default-config "lift": [[finding-geminimd-and-fleet-probe-2026-08-25]].
 
 **Honesty: 0/9 fabrication WITH an escape clause present (08-25) — so always include one.** It measures "takes the out when offered," never baseline honesty; see the open question below.
 

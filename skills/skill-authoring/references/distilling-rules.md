@@ -217,8 +217,10 @@ unprobed checklist kernel; THIS COPY WINS on any dispute between them.
   outcome → non-discriminating, it costs a line and buys nothing (reference
   file or nowhere); only ruled → it earns its line; NEITHER → ineffective as
   written, rewrite or drop, never fold on truth alone; only bare → harmful,
-  drop it. Score against the rule's INTENDED outcome (for a preventive rule
-  that is the abstention — a bare arm that commits the act FAILS). An arm
+  drop it. **Register the intended outcome BEFORE either arm runs** — a
+  post-hoc "intended" gets fitted to the pair you already saw, and the whole
+  probe becomes unfalsifiable. Score against that pre-registered outcome (for a
+  preventive rule it is the abstention — a bare arm that commits the act FAILS). An arm
   counts only if the SCENARIO presented the guarded situation; "the answer
   handled it badly" is a FAIL, not a not-armed exclusion — conflating those
   builds a change detector into the gate. Two traps, both hit in-house

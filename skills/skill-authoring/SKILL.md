@@ -370,18 +370,18 @@ what happened (concrete), root cause (a MECHANISM), rule change needed, status.
   earn an always-loaded line (every always-loaded line taxes every session).
 - **Probe a candidate rule against the bare executor before folding it in —
   correct + non-duplicate is the bar for TRUTH, not for inclusion.**
-  Verdict from the PAIR: both arms intended → non-discriminating (reference
-  file or nowhere); only ruled → earns its line; NEITHER → rewrite or drop,
-  never fold on truth alone; only bare → harmful, drop. An arm that met the
+  Register the intended outcome (preventive rule → the abstention) BEFORE either
+  arm runs. Verdict from the PAIR: both arms intended → non-discriminating
+  (reference file or nowhere); only ruled → earns its line; NEITHER → rewrite or
+  drop, never fold on truth alone; only bare → harmful, drop. An arm that met the
   trigger but handled it badly is a FAIL, not not-armed.
-  **This kernel is the trigger and the verdict table, NOT the method. Read
-  `references/distilling-rules.md` §Probe methodology before probing — the
-  scenario re-read, both-arms framing, and what to record beside the verdict
-  live there verbatim, and that copy WINS on any dispute.**
+  **Never verdict from this kernel alone: read `references/distilling-rules.md`
+  §Probe methodology first — it is the method, and WINS on any dispute.**
   ❌ "it's correct and not a duplicate, so it earns a line."
+  ❌ "the subagent arm had no rule, so it was bare" — session memory reaches it;
+  frame BOTH arms away from recall or a both-pass is an artifact.
   ❌ "the scenario only scopes the task" — scoping that names the operation
-  the rule prescribes IS the method; scope by naming the situation, not
-  the move.
+  the rule prescribes IS the method; scope by naming the situation, not the move.
 - **Lint a new rule against its target file's OWN rules, one by one.** When adding
   or rewriting rule text in an existing rules file, a general contradiction scan
   misses the usual defect: not the addition contradicting a rule, but the addition
