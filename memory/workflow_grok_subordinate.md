@@ -89,6 +89,31 @@ agy/opencode for graded fan-out.
   and a "reply with exactly: PONG" prompt — plain mode prints 4 bytes and no
   envelope, so it isolates transport/auth from your parser.
 
+### 🔴 "Empty" has TWO causes — separate them before blaming either
+
+The parser bug above is one. The other is grok genuinely doing nothing: on a
+multi-step read-then-analyze brief it **narrates its plan and exits** instead of
+executing. Measured 2026-08-26 (3/3 attempts, one review task, adversarial diff
+review): plain mode returned 305 B then 328 B of pure intent ("Next I'll locate
+the repo, read the changed files, and run the printed commands"), `rc=0`, zero
+findings — and copying every needed file INTO `--cwd` did NOT fix it. Escalating
+to `--json-schema` produced `structuredOutput: null`, `num_turns: 2`, and
+`structuredOutputError: "model did not produce structured output"`, with `.text`
+holding schema-shaped **placeholder values** (`"pending"`, `"running"`) — the
+shape of an answer with no answer in it.
+
+Triage, in order:
+1. `wc -c` the output. A few hundred bytes on a task you expected paragraphs from
+   is the signature, not a parse failure.
+2. `jq '.num_turns, .structuredOutput, .structuredOutputError'` on the whole file.
+   `num_turns` ≤ 2 on a multi-file task = it never worked. This generalises the
+   tool-use short-circuit guard above from side effects to ANALYSIS.
+3. Only then suspect your parser (whole-buffer `jq`, PONG probe).
+
+**Never read a schema-shaped object as evidence of work — a `"pending"` string in
+your field is grok filling the shape, not answering.** For review-class delegation
+where this bites, route to codex; agy is the substitute third lens.
+
 ### 🔴 Tool-use short-circuit — the one hard safety rule
 
 **3/10 schema runs on a file-creation task made ZERO tool calls (`num_turns: 1`), wrote
@@ -119,9 +144,9 @@ settled. Does not matter: the rule is the same either way.)
 **The headline rule: grok does not volunteer guards, but it delivers them when asked.**
 0/28 unstated → 11/11 stated. Consistent with non-volunteering rather than incapacity (the probes measure stated-vs-unstated behavior, not the internal cause). Spec every edge explicitly.
 
-**2026-08-25 fleet probe promoted this from provisional to deterministic-under-isolated-HOME** ([[finding-geminimd-and-fleet-probe-2026-08-25]]): 10 fresh isolated-HOME reps across two passes an hour apart, same-hour replication held exactly (0/5, 0/5), all 10 asserted byte-identical to the naive `for (i=0; i<arr.length; i+=size)` loop in the finding (read-back is explicit for pass 1, partial-count for pass 2). Instrument caveat (the finding's own Result 5): the 08-25 reps used a *different, easier* prompt than the 0/16 leg — pooling is direction-safe for grok only because the easier instrument still gave 0, but it is not a same-instrument replication. Grok was the only tier whose number matched its stored prior in that probe ("the most reproducible fact in the entire fleet corpus") — though Result 5 later attributed the other tiers' apparent moves to the easier instrument, so "moved vs didn't move" is itself instrument-confounded. **Scope: deterministic under isolated HOME on this probe family — and, as of the 08-25 N=6 repeat, deterministic under default config too** (see §Default-config lift below; the earlier 1/2 exception was noise, retracted).
+**Settled — do not re-run this probe family.** The unstated-edge miss is deterministic under isolated HOME AND default config; 08-25 added 10 fresh reps, all byte-identical to the same naive loop. Caveat carried, not re-derived: those reps used an *easier* prompt than the 0/16 leg, so it is direction-safe pooling, not same-instrument replication. Numbers, the instrument-confound, and the retraction of the earlier 1/2 default-config "lift": [[finding-geminimd-and-fleet-probe-2026-08-25]].
 
-Same probe: **0/9 fabrication on the honesty axis (first honesty measurement on grok)** — with the escape clause present, no rep invented an answer; the one documented reply reached for a tool ("I'll look up ... instead of guessing") rather than the escape clause — non-answer, not invention. Caveat: this measures "takes the escape hatch when offered," not baseline honesty absent the clause — always include it.
+**Honesty: 0/9 fabrication WITH an escape clause present (08-25) — so always include one.** It measures "takes the out when offered," never baseline honesty; see the open question below.
 
 **Effort does not adapt.** Unlike codex (where effort is the one axis that adapts), grok
 is flat across all four tiers. Use the default; do not build effort routing. This

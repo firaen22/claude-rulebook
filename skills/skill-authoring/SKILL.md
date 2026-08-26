@@ -370,33 +370,14 @@ what happened (concrete), root cause (a MECHANISM), rule change needed, status.
   earn an always-loaded line (every always-loaded line taxes every session).
 - **Probe a candidate rule against the bare executor before folding it in —
   correct + non-duplicate is the bar for TRUTH, not for inclusion.**
-  (Checklist kernel, `unprobed` condensation 2026-08-12; the probed wording
-  is verbatim in `references/distilling-rules.md` §Probe methodology and
-  WINS on any dispute.)
-  1. Write the scenario, then re-read it: it names the SITUATION and the
-     TASK only — its text nowhere states, directs, or conditions acceptance
-     on the move the rule prescribes. If it does: discard, rewrite, re-run —
-     a discarded round is not a verdict and licenses no fold, demotion, or
-     drop. (A bare arm INFERRING the move on a clean scenario is real
-     non-discrimination, not a reason to discard.)
-  2. Register the intended outcome before either arm runs — for a
-     preventive rule, the abstention.
-  3. Run both arms as independent fresh invocations at the audience tier,
-     framed away from recall, the candidate rule their ONLY difference.
-     A subagent bare arm is NOT bare (session memory reaches it): say
-     "disregard memory" and check the output for citations — that bounds
-     only QUOTED recall, so a surprising bare-pass from a memory-bearing
-     arm stays suspect, not license.
-  4. Verdict: both arms intended → non-discriminating (reference file or
-     nowhere); only ruled → earns its line; NEITHER → rewrite or drop,
-     never fold on truth alone; only bare → harmful, drop. An arm that met
-     the trigger but handled it badly is a FAIL, not not-armed.
-  5. Record beside the verdict: tier, what the baseline carried, the
-     scenario verbatim, and the line "scenario names situation and task
-     only; method absent". n=1/arm screens large effects only; no
-     bare-pass from an arm stronger than the audience licenses removing a
-     line — a bare ✓ argues redundancy at that tier in that environment,
-     never everywhere.
+  Verdict from the PAIR: both arms intended → non-discriminating (reference
+  file or nowhere); only ruled → earns its line; NEITHER → rewrite or drop,
+  never fold on truth alone; only bare → harmful, drop. An arm that met the
+  trigger but handled it badly is a FAIL, not not-armed.
+  **This kernel is the trigger and the verdict table, NOT the method. Read
+  `references/distilling-rules.md` §Probe methodology before probing — the
+  scenario re-read, both-arms framing, and what to record beside the verdict
+  live there verbatim, and that copy WINS on any dispute.**
   ❌ "it's correct and not a duplicate, so it earns a line."
   ❌ "the scenario only scopes the task" — scoping that names the operation
   the rule prescribes IS the method; scope by naming the situation, not
