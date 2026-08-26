@@ -85,12 +85,30 @@ Rules for LESSONS.md:
   something else must move to a harness/memory file first.
 - Harness files: soft ceiling ~200 lines each. Past that, split — don't summarize
   away examples (examples are the load-bearing part for weaker readers).
-- **Every line ceiling above has a density twin: ~12 words/line averaged over the
-  file** (corpus runs 7–11; check with `wc -lw`). A file inside its line ceiling but
-  far above the density twin has evaded the gate, not passed it — `40-maintenance.md`
-  itself did this for a month: 103 lines / 6,605 words (64 w/line, one table row
-  reached 2,716 words) until the 2026-08-26 split into `41-file-registry.md`.
-  Wrapping prose to more lines is not a fix; moving history to an evidence file is.
+- **The line ceilings bind RULES files. Evidence layers are exempt from the LINE
+  ceiling only** — `LESSONS-archive.md` (429) and `41-file-registry.md` (603) are
+  append-only history that a strong reader opens on demand, and truncating them
+  destroys the provenance they exist to hold. The exemption is conditional and
+  checkable: an evidence file may carry NO order that isn't in a rules file, so if
+  you ever find yourself obeying one of these files directly, it has drifted and the
+  exemption lapses. Both density twins still apply — exempt from the line count is
+  not exempt from measurement.
+- **Every line ceiling above has two density twins.** A file inside its line ceiling
+  but past either one has evaded the gate, not passed it. Wrapping prose to more
+  lines is never the fix; moving history to an evidence file is.
+  1. **Prose: ~12 words/line, measured over NON-TABLE lines** (corpus runs 7–11).
+     `python3 -c "l=[x for x in open(F) if not x.lstrip().startswith('|')];
+     w=sum(len(y.split()) for y in l); print(len(l), w, w/len(l))"`
+  2. **Tables: ~150 words in any single row.** Markdown rows cannot wrap, so they
+     are invisible to a line count AND they drag the file average — measure them
+     separately, never as an excuse to skip measuring. Check with
+     `grep '^|' F | awk '{print NF}' | sort -rn | head -3`.
+  A row past 150 words is narrating history, not stating a rule: move the history to
+  an evidence file and leave the standing rule. This is calibrated, not arbitrary —
+  `40-maintenance.md` hid 6,605 words behind 103 lines for a month (64 w/line, one
+  row at **2,716 words**) until the 2026-08-26 split into `41-file-registry.md`. Its
+  longest legitimate row today is 119 words (a live hook hazard), so 150 clears every
+  real rule while firing on that defect 18× over — and would have fired in 2026-07.
 - MEMORY.md index: one line per memory, always. Content in memory files only.
 - Cadence: no scheduled maintenance. Compress on threshold-hit only. Do not
   "tidy" these files as a side quest during other work (R3: surgical changes).
