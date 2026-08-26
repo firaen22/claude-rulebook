@@ -474,10 +474,10 @@ what happened (concrete), root cause (a MECHANISM), rule change needed, status.
    - Three cuts go wrong in ways a word-diff cannot show — a compression that
      deletes load-bearing rebuttal prose, a restructure that paraphrases
      probe-tuned sentences while moving them, and a reword that breaks a
-     BINDING (subject↔number, scope↔claim, before/after) while every word
-     survives. Open `references/distilling-rules.md` §Compression and
-     restructuring passes BEFORE any condense, extraction, split, re-home,
-     or rewording pass.
+     BINDING (subject↔number, scope↔claim, condition↔condition, before↔after)
+     while every word survives. Open `references/distilling-rules.md`
+     §Compression and restructuring passes BEFORE any condense, extraction,
+     split, re-home, or rewording pass.
 3. Never rename/move a file that CLAUDE.md points at.
 4. Respect the permission tiers: frozen files (00-DIAGNOSIS, letter body) are
    never edited; CLAUDE.md files and ANY numeric threshold need the user;

@@ -93,16 +93,17 @@ artifact and no per-line trigger check — a maintenance entry that says
 never updates. The gate (artifact → per-line check → only then re-baseline)
 exists so a floor claim is falsifiable by a fresh reader, not asserted.
 
-## Compression and restructuring passes — the two cuts that go wrong
+## Compression and restructuring passes — the three cuts that go wrong
 
 Moved here VERBATIM from SKILL.md §5 step 2 on 2026-07-27 to make room for
 §2's verify-capability-before-shipping rule. Move map: SKILL.md lines 306-329
 at backup `~/.claude/backups/skill-authoring.SKILL.md.2026-07-27-*.bak` →
 this section, disposition **verbatim, both bullets, no rewording** (these are
 adapted from probe-tuned external text via PR #75, and §5's own move-map rule
-forbids paraphrasing tuned prose while relocating it). SKILL.md §5 step 2
-keeps a pointer. Trigger for opening this section: you are running a condense,
-extraction, split, or re-home pass on a rules file.
+forbids paraphrasing tuned prose while relocating it). That 2026-07-27 move
+covered the first two bullets; the third was added 2026-08-27. SKILL.md §5
+step 2 keeps a pointer. Trigger for opening this section: you are running a
+condense, extraction, split, re-home, or rewording pass on a rules file.
 
 - **A compression cut is a falsifiable bet, not just a word-count win.**
   The word-diff shows what TEXT disappeared; it can't prove retained or
@@ -135,8 +136,9 @@ extraction, split, or re-home pass on a rules file.
   every number, qualifier, and condition now attaches to, then check each
   against the original. Four binding shapes recur: subject↔number (a
   count detaches from its subject and drifts to an adjacent one),
-  scope↔claim (a qualifier that scoped a superlative gets dropped, making
-  the claim false against nearby data), condition↔condition (two
+  scope↔claim (a qualifier that scoped a claim gets dropped, making the
+  claim false against nearby data — the production case was a dropped
+  NON-FREE, not a superlative), condition↔condition (two
   independent conditions silently merge into one), and before↔after (a
   sequencing constraint inverts or vanishes). Evidence: three consecutive
   2026-08-27 production compressions (3ade6e2, 4ab2a56, 514a227), each
@@ -149,8 +151,10 @@ extraction, split, or re-home pass on a rules file.
   break); ruled arm (rule text appended to the prompt) 2/2 clean. Small n,
   consistent with the production pattern — treat as PROVISIONAL, not
   proof, and re-open only if a ruled compression still drops a binding.
-  Word-diff remains necessary for extractions (it catches ambiguity, not
-  content simply going missing) but is never sufficient for a reword.
+  Word-diff remains necessary for extractions (it shows which clauses
+  disappeared, so each can be traced to a surviving copy) but is never
+  sufficient for a reword — it cannot see a binding break, because no
+  word went missing.
 
 ## Install-time citation retargets — probe evidence (kernel: SKILL.md §2)
 
