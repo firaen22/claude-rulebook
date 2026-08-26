@@ -11,16 +11,11 @@ Evidence for every number here: [[finding-grok-cli-bench-2026-08-23]],
 [[finding-fiveway-bench-2026-08-23]], [[finding-geminimd-and-fleet-probe-2026-08-25]].
 This file is orders only.
 
-> ⚠️ **THE ONE RULE (provisional).** Grok writes the naive loop. On the 3-way head-to-head
-> (4 real-repo briefs, N=12/arm) it tied codex and agy 9/9 on NaN- and fabrication-class
-> edges but went **0/3 on the HANG class** vs 2/3 and 2/3, emitting a semantically identical
-> unguarded `for` loop every rep and OOM-ing each time. **Caveat: n=3 on ONE task, Fisher
-> p=0.17 pooled (0/3 vs 4/6; per-arm 0/3 vs 2/3 is p=0.40), and both incumbents drew the
-> same naive loop once each** — the direction matches
-> the synthetic record (0/16 then, 0/28 now) but this is a hypothesis with one replication,
-> not a proven blind spot.
-> Until a second HANG-class brief confirms it: state the termination edge whenever you hand
-> grok loop/iteration work. Stated edges it guards 11/11, so the cost of the rule is one line.
+> ⚠️ **THE ONE RULE.** Grok writes the naive loop. **State the termination edge whenever
+> you hand grok loop/iteration work** — unstated it guards 0/28, stated 11/11, so the rule
+> costs one line. (The real-repo leg is PROVISIONAL: 0/3 HANG-class vs 2/3 and 2/3, but
+> n=3 on ONE task, p=0.17, and both incumbents drew the same loop once —
+> [[finding-grok-cli-bench-2026-08-23]]. The synthetic 0/28 is not provisional.)
 >
 > ⚠️ **Grok ≠ Groq.** Groq is SUSPENDED (NordVPN egress IP blocklisted, 403s before auth)
 > and has no CLI at all. Nothing about that applies here. Never type `groq`.
@@ -91,16 +86,13 @@ agy/opencode for graded fan-out.
 
 ### 🔴 "Empty" has TWO causes — separate them before blaming either
 
-The parser bug above is one. The other is grok genuinely doing nothing: on a
-multi-step read-then-analyze brief it **narrates its plan and exits** instead of
-executing. Measured 2026-08-26 (3/3 attempts, one review task, adversarial diff
-review): plain mode returned 305 B then 328 B of pure intent ("Next I'll locate
-the repo, read the changed files, and run the printed commands"), `rc=0`, zero
-findings — and copying every needed file INTO `--cwd` did NOT fix it. Escalating
-to `--json-schema` produced `structuredOutput: null`, `num_turns: 2`, and
-`structuredOutputError: "model did not produce structured output"`, with `.text`
-holding schema-shaped **placeholder values** (`"pending"`, `"running"`) — the
-shape of an answer with no answer in it.
+The parser bug above is one. The other is grok genuinely idling: on a multi-step
+read-then-analyze brief it **narrates its plan and exits** ("Next I'll locate the
+repo, read the changed files") without executing — 3/3 on one review task, and
+copying every file INTO `--cwd` did NOT fix it. **The fix is packet SHAPE, not
+retry: inline everything, demand pure judgement, add `--json-schema`.** That
+re-shape turned the same failing review into a clean 5-finding run. Numbers and
+the falsifier: [[finding-grok-idle-vs-parser-2026-08-27]].
 
 Triage, in order. **Size alone does not separate the two causes — a mis-parsed
 short answer and pure narration are both small. READ the bytes.**
@@ -149,95 +141,65 @@ settled. Does not matter: the rule is the same either way.)
 | cwd escapes | 0/56 |
 | Cost | telemetry reports median **$0.0054/run**, but per user 2026-08-25 the CLI runs under a **SuperGrok SUBSCRIPTION** (flat plan, like codex's quota) — the `total_cost_usd` field is reported, not billed. `openrouter/x-ai/grok-4.6` IS metered (OpenRouter credits, separate) |
 
-**The headline rule: grok does not volunteer guards, but it delivers them when asked.**
-0/28 unstated → 11/11 stated. Consistent with non-volunteering rather than incapacity (the probes measure stated-vs-unstated behavior, not the internal cause). Spec every edge explicitly.
+**Headline: grok does not volunteer guards, but delivers them when asked** (0/28 → 11/11).
+Spec every edge explicitly. The measurement is stated-vs-unstated behaviour, not the
+internal cause — so route on it, do not theorise from it.
 
-**Settled enough to route on; the one replication still worth running is same-instrument.** The unstated-edge miss is deterministic on this probe family under isolated HOME (08-25 added 10 fresh reps, two 0/5 passes, all byte-identical to the same naive loop — read-back explicit for pass 1, partial-count for pass 2) AND, on a SEPARATE N=6 repeat, under default config. Caveat carried, not re-derived: those reps used an *easier* prompt than the 0/16 leg, so it is direction-safe pooling, not same-instrument replication. Numbers, the instrument-confound, and the retraction of the earlier 1/2 default-config "lift": [[finding-geminimd-and-fleet-probe-2026-08-25]].
-
-**Honesty: 0/9 fabrication WITH an escape clause present (08-25) — so always include one.** It measures "takes the out when offered," never baseline honesty; see the open question below.
-
-**Effort does not adapt.** Unlike codex (where effort is the one axis that adapts), grok
-is flat across all four tiers. Use the default; do not build effort routing. This
-replicates agy's "effort tier ≠ edge safety" on a second vendor.
+- **Settled enough to route on** under isolated HOME AND (separate N=6) default config.
+  Still owed: a SAME-INSTRUMENT replication — the 08-25 reps used an easier prompt than
+  the 0/16 leg, making it direction-safe pooling, not replication.
+  [[finding-geminimd-and-fleet-probe-2026-08-25]]
+- **Always include an escape clause.** 0/9 fabrication WITH one present; that measures
+  "takes the out when offered", never baseline honesty (see What is NOT measured).
+- **Use the default effort; do not build effort routing.** Flat across all four tiers —
+  replicates agy's "effort tier ≠ edge safety" on a second vendor.
 
 ## Where to use it
 
 ### Head-to-head MEASURED 2026-08-23 (vs codex + agy, N=12/arm)
 
 4 real-repo briefs, each tool in its OWN default config: **grok 9/12, codex
-`gpt-5.6-luna` 11/12, agy `gemini-3.7-flash-medium` 11/12** — the entire gap is T-A, the
-HANG-class task. Numbers and adjudication: [[finding-grok-cli-bench-2026-08-23]].
+`gpt-5.6-luna` 11/12, agy `gemini-3.7-flash-medium` 11/12** — the whole gap is one
+HANG-class task. Numbers, adjudication, and the saturation caveat (every arm hit
+ceiling on the other three briefs, so that is no-separation, NOT proven parity):
+[[finding-grok-cli-bench-2026-08-23]].
 
-- **Everything except HANG edges: no separation at n=3.** On NaN-class and fabrication-class
-  briefs grok matched both incumbents 3/3, 3/3, 3/3 — every arm saturated, so this shows
-  no separation on tasks at ceiling, not proven parity (the same set returned CONFOUNDED
-  for agy on 08-14). Still: a legitimate third option for ordinary spec'd implementation.
-- **Loop / iteration / termination work → state the edge before handing it to grok.**
-  PROVISIONAL: same direction under two configs (synthetic `chunk(size<=0)` isolated-HOME,
-  0/16 at the time and 0/28 as of 08-25; real `degTickAngles(step<=0)` 0/3 default
-  config), but the real-brief leg
-  is n=3 / p=0.17 pooled (0.40 per-arm) and codex and agy each emitted the identical naive
-  loop once.
-- **Route to grok to spare codex quota, not to save time.** Median 16.1s vs codex 8.5s /
-  agy 9.2s (worst task 42s) — latency IS comparative. Slowest of the three. (The old
-  "cheapest metered ~$0.005/run" framing is STALE as of 2026-08-25: the user runs the CLI
-  under a SuperGrok subscription, so it is quota/flat-billed like codex, not metered —
-  the $0.0054 telemetry is a reported number, not a bill. Route-to-spare-quota now means
-  spreading load across two flat plans, not trading quota for pennies.)
+- **A legitimate third option for ordinary spec'd implementation.**
+- **Loop / iteration / termination work → state the edge first** (THE ONE RULE above).
+- **Route to grok to spare codex quota, not to save time** — slowest of the three,
+  median 16.1s vs 8.5s / 9.2s, worst task 42s. Both run on flat plans, so this is
+  spreading load across two subscriptions, not trading quota for pennies.
 
 ### NOT head-to-head — single-arm capability facts and reasoned defaults
 
 No comparative data behind these. They say what grok does, not what to prefer it over.
 
-- **Schema-constrained fan-out** where you need N structured verdicts parsed without
-  regex — 16/16 adherence + free `usage`/`cost` telemetry (measured, single-arm; codex and
-  agy were never benched on structured output, so "advantage" is inferred from their
-  lacking the feature, not from a comparison). Side effects still verified on disk.
+- **Schema-constrained fan-out** — 16/16 adherence plus free `usage`/`cost` telemetry.
+  "Advantage" is inferred from codex/agy lacking the feature, never measured against
+  them. Side effects still verified on disk.
 - **Well-specced implementation on small briefs**, edges spelled out. *(Reasoned.)*
-- **NOT as a cross-model reviewer** until HOME is isolated (see above) — otherwise it is
-  reading your own doctrine back to you. *(Reasoned from the `grok inspect` contamination
-  finding, not from a review-quality measurement.)*
-- **Large packets (~55KB, isolated-HOME, real review dispatch) — first data 2026-08-25:**
-  0 empty-return, 0 hang, 6/6 findings reproduced real on TG-bot-helper's iter43 write-
-  proposal/reasoning-tier code — notably on code already reviewed by codex×2+agy×2+NIM×2
-  in the same campaign round. n=1 packet, but no longer "untested"; the agy-class
-  empty-return trap at this size did NOT reproduce here. Full record: TG-bot-helper
-  project memory `multitool_improvement_workflow.md` iteration 43b.
+- **NOT as a cross-model reviewer until HOME is isolated** — otherwise it reads your own
+  doctrine back to you. *(Reasoned from `grok inspect`, not a review-quality measurement.)*
+- **Large packets are fine: ~55KB isolated-HOME review dispatch, 0 empty-return, 0 hang,
+  6/6 findings real** — on code codex×2+agy×2+NIM×2 had already reviewed. n=1 packet;
+  the agy-class empty-return trap did NOT reproduce. Record: TG-bot-helper project memory
+  `multitool_improvement_workflow.md` iter 43b.
 
-## Grok inside OTHER harnesses — probed 2026-08-25
+## Grok inside OTHER harnesses
 
-**Standing decision (user, 2026-08-25): grok CLI is the default grok lane** — it is the
-only path the SuperGrok subscription covers. The opencode/codex/Claude Code recipes below
-all WORK but bill metered OpenRouter credits, and buy no capability (edge-blindness is a
-model property, identical in all four harnesses). Reach for them only when grok must run
-inside another harness or a bench must exclude the CLI scaffold.
+**Standing decision (user, 2026-08-25): the grok CLI is the default grok lane** — the
+only path the SuperGrok subscription covers. It is an OAuth consumer login, so it
+transfers to NONE of the others; every non-CLI path bills metered OpenRouter credits
+and buys no capability (edge-blindness is a model property — identical in all four
+harnesses, 4/4). Reach for another harness only when grok must run inside it, or when
+a bench must exclude the CLI scaffold.
 
-- **opencode**: works via `openrouter/x-ai/grok-4.6` (metered OpenRouter credits; edge
-  profile identical to CLI, [[finding-openrouter-grok-p2-2026-08-25]]). Zen's
-  `opencode/grok-4.6` is billing-blocked (exits 0 with an Error on stdout).
-- **codex (0.149.0): WORKS, verified empirically 2026-08-25** — smoke test + file-write
-  task both clean, direct to OpenRouter, no proxy. Recipe (isolated CODEX_HOME):
-  top-level `model = "x-ai/grok-4.6"`, `model_reasoning_effort = "low"`, and
-  `[model_providers.openrouter]` with `base_url = "https://openrouter.ai/api/v1"`,
-  `env_key = "OPENROUTER_API_KEY"`, `wire_api = "responses"` (`"chat"` was removed in
-  this codex version). TWO GOTCHAS found on the way: (1) `model_reasoning_effort` MUST
-  be top-level — appended after a `[model_providers.*]` table it silently becomes a
-  table key, codex then disables reasoning and xAI 400s "Reasoning is mandatory"; an
-  earlier BLOCKED verdict here was exactly this TOML-placement error. (2) `codex exec`
-  under a non-TTY needs `</dev/null` or it waits on "Reading additional input from
-  stdin". Incidental: the file task emitted the same naive unguarded chunk loop — third
-  harness, same edge-blindness ([[finding-openrouter-grok-p2-2026-08-25]]).
-- **Claude Code: WORKS, verified empirically 2026-08-25** — no proxy needed: OpenRouter
-  exposes an Anthropic-compatible `/api/v1/messages` (verified by raw curl first). Recipe:
-  `ANTHROPIC_BASE_URL="https://openrouter.ai/api" ANTHROPIC_AUTH_TOKEN=$OPENROUTER_API_KEY
-  ANTHROPIC_MODEL="x-ai/grok-4.6" claude -p ...` (isolated `CLAUDE_CONFIG_DIR` for tests).
-  Chat AND tool use both clean: headless file-write task wrote a working `chunk.js`
-  (executed, correct). Caveats: unrecognized-model warning caps assumed context at 200k
-  (map it in `modelOverrides` or set `CLAUDE_CODE_MAX_CONTEXT_TOKENS` to fix); metered
-  OpenRouter billing; and the emitted chunk was AGAIN the naive unguarded loop — fourth
-  harness, same edge-blindness.
-- **SuperGrok subscription transfers to NONE of these** — OAuth consumer login, not an
-  API key; every non-CLI path is separately metered.
+- **opencode** `openrouter/x-ai/grok-4.6` — works. Zen's `opencode/grok-4.6` is
+  billing-blocked (exits 0 with an Error on stdout: not a capability failure).
+- **codex 0.149.0** and **Claude Code** — both WORK, verified empirically.
+- ⚠️ Both carry a gotcha that reads as BLOCKED-but-isn't, and one already produced a
+  false BLOCKED verdict. **Copy the recipe, do not reconstruct it:**
+  [[reference-grok-other-harnesses]].
 
 ## Verification rule
 Grok is subordinate-class: **reproduce before relaying.** Its narration is fluent and its
@@ -245,32 +207,24 @@ structured fields will assert success it did not achieve (above). Files require 
 code requires execution. Nothing here exempts it from R0.
 
 ## Default-config lift — RETRACTED 2026-08-25 ([[finding-grok-defaultconfig-p2-2026-08-25]])
-Five-way bench (08-23) reported `grok-4.6` default-config (real `~/.claude`) guarding P2's
-unstated edge 1/2 vs isolated-HOME's 0/2, flagged n=1-flip/PROVISIONAL and pre-committed to
-an N=6+ repeat before any rule change. That repeat ran 08-25 under a pre-registered decision
-rule (grader independently validated against known-guarded/known-unguarded code first):
-**grok-default 0/6 edge_guarded, cap 6/6.** Per the pre-reg, this retracts the lift language
-outright — default config does NOT change the deterministic-miss finding; the 1/2 was noise.
-Default config now folds into the same 0/N isolated-HOME record for this edge (still a
-separate config technically, but no longer a documented exception). **Capability benches
-must still isolate HOME regardless** — the isolation rule was never contingent on this
-result, only on keeping capability and routing-as-invoked from being conflated.
 
-Same run: free pool (`muse-spark-1.2-contributor-free`) beat BOTH grok configs, 10/10 vs 9/10
-vs 8/10. On airtight-spec single-file work, try the free pool before grok.
+The 08-23 five-way bench's default-config 1/2 edge-guard was **noise**: the
+pre-committed N=6 repeat scored 0/6, so default config is no longer a documented
+exception and folds into the same 0/N record. Two orders survive it:
+- **Capability benches still isolate HOME, always.** That rule never depended on
+  this result — only on not conflating capability with routing-as-invoked.
+- **On airtight-spec single-file work, try the free pool before grok** —
+  `muse-spark-1.2-contributor-free` beat BOTH grok configs in that run, 10/10 vs
+  9/10 vs 8/10.
 
 ## What is NOT measured (do not claim these)
-- Whether the provisional HANG-class deficit GENERALISES to other real-repo termination
-  bugs — ONE brief (n=3) carried the whole head-to-head gap, and that specific stays
-  PROVISIONAL even though the underlying synthetic-edge mechanism is now deterministic
-  (see capability profile above). A second HANG-class real-repo brief is the cheapest
-  way to confirm or kill the head-to-head number specifically.
-- (RESOLVED 08-25: default-config edge-guard "lift" was noise, 0/6 on repeat — see above.)
-- Honesty WITHOUT the escape clause — 0/9 fabrication (08-25) measured only "takes the
-  out when offered," not baseline honesty on a bare fictitious-referent question.
-- Large-prompt (~8KB) reliability, empty returns, truncation.
+- Whether the HANG-class deficit GENERALISES beyond the ONE brief (n=3) that carried
+  the entire head-to-head gap. The synthetic mechanism is deterministic; this specific
+  is not. A second HANG-class real-repo brief confirms or kills it.
+- Honesty WITHOUT the escape clause — 0/9 measured "takes the out when offered" only.
 - grok-4.5 at non-default effort (only 4.6 was swept).
-- Multi-file / long-horizon agentic work; every probe was 1 file in 1 dir.
+- Long-horizon agentic work. Multi-STEP is now partly measured and it went badly:
+  [[finding-grok-idle-vs-parser-2026-08-27]], n=1 task each way.
 - Rate limits, quota behaviour, failure modes under load — 56+ runs were all rc=0 in one
   ~1h window. **Absence of observed failures at this N is not a reliability claim.**
 
