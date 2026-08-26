@@ -451,6 +451,15 @@ what happened (concrete), root cause (a MECHANISM), rule change needed, status.
   10 unnamed ones — the grep was sound, the SCOPE of the claim was not. State
   what a verification pass covered, in the artifact it produced, not just in
   the session that ran it.
+- **When a search returns ABSENT, verify the search's SCOPE before accepting the
+  absence — a mis-scoped grep and a true negative are byte-identical.** Twice on
+  2026-08-26: a subagent reported a memory file "does not exist" when it lives in
+  the PROJECT memory tree (`~/.claude/projects/<proj>/memory/`), which the search
+  scope excluded; and a `grep --include` died on a zsh glob, printing nothing and
+  reading exactly like a clean null. Before writing ABSENT: confirm the search
+  covered every memory layer (global `~/.claude/memory/` AND project-scoped),
+  and confirm the command actually ran (check rc, or grep something you KNOW is
+  there as a positive control).
 - **A corpus coverage baseline is (persistent files) PLUS (the tool and skill
   DESCRIPTIONS that auto-load in that session) — never files alone.** Auditing
   "what will a future session know?" against the file corpus only manufactures

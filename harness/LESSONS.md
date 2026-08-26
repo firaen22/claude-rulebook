@@ -5,12 +5,21 @@ Append-only between compressions. Compress at >150 lines / >20 entries.
 Compressed 2026-07-12: six applied entries (2026-07-05 → 2026-07-12) moved
 verbatim to `LESSONS-archive.md`.
 Compressed 2026-08-25 at 243 lines / 19 entries: ALL 19 entries (2026-07-11 →
-2026-08-25) moved verbatim to `LESSONS-archive.md`. Every one was verified
-applied by grepping its rule in the destination cache before the move — not
-trusted from its own `Status:` line (two entries carried no Status at all).
-The verification map is in the archive's compression banner. What survives here
-is only what is NOT closed: one promoted rule-change proposal awaiting approval,
-one open external thread, and the recurrence counters.
+2026-08-25) moved verbatim to `LESSONS-archive.md`. What survives here is only
+what is NOT closed: one promoted rule-change proposal awaiting approval, one
+open external thread, and the recurrence counters.
+
+⚠️ **CORRECTED 2026-08-26.** This block used to claim every moved entry "was
+verified applied by grepping its rule in the destination cache before the move."
+That was false, and is corrected at the archive's banners — read those, not a
+Status line. Both compressions were re-audited 2026-08-26 at PRESCRIPTION
+granularity: the 08-25 pass named destinations for only 9 of 19 and verified
+those 9 (4 failures among the 10 it never named); the 07-12 pass named no
+destinations at all (5 of 10 prescriptions not live as written). Evidence:
+`claude code technique/experiments/lessons-applied-audit-2026-08-26/`.
+**Moving an entry here closes nothing. Before writing "applied", grep the
+destination and quote the operative sentence — a "compiled into §N" reference
+decays as files are reorganized and nothing re-checks it.**
 
 ## APPLIED RULE CHANGE — 2026-08-26 (§3: recurred ≥3×, promoted on user order)
 
@@ -84,10 +93,24 @@ the rule edit and ask in-session.
 - **`gate-before-commit` cannot resolve `cd $VAR` — 2 instances** (2026-07-11,
   2026-08-04; same hook, same shlex-inert-variable mechanism, both times it fell
   through to `$CLAUDE_PROJECT_DIR` and ran the wrong repo's gates). Applied in
-  40-maintenance §1's hook rows + `memory/feedback_hook_block_read_the_repo_line.md`.
+  40-maintenance §1's hook rows + `~/.claude/projects/-Users-yauch-Documents-claude-code-technique/memory/feedback_hook_block_read_the_repo_line.md`
+  (PROJECT memory, not global `~/.claude/memory/` — path corrected 2026-08-26
+  after the bare `memory/` prefix sent an audit searching the wrong tree).
   Write literal absolute paths in any commit-adjacent `cd`.
-- **A read-only instruction is not a control — 2 instances** (agy edited files
-  despite read-only in sweep-6; a review subagent deleted a stale-response guard
-  from a live working tree in 2026-07-28). Only the filesystem/worktree boundary
-  is a control. Applied in `delegation-and-review`; prefer `isolation: 'worktree'`
-  for review fan-outs.
+- **A read-only instruction is not a control — 3 instances, THRESHOLD MET,
+  promotion executed 2026-08-26** (2026-07-09 agy, dispatched as an adversarial
+  spec REVIEWER, "ignored the review framing, chose to IMPLEMENT" and overwrote a
+  file at an absolute real-repo path; 2026-07-14 agy edited 4 files despite
+  read-only in sweep-6; 2026-07-28 a review subagent deleted a stale-response
+  guard from a live working tree). Only the filesystem boundary is a control.
+  Now applied at `skills/delegation-and-review/SKILL.md:423` (classify by tools
+  held, not by brief) with the worktree/enforced-copy clause at :431.
+  - ⚠️ **Corrected 2026-08-26 — this counter was wrong in two ways at once, and
+    the two errors masked each other.** It read "2 instances" (the 07-09 case was
+    never counted) AND asserted the rule was already "Applied in
+    `delegation-and-review`" when `isolation: 'worktree'` appeared in no rules
+    file at all. §3 says promote at 3; the third instance landed 2026-07-28, so
+    the promotion was a month overdue and only ran because an audit tripped over
+    it. **A counter that believes its rule is already applied never promotes —
+    so when you log an instance, re-grep the claimed destination in the same
+    edit.**
