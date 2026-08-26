@@ -142,8 +142,29 @@ current instruction — see the compiled rules in the caches.
 
 ## Moved here by the 2026-08-25 compression (LESSONS.md was 243 lines / 19 entries)
 
-All entries below were verified APPLIED before the move — each rule was grepped
-in its destination cache, not trusted from its own Status line. Verification map:
+⚠️ **CORRECTED 2026-08-26.** The original banner here claimed "all entries below
+were verified APPLIED before the move." That was FALSE — a 9-row check stated as
+a 19-row claim. What was actually verified is the 9 lessons named in the map
+below; the other 10 were moved with no destination named and no grep run.
+
+A prescription-level re-audit on 2026-08-26 (23 checks, pre-registered, 3
+fresh-context read-only agents + direct re-verification of every non-LANDED
+verdict) found 18 LANDED and 4 not: 07-28 rule 3 (stop the fan-out on first
+mutation) ABSENT; 07-28 rule 4 (read-only is not a control) CONTRADICTED by
+`delegation-and-review` §8; 07-28 rule 2 (post-fan-out contamination check)
+NARROWED to worktree/agy scopes; 08-04's glossary and third-door rules never
+compiled out of `project_opus_pack_fork.md`. **All four failures were in the 10
+unnamed rows; all 9 map-named rows checked out.** The method was sound where it
+was applied — the defect was the unstated scope. Fixed same day; full evidence in
+`claude code technique/experiments/lessons-applied-audit-2026-08-26/`.
+
+Two method rules earned here, both now compiled into `skill-authoring` §4:
+grade a lesson at PRESCRIPTION granularity (a lesson with numbered sub-rules
+gets certified by whichever sub-rule the grep hits first — here rule 1, while
+rules 2/3/4 were narrowed/absent/contradicted), and state the SCOPE of any
+verification claim (which rows were checked, which were not).
+
+Verification map — the 9 rows actually checked in 2026-08-25's pass:
 07-15 stdin TODO → invocations-and-traps.md:17 (`< /dev/null` present, correctly
 placed before `&`); 07-14 agy framing → workflow_agy_subordinate.md:283; 07-14
 glob/mutation-test → operational-rigor/references/external-systems.md:111; 07-14 +
