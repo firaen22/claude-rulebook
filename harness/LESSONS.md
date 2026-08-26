@@ -114,3 +114,22 @@ the rule edit and ask in-session.
     it. **A counter that believes its rule is already applied never promotes —
     so when you log an instance, re-grep the claimed destination in the same
     edit.**
+
+## 2026-08-27 — Word-presence diffs certify words, not bindings (3 compressions, 3 escapes)
+- What happened: Three consecutive rules-file compressions (3ade6e2, 4ab2a56, 514a227)
+  were each verified by grep/token-diff and passed; external review then found a real
+  loss in every one: a pre-registration TIMING order (words all present, before/after
+  lost); a dropped NON-FREE qualifier that made the sentence false against data 8
+  lines above; 9/10-vs-4/20 numbers detached from their subject (-medium) and
+  re-attaching to the adjacent -low sentence; ">=4 independently-authored unseeded
+  defects" silently merging two independence conditions into one.
+- Root cause: token-presence checks are order-blind — a binding (subject↔number,
+  scope↔claim, condition↔condition, before↔after) can break while every word
+  survives, so the check certifies the wrong invariant.
+- Rule change needed: skill-authoring §4 or 40-maintenance §5 — after compressing any
+  rule text, re-read each compressed sentence asking WHO/WHAT the numbers and
+  qualifiers now attach to (a bindings pass, not a words pass); word-diff remains
+  necessary for extractions but is never sufficient for rewording. External lens
+  stays mandatory for compression commits (this is the existing "self-review is no
+  substitute" line — 3/3 rounds confirm it).
+- Status: noted

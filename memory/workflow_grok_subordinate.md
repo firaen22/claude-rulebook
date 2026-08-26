@@ -180,10 +180,14 @@ No comparative data behind these. They say what grok does, not what to prefer it
 - **Well-specced implementation on small briefs**, edges spelled out. *(Reasoned.)*
 - **NOT as a cross-model reviewer until HOME is isolated** — otherwise it reads your own
   doctrine back to you. *(Reasoned from `grok inspect`, not a review-quality measurement.)*
-- **One ~55KB isolated-HOME review dispatch came back clean: 0 empty-return, 0 hang,
-  6/6 findings real** — on code codex×2+agy×2+NIM×2 had already reviewed. n=1 packet:
-  an existence proof that size alone doesn't break it, NOT a reliability claim.
-  Record: TG-bot-helper project memory `multitool_improvement_workflow.md` iter 43b.
+- **Large inline packets delivered twice: ~55KB (6/6 findings real, iter 43b) and
+  ~139KB (7 findings, 3 confirmed convergent with codex, 2026-08-27).** n=2, both
+  isolated-HOME schema reviews: existence proofs that size alone doesn't break it,
+  NOT a reliability claim. Budget for latency: the 139KB run took ~17min at
+  `num_turns: 3` with ZERO bytes on stdout/stderr until done — a silent long run at
+  this size is normal, not a hang; set a deadline ≥25min before killing.
+  Records: TG-bot-helper `multitool_improvement_workflow.md` iter 43b; this repo's
+  routing-map review 7194600.
 
 ## Grok inside OTHER harnesses
 
@@ -226,8 +230,8 @@ exception and folds into the same 0/N record. Two orders survive it:
 - Long-horizon agentic work. Multi-STEP is now partly measured and it went badly:
   [[finding-grok-idle-vs-parser-2026-08-27]], n=1 task each way.
 - Output TRUNCATION — never probed on grok (the truncation note in the 08-25 fleet
-  finding is about a NIM model). Large-packet RELIABILITY likewise: one clean ~55KB
-  packet is the entire record.
+  finding is about a NIM model). Large-packet RELIABILITY likewise: two clean packets
+  (~55KB, ~139KB) are the entire record.
 - Rate limits, quota behaviour, failure modes under load — 56+ runs were all rc=0 in one
   ~1h window. **Absence of observed failures at this N is not a reliability claim.**
 
