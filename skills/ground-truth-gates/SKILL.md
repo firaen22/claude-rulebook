@@ -233,6 +233,17 @@ The gate has teeth only if cases come from real logs. Export flow:
 A green test proves nothing until you close the ways it goes green while the claim
 is false:
 
+- **An ALL-PASS suite the author wrote is necessary, never sufficient — and
+  for a text/shell PARSER it is barely evidence at all.** The suite encodes the
+  cases the author already thought of; the defects live in the ones they didn't.
+  A commit-gate hook passed its own 16-path suite, then a fresh-context review
+  told to *try to break it* (not replay it) found 6 more live defects — one of
+  which blocked a legitimate command during the review itself, and one of which
+  silently allowed a real commit. Root cause: hand-rolled sed/grep cannot
+  reconstruct shell quoting; the rewrite used a real tokenizer. **Trigger: your
+  own suite going green on a parser or guard is the moment to commission
+  another adversarial round, not the moment to extend trust.** Repeat until a
+  break-it pass returns nothing new (it found more on rounds 2 AND 3).
 - **Confirm a new test actually *runs*** — the runner lists it, or it fails when
   you deliberately break the code — not merely that it compiles. Same family: a
   **CI/automation config that has never executed** — count runs (the platform's

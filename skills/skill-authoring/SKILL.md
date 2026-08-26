@@ -451,6 +451,13 @@ what happened (concrete), root cause (a MECHANISM), rule change needed, status.
   10 unnamed ones — the grep was sound, the SCOPE of the claim was not. State
   what a verification pass covered, in the artifact it produced, not just in
   the session that ran it.
+- **A corpus coverage baseline is (persistent files) PLUS (the tool and skill
+  DESCRIPTIONS that auto-load in that session) — never files alone.** Auditing
+  "what will a future session know?" against the file corpus only manufactures
+  phantom gaps for everything the tooling already teaches at load time: a
+  2026-07-07 gap audit flagged 9 candidates, and 2 were non-gaps because the
+  Workflow tool's own description teaches them and co-loads with the tool every
+  session. Enumerate the auto-loading surface before you diff against it.
 - **Grade a multi-rule lesson at PRESCRIPTION granularity, not lesson
   granularity.** A lesson with several numbered sub-rules (e.g. "rule 1 / rule
   2 / rule 3...") gets falsely certified whole by a single grep hit on

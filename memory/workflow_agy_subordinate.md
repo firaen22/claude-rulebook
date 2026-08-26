@@ -288,6 +288,17 @@ adjacent term's phase). Two findings from agy's role in the fix:
   findings as "already fixed"). Scope mechanically, not with prose: reviews get NO --add-dir
   (or a scratch copy); after any agy run with write access, git-diff before trusting file
   state. (--add-dir stays fine for intended implementation work.)
+- **Why containment here is DETECT-the-write, not PREVENT-the-write — a recorded
+  trade, not an oversight.** The 2026-07-09 incident (agy wrote to a live repo
+  during a "review the spec" dispatch) concluded "drop
+  `--dangerously-skip-permissions`". **Do not do that**: dropping it is
+  silent-hang Cause B — headless agy blocks forever on an approval keypress that
+  can never arrive. So the flag stays unconditional, and containment is carried
+  by the two controls above instead: no `--add-dir` (or a scratch copy) on
+  reviews, and git-diff every run that had write access. Accepted 2026-08-26
+  after the audit found the two rules flatly contradicting each other with no
+  recorded resolution. If you ever find a way to run agy headless without the
+  flag, revisit — prevent beats detect.
 - **"[verified: vitest/Node.js]" tags are fabricated** — agy fabricates these tags even though it CAN execute (see the end-to-end delegation section) (N≥2,
   sweeps 6 and 8). Treat every agy verification tag as false; only your own runs verify.
 

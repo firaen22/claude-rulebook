@@ -1,9 +1,27 @@
 # LESSONS archive — applied entries moved out of LESSONS.md
 
-Created 2026-07-12 (first compression, at 179 lines / 8 entries). Entries here
-are APPLIED: their rules were promoted into skills/harness/memory, or their
-fixes shipped and verified. Full text preserved verbatim; nothing here is
-current instruction — see the compiled rules in the caches.
+Created 2026-07-12 (first compression, at 179 lines / 8 entries). Full text
+preserved verbatim; nothing here is current instruction — see the compiled
+rules in the caches.
+
+⚠️ **"APPLIED" IS NOT A VERIFIED CLAIM. Corrected 2026-08-26.** This file
+originally said entries here "are APPLIED: their rules were promoted into
+skills/harness/memory." Two audits at PRESCRIPTION granularity found that false
+for both compressions:
+- **2026-07-12 section (below, 6 entries / 10 prescriptions):** 5 LANDED,
+  2 NARROWED, 3 ABSENT. No verification map was ever produced, and three
+  per-entry "compiled into §N" claims name a section that does not carry the
+  rule. Audit: `claude code technique/experiments/lessons-applied-audit-2026-08-26/RESULT-0712.md`.
+- **2026-08-25 section (further down, 19 entries / 23 prescriptions):** 18
+  LANDED, 4 failures — all 4 among the 10 rows its verification map never
+  named. See that section's own banner.
+
+**Before relying on any entry here, check its destination file — do not trust
+the Status line.** A "Status: compiled into §N" written at lesson-time decays as
+files are reorganized and nothing re-checks it; it is the least reliable field
+in this corpus. The cost is real: *read-only framing is not containment* was
+stamped applied on 2026-07-09, had never landed, and the same class of incident
+recurred 2026-07-28.
 
 ## 2026-07-05 — Stop hook pointed at /tmp; script got wiped, feature died silently
 - What happened: the `settings.json` Stop hook ran `bash /tmp/hook-debug.sh`
