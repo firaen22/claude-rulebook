@@ -40,6 +40,11 @@ grok then guards 11/11.
 `{file_created: true}` with `num_turns:1` and zero tool calls (3/10); opencode agents narrate
 a file and write nothing; agy fabricates claims about files not inlined in the packet; codex
 quota exhaustion surfaces as a silent `no-change`, not an error. Read the file back.
+**The REVIEW-side corollary (2026-08-27): a reviewer's all-clear is a self-report too.**
+grok returned a schema-valid `findings: []` / all-claims-survived verdict on a diff carrying
+a defect that two independent lenses (Claude + codex) found and reproduced the same hour.
+A clean review verdict counts only when a second lens agrees or you reproduce the pass —
+same rule as a green test count, [[finding-test-validity-failure-modes]].
 
 **R-C — Deliverable-is-a-scanner ⇒ the dispatch must require executing it.** Measured on
 codex only (2026-08-24, decisive force-load probe): dominant failure 5/18 runs shipped a
@@ -73,6 +78,7 @@ is not.
 | Adversarial edge-hunting, PRE-implementation | **agy** `gemini-3.7-flash-medium` | 24/24 recall, 0/32 fabrication w/ escape clause |
 | Reviewing a large real-repo packet | **agy** `gemini-3.6-flash-high` (review pin) | pin held on measurement, N=30, p=1.000 |
 | Structured/JSON-schema fan-out, N verdicts parsed | **grok** | 16/16 adherence + free cost telemetry (SINGLE-ARM) |
+| Third review lens after codex (diff/rules-file review) | **grok, ONLY as: everything inline in the prompt + pure judgement (zero file reads) + `--json-schema` + isolated HOME** | 2/2 delivered with this shape vs 0/3 idle (narrates, exits) with read-then-analyze packets — fix is packet SHAPE, not retry, [[finding-grok-idle-vs-parser-2026-08-27]]. n=2/n=3, one task family. Its finds are real (caught a dropped order codex passed) but its all-clears are void (R-B corollary) |
 | Ordinary spec'd implementation, want to spare codex quota | **free pool first** (`muse-spark-1.2-contributor-free`), grok if the free pool is unavailable | MEASURED 08-23 same-window five-way: free 10/10 > grok-default 9/10 > grok-isolated/NIM/big-pickle 8/10 |
 | Anything with a loop / iteration / termination edge | codex or agy — or grok WITH the edge stated | PROVISIONAL, n=3, p=0.17 pooled |
 | Same, but the edge CANNOT be stated (unstated-edge exposure is the risk) | **agy `gemini-3.7-flash-low`** — then verify by execution regardless | 15/20 fresh-day repeat (prior 14/20, p=1.000); `-medium` 4/20 same day. NOT safe, just least-bad |
@@ -97,7 +103,9 @@ is not.
   (SuperGrok flat plan — the ~$0.005/run telemetry is reported, not billed; the metered path
   is `openrouter/x-ai/grok-4.6`, a separate product), effort tiers are FLAT (don't build effort routing). *Weakness:* slowest of
   the three (16.1s vs 8.5/9.2); provisional HANG-class miss; **ingests `~/.claude` by
-  default → not an independent review lens, and any benchmark without an isolated HOME is void.**
+  default → not an independent review lens, and any benchmark without an isolated HOME is void**;
+  IDLES on multi-step read-then-analyze packets (narrates a plan, exits, rc=0 — re-shape
+  inline + pure judgement + schema, do not retry); its review all-clears are void per R-B.
 - **opencode** — the free agent layer: the only free path that edits files. Isolated scratch
   dir + `timeout` + sequential by default (parallel OK with isolated `XDG_DATA_HOME` + copied auth.json). *Weakness:* no judgment-to-refuse; reliability (not
   reasoning) ceiling on multi-file; `$PWD`-not-cwd bug still live at 1.18.19 — set `env["PWD"]`
@@ -222,4 +230,6 @@ direction.** Route step 4 on cost. N=5/arm throughout, PROVISIONAL.
   don't route it — but is a distinct shape (55/95 ids in the 08-25 full sweep). An id
   ending `-free` and its bare twin are DIFFERENT PRODUCTS on different tiers
   ([[finding-pool-reprobe-2026-08-23]]).
-- Cost comparisons are inferred, not measured — only grok is metered in dollars.
+- Cost comparisons are inferred, not measured — NOTHING is CLI-metered in dollars any more
+  (grok CLI moved to the SuperGrok subscription 2026-08-25; the metered grok is the separate
+  `openrouter/x-ai/grok-4.6` product).
