@@ -12,6 +12,13 @@ Universal rules baked into all templates — do not remove them when filling in:
 - Long output → file + path, never inline.
 - Subagents do NOT inherit your scratchpad path or env — every `{{scratch path}}`
   field must be a literal absolute path you write into the prompt.
+- Deliverable IS a scanner/checker/guard → acceptance criteria MUST include
+  executing the deliverable against one known-positive and one known-negative
+  input, with both observed outputs in the report. Measured 2026-08-24: the
+  dominant failure across 18 codex runs (flat across every rule configuration)
+  was shipping a scanner whose scan never executes — prose care doesn't prevent
+  it; a required execution does. Corollary for red-tests: the injected failure
+  must be REACHABLE (a failing line after `exit` silently reports green).
 
 ---
 

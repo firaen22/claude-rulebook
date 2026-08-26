@@ -15,7 +15,7 @@ instead of trusting this file if anything errors.**
 - `agent-skills:code-reviewer` / `security-auditor` / `test-engineer` — review roles.
 - `claude-code-guide` — questions about Claude Code/API itself.
 
-**External CLIs (Bash):** `codex` (gpt-5.5), `agy` (Gemini 3.5 Flash), `opencode`
+**External CLIs (Bash):** `codex` (gpt-5.6-luna), `agy` (Gemini 3.6 Flash), `opencode`
 (free models). Playbooks in `~/.claude/memory/workflow_*.md` are the source of truth
 for invocation syntax and known traps. Re-verify a CLI still works with a 5-second
 probe (`codex exec --skip-git-repo-check "PONG"`) before batch-dispatching to it.
@@ -56,7 +56,7 @@ transcript that lands in it displaces judgment.
 | Web/doc research | Agent `general-purpose` `sonnet` | require citations + confidence per claim |
 | Code review (briefed scope) | Agent `agent-skills:code-reviewer` `sonnet`/`opus` | |
 | Miss-is-costly audit (security, money paths) | `opus` + a SECOND independent reviewer (codex-as-reviewer or agy) | if `fable` is offered by the harness, it replaces `opus` in this row; keep the second reviewer either way. No single model is trusted alone here; see §6 honesty note |
-| Second-opinion / adversarial read | agy (≥2 samples) or codex-as-reviewer | codex volunteers risks when ASKED to review that it hides while implementing |
+| Second-opinion / adversarial read | agy (one sample) or codex-as-reviewer | codex volunteers risks when ASKED to review that it hides while implementing |
 | Bulk summarization / pattern discovery | agy | prose-only prompts |
 | Acceptance review of any delegated work | fresh-context agent, §5 | NEVER the agent that did the work |
 
@@ -149,6 +149,8 @@ manufacture taste.
 
 - Independent read-only agents: launch in parallel freely (one message, many calls).
 - Anything that EDITS: parallel only on disjoint files; overlap → worktrees or
-  sequential. opencode: strictly sequential (shared SQLite lock).
+  sequential. opencode: sequential by DEFAULT (shared SQLite lock) — parallel
+  verified only with per-instance `XDG_DATA_HOME` + copied auth.json, 3-way
+  (recipe: `~/.claude/memory/workflow_opencode_subordinate.md`).
 - Never launch a second wave before accepting/rejecting the first — unaccepted work
   compounds errors.
