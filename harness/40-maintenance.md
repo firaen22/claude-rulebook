@@ -25,7 +25,7 @@ between the two, **this table wins**.
 | `~/.claude/skills/delegation-and-review/SKILL.md` | YES | CACHE over `10-orchestration.md`, `30-delegation-templates.md` and the subordinate playbooks — not a source of truth. §5 write-back applies. Over the §4 soft ceiling by user approval; the next addition must EXTRACT, not grow. |
 | `~/.claude/skills/operational-rigor/SKILL.md` (+ `references/`) | YES wording; NO thresholds | CACHE over global CLAUDE.md R0–R8 + `20-judgment-rubrics.md`. §5 write-back applies; numeric thresholds change only with the source (user sign-off). Next addition must extract. |
 | `~/.claude/skills/ground-truth-gates/` (SKILL.md + scripts + references/) | YES | CACHE over the ground-truth-harness-pattern doc (claude-code-technique). **Any edit to `scripts/` re-runs the PASS *and* FAIL probes before claiming run-verified.** Next addition must extract. |
-| `~/.claude/skills/skill-authoring/SKILL.md` (+ `references/`) | YES | CACHE over `00-DIAGNOSIS.md`, this file, and the letter's degradation modes. §5 write-back applies. Well past the tested no-dilution band — the extraction order in `41-file-registry.md` is overdue and binds the next addition absolutely. |
+| `~/.claude/skills/skill-authoring/SKILL.md` (+ `references/`) | YES | CACHE over `00-DIAGNOSIS.md`, this file, and the letter's degradation modes. §5 write-back applies. Well past the tested no-dilution band: **the next addition to this file must EXTRACT, not grow — this order binds absolutely** (history behind it in `41-file-registry.md`). |
 | `~/.claude/skills/cross-model-review/SKILL.md` | YES wording; NO lineup | Installed port of opus-pack; doctrine only, NOT a cache over anything local. **Never write machine-specific detail into it** (which CLIs, slugs, effort flags, pins) — that lives in `workflow_*_subordinate.md`; its own §1 forbids a hard-coded lineup. Ships three in-body `unprobed` markers — never cite them as measured here. Re-port remaps sections against the LIVE files, never from a stored map. |
 | `~/.claude/skills/skill-vetting/SKILL.md` + `~/.local/share/opus-pack/skill_snapshot.py` | YES wording; NO verdict semantics | DRIVER over `operational-rigor` §2 + `references/install-gate.md` — that file is canonical and WINS on disagreement. **The digest tool is deliberately OUTSIDE `~/.claude/`** (§3 requires running it from a trusted copy outside the tree being vetted, and `~/.claude/skills/` is exactly such a tree) — do not "tidy" it inward; set `TOOL=~/.local/share/opus-pack/skill_snapshot.py`. Re-run `python3 test-skill_snapshot.py` after ANY edit to the tool. **KNOWN UNFIXED HAZARD:** a candidate's DIRECTORY NAME is attacker-chosen and `$`, backtick, backslash and `"` survive double-quoting — a name that is not `[A-Za-z0-9][A-Za-z0-9._-]*` goes in NO shell command at all; record BLOCK. |
 | `~/.claude/skills/security-architect/SKILL.md` | YES wording; NO severity ladder | Installed port of opus-pack; loads on trigger only. TWO rules ship `unprobed` (capability triangle, guardrail/denial-of-wallet) — never cite either as measured. Its per-platform secret-storage table is capability-NEGATIVE content, the class that rots silently: re-verify yearly, and re-probe before acting on any "platform X can't do Y" line. |
@@ -85,30 +85,41 @@ Rules for LESSONS.md:
   something else must move to a harness/memory file first.
 - Harness files: soft ceiling ~200 lines each. Past that, split — don't summarize
   away examples (examples are the load-bearing part for weaker readers).
-- **The line ceilings bind RULES files. Evidence layers are exempt from the LINE
-  ceiling only** — `LESSONS-archive.md` (429) and `41-file-registry.md` (603) are
-  append-only history that a strong reader opens on demand, and truncating them
-  destroys the provenance they exist to hold. The exemption is conditional and
-  checkable: an evidence file may carry NO order that isn't in a rules file, so if
-  you ever find yourself obeying one of these files directly, it has drifted and the
-  exemption lapses. Both density twins still apply — exempt from the line count is
-  not exempt from measurement.
+- **The line ceilings bind RULES files.** Evidence layers are exempt from the LINE
+  ceiling only, and the exempt list is CLOSED: exactly `LESSONS-archive.md` and
+  `41-file-registry.md`. Adding a file to it is a user decision (ASK USER, like a
+  threshold change) — a session may never self-declare a bloated rules file
+  "evidence" to dodge the ceiling. Both are append-only history a strong reader
+  opens on demand; truncating them destroys the provenance they exist to hold. The
+  exemption is conditional: an evidence file may carry NO order that isn't in a
+  rules file. Spot-check by sampling imperative sentences and finding each one's
+  rules-file home (2026-08-26 review: 5 samples per file, all homed) — a sample
+  can only FIND a violation, never prove absence, so treat any hit as decisive and
+  a clean sample as absence-of-evidence. If an order has no home, the fix is to add
+  it to the rules file, not to obey the evidence file. Both density twins still apply — exempt from the line count is not
+  exempt from measurement.
 - **Every line ceiling above has two density twins.** A file inside its line ceiling
   but past either one has evaded the gate, not passed it. Wrapping prose to more
   lines is never the fix; moving history to an evidence file is.
-  1. **Prose: ~12 words/line, measured over NON-TABLE lines** (corpus runs 7–11).
-     `python3 -c "l=[x for x in open(F) if not x.lstrip().startswith('|')];
-     w=sum(len(y.split()) for y in l); print(len(l), w, w/len(l))"`
-  2. **Tables: ~150 words in any single row.** Markdown rows cannot wrap, so they
-     are invisible to a line count AND they drag the file average — measure them
-     separately, never as an excuse to skip measuring. Check with
-     `grep '^|' F | awk '{print NF}' | sort -rn | head -3`.
-  A row past 150 words is narrating history, not stating a rule: move the history to
-  an evidence file and leave the standing rule. This is calibrated, not arbitrary —
+  1. **Prose: ~13 words/line, measured over NON-TABLE, non-blank lines.**
+     Calibrated to this exact command on 2026-08-26: corpus runs 8.9–12.1 (rules
+     files 8.9–11.0; the 2026-07 defect measured 64). A threshold quotes the command
+     that measures it — re-measure the corpus if you change the command. Run
+     exactly, replacing only FILE (keep the quotes):
+     `python3 -c "L=[x for x in open('FILE') if x.split() and not x.lstrip().startswith('|')]; w=sum(len(x.split()) for x in L); print(len(L), w, round(w/max(len(L),1),1))"`
+  2. **Tables: ~150 fields in any single row** (awk NF counts words PLUS the `|`
+     delimiters — a hair strict, never lenient; a row near the boundary can be
+     re-counted by hand). Rows cannot wrap, so they are invisible to a line count
+     AND they drag the file average — measure them separately, never as an excuse
+     to skip measuring. Run exactly, replacing only FILE:
+     `awk '/^[[:space:]]*\|/ {print NF}' "FILE" | sort -rn | head -3`
+  A row past 150 is narrating history, not stating a rule: move the history to an
+  evidence file and leave the standing rule. This is calibrated, not arbitrary —
   `40-maintenance.md` hid 6,605 words behind 103 lines for a month (64 w/line, one
-  row at **2,716 words**) until the 2026-08-26 split into `41-file-registry.md`. Its
-  longest legitimate row today is 119 words (a live hook hazard), so 150 clears every
-  real rule while firing on that defect 18× over — and would have fired in 2026-07.
+  row at **2,716 fields** = 2,712 words) until the 2026-08-26 split into
+  `41-file-registry.md`. Its longest legitimate row today is 119 fields (a live hook
+  hazard), so 150 clears every real rule while firing on that defect 18× over — and
+  would have fired in 2026-07.
 - MEMORY.md index: one line per memory, always. Content in memory files only.
 - Cadence: no scheduled maintenance. Compress on threshold-hit only. Do not
   "tidy" these files as a side quest during other work (R3: surgical changes).

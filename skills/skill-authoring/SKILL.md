@@ -255,7 +255,10 @@ history to know what to do today.
 - **Size ceilings**: global CLAUDE.md 100 lines hard; skill/harness files ~200
   soft (500 absolute and TOC-above-300 per Anthropic skill-creator convention —
   past the soft ceiling, split with clear pointers). Index files: one line per
-  entry, content in leaf files only.
+  entry, content in leaf files only. **Each line ceiling has two density
+  twins — prose ~13 w/line (non-table lines) and ~150 awk-fields per table row;
+  a line count alone is evadable by density.** Check commands, calibration, and
+  the closed evidence-layer exemption: 40-maintenance §4.
 - **No secrets in rules, memory, or lesson files** — no keys, tokens, or
   credentials, ever; name WHERE a secret lives (`.env.local`, keychain entry),
   never its value. These files are long-lived, synced, and sometimes shared.
