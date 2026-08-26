@@ -180,10 +180,10 @@ No comparative data behind these. They say what grok does, not what to prefer it
 - **Well-specced implementation on small briefs**, edges spelled out. *(Reasoned.)*
 - **NOT as a cross-model reviewer until HOME is isolated** — otherwise it reads your own
   doctrine back to you. *(Reasoned from `grok inspect`, not a review-quality measurement.)*
-- **Large packets are fine: ~55KB isolated-HOME review dispatch, 0 empty-return, 0 hang,
-  6/6 findings real** — on code codex×2+agy×2+NIM×2 had already reviewed. n=1 packet;
-  the agy-class empty-return trap did NOT reproduce. Record: TG-bot-helper project memory
-  `multitool_improvement_workflow.md` iter 43b.
+- **One ~55KB isolated-HOME review dispatch came back clean: 0 empty-return, 0 hang,
+  6/6 findings real** — on code codex×2+agy×2+NIM×2 had already reviewed. n=1 packet:
+  an existence proof that size alone doesn't break it, NOT a reliability claim.
+  Record: TG-bot-helper project memory `multitool_improvement_workflow.md` iter 43b.
 
 ## Grok inside OTHER harnesses
 
@@ -225,6 +225,9 @@ exception and folds into the same 0/N record. Two orders survive it:
 - grok-4.5 at non-default effort (only 4.6 was swept).
 - Long-horizon agentic work. Multi-STEP is now partly measured and it went badly:
   [[finding-grok-idle-vs-parser-2026-08-27]], n=1 task each way.
+- Output TRUNCATION — never probed on grok (the truncation note in the 08-25 fleet
+  finding is about a NIM model). Large-packet RELIABILITY likewise: one clean ~55KB
+  packet is the entire record.
 - Rate limits, quota behaviour, failure modes under load — 56+ runs were all rc=0 in one
   ~1h window. **Absence of observed failures at this N is not a reliability claim.**
 
