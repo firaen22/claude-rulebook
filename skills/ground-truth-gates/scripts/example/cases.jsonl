@@ -1,0 +1,6 @@
+{"input":"提醒 12345678 下星期三 打電話","intent":"remind"}
+{"input":"提醒 12345678 聽日 覆診","intent":"remind"}
+{"input":"睇下 陳大文","intent":"view_client"}
+{"input":"睇下 Mary","intent":"view_client"}
+{"input":"我想睇下今個月嘅業績","intent":"(fallback)"}
+{"input":"日期睇陳大文 slip","intent":"(fallback)"}

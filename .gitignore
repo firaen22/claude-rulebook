@@ -1,5 +1,7 @@
-# Whitelist repo: version ONLY the rulebook (CLAUDE.md, harness, memory).
+# Whitelist repo: version ONLY the rulebook (CLAUDE.md, harness, memory, skills).
 # Everything else in ~/.claude (settings, sessions, caches, tokens) stays untracked.
+# skills/ added 2026-08-26: the skill caches ARE rulebook — harness lessons are
+# compiled INTO them, so edits there were landing untracked and unrecoverable.
 *
 !.gitignore
 !CLAUDE.md
@@ -7,3 +9,5 @@
 !harness/**
 !memory/
 !memory/**
+!skills/
+!skills/**
