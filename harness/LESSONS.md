@@ -12,7 +12,7 @@ The verification map is in the archive's compression banner. What survives here
 is only what is NOT closed: one promoted rule-change proposal awaiting approval,
 one open external thread, and the recurrence counters.
 
-## PENDING RULE CHANGE — awaiting user approval (§3: recurred ≥3×, promote)
+## APPLIED RULE CHANGE — 2026-08-26 (§3: recurred ≥3×, promoted on user order)
 
 ### "A fix is a change, and needs its own independent review"
 - **Recurrence: 4 instances, no cache home.** Every other lesson in the archive
@@ -34,15 +34,41 @@ one open external thread, and the recurrence counters.
   finding, not on what the edit's blast radius newly touches. Checking "did the
   described fix land" is structurally incapable of catching a defect the fix
   introduced.
-- **Proposed edit (NOT yet applied — needs your go):** add to
-  `operational-rigor` §"verification by execution" —
-  > A fix is a change and inherits the full verification duty of one. A finding
-  > being correct says nothing about your fix being correct: re-derive the fixed
-  > behavior from the artifact, not from your own fix description, and check what
-  > the edit newly touches — not only that the reported defect is gone. This
-  > applies to your OWN fix in the same turn as the finding, and hardest when the
-  > fix is a rewrite of prose or a summary rather than code.
-- Status: **noted** — surface when a review/fix cycle is about to start.
+- **APPLIED 2026-08-26** to `skills/operational-rigor/SKILL.md` §4 (Verify by
+  execution), inserted after the "a failing check has two suspects" bullet.
+  Backup: `~/.claude/backups/operational-rigor.SKILL.md.2026-08-26-fixrule.bak`.
+  Ships `unprobed` — incident-derived, never bare/ruled probed.
+
+- **Mechanism trace before shipping** (the 2026-07-14 lesson: a compiled rule is
+  executable code — run the prescribed mechanism against its motivating case and
+  the nearest edge, because distillation introduces bugs the incidents never had).
+  Prescription: *re-derive the fixed behavior from the artifact, not your fix
+  description; check what the edit newly touches.*
+  - PR #125 (antecedent re-pointed, naming duty silently dropped) → CATCHES.
+    Re-deriving means reading the edited sentence and asking what "such a
+    component" now refers to and what duty that leaves; the dropped duty is
+    visible in the artifact, invisible in the fix description.
+  - PR #129 (round-1 mask() fix introduced a DEP-UNUSED false-positive/negative
+    pair + a SCAN-INCOMPLETE boundary misfire) → CATCHES, and is the empirical
+    proof: round-2 did exactly this (re-derived from the code, not the fix
+    description) and that is how the two new defects surfaced.
+  - 2026-08-25 NIM table (fix reproduced the rot it was written to remove) →
+    catches ONLY under the sharpened wording. "Re-derive from the artifact" read
+    naively means re-reading the table, which is what produced the defect. The
+    shipped rule therefore names the ground truth as the artifact for summaries
+    and tables ("re-probe, don't re-read"). This edge is why that clause exists —
+    without it the rule would not catch its own most recent instance.
+  - Nearest edge, pure revert: re-derivation is trivial and the rule costs
+    nothing. No regress risk — verification is a read, not a change, so it does
+    not itself trigger the duty.
+- **Self-application caught two defects in this very edit** (recorded because it
+  is the rule's own first live test, N=1): the draft cited
+  `harness/LESSONS-archive.md` as holding the mechanism trace when the archive
+  holds only the incidents — the trace did not exist anywhere until this block was
+  written — and it used a bare relative path where the file's convention (line 8)
+  is `~/.claude/`-prefixed. A "did the described fix land" check passes both. Both
+  fixed before commit.
+- Status: **applied-on 2026-08-26**
 
 ## RECURRENCE COUNTERS (applied rules that are climbing toward promotion)
 
