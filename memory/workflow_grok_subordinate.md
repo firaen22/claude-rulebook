@@ -72,7 +72,22 @@ agy/opencode for graded fan-out.
 - The constrained object is **`structuredOutput`**. Parse that.
 - Validating the envelope against your own schema scores 0/N and looks like catastrophic
   model failure. It is your bug, not grok's.
-- `text` may hold several concatenated JSON drafts. Ignore it.
+- `text` may hold several concatenated JSON drafts. Ignore it. Even in the clean
+  single-draft case `text` is a JSON **string** (`"{\"reply\":\"PONG\"}"`), not your
+  object — `.text` never gives you a parsed result.
+- 🔴 **The envelope is PRETTY-PRINTED multi-line JSON — never parse it line-wise.**
+  `tail -1` yields the bare `}`, and `... | tail -1 | jq` dies with
+  `parse error: Unmatched '}'`. Line-oriented parsing (`tail -1`, `read` loops,
+  last-line-wins log scrapers) is the #1 way a perfectly healthy grok run reads as
+  **"grok always returns empty."** Redirect to a file and parse the whole buffer:
+  ```
+  grok -p "..." -m grok-4.6 --json-schema '<SCHEMA>' > out.json
+  jq -r '.structuredOutput.<field>' out.json
+  ```
+  Verified 2026-08-26: same run, `tail -1 | jq` → parse error, whole-buffer `jq` →
+  the value. Before reporting grok as broken, re-probe with `--output-format plain`
+  and a "reply with exactly: PONG" prompt — plain mode prints 4 bytes and no
+  envelope, so it isolates transport/auth from your parser.
 
 ### 🔴 Tool-use short-circuit — the one hard safety rule
 
