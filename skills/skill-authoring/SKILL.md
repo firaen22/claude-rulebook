@@ -462,7 +462,11 @@ what happened (concrete), root cause (a MECHANISM), rule change needed, status.
 
 ## 5 · Edit safety (this environment: see 40-maintenance.md for the full table)
 
-1. Backup first: `cp <file> ~/.claude/backups/<name>.$(date +%Y-%m-%d-%H%M).bak`.
+1. Backup first, under a **path-derived** name — the bare basename clobbers
+   (`SKILL.md` is the tree's most common filename; two same-minute backups
+   silently overwrote one another 2026-08-26). With `f` the path relative to
+   `~/.claude`:
+   `cp ~/.claude/"$f" ~/.claude/backups/"$(echo "$f" | tr / -).$(date +%Y-%m-%d-%H%M).bak"`
 2. Edit; then read the file back — check the edit landed and broke nothing
    adjacent. For a condense or extraction pass, structural checks are not
    enough (`references/examples-and-cases.md` §5): word-diff the result

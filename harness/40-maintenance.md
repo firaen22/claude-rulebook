@@ -27,9 +27,16 @@ if it drifts from reality OR if it bloats. This file governs both.
 | `~/.claude/hooks/gate-credential-destruction.py` (+ its PreToolUse/Bash entry in `settings.json`, second in the array after gate-before-commit) | YES script; ASK USER to remove/disable | Blocks destructive verbs (rm/unlink/shred/srm/truncate, git rm, incl. sudo/env/etc. wrappers and if/for/while control-syntax prefixes) against credential-pattern paths (ssh keys, .env, .pem/.key/etc., .ssh/.aws/.gnupg trees). Adopted 2026-07-10 from opus-pack PR #11 after full install gate; **re-installed 2026-07-11 with PR #13's bypass fixes** (control-syntax command position, `--` end-of-options, secret.pub hole); **re-installed 2026-07-13 with PR #24's hardening** (fail-open→degraded-raw-scan on malformed/internal-error envelopes so a malformed envelope carrying a destructive command can't slip; oversized >1 MiB envelope blocked unread; now 291 lines) — re-verified via 50/50 fixtures + direct fail-open-vuln repro (old exit 0 → new exit 2) + live in-session block. Re-run `bash ~/.claude/hooks/test-gate-credential-destruction.sh` after ANY edit, and re-gate on any upstream update (a passed gate certifies the version read, not the path). NB the hook is an **accidental-destruction gate, NOT a security boundary** (newline-separated commands, bash -c/eval, redirect/var indirection are NOT caught — real protection is filesystem isolation). Override: `CRED_GATE_APPROVED=1` prefix, one command only, logged. Known false positive: it text-scans heredoc bodies, so documentation QUOTING a destructive-command example trips it — write such docs via Write/Edit, not Bash heredocs. Blind spots (inherent): xargs rm, find -delete, `>` truncation, Write/Edit overwrites. |
 
 **Before ANY edit to ANY harness file:**
-1. `cp <file> ~/.claude/backups/<name>.$(date +%Y-%m-%d-%H%M).bak` (backups dir
-   exists; the timestamp includes hour+minute so same-day edits never overwrite an
-   earlier backup).
+1. Back up to a **path-derived** name — never the bare basename:
+   ```
+   f=<file-relative-to-~/.claude>   # e.g. skills/skill-authoring/SKILL.md
+   cp ~/.claude/"$f" ~/.claude/backups/"$(echo "$f" | tr / -).$(date +%Y-%m-%d-%H%M).bak"
+   ```
+   → `skills-skill-authoring-SKILL.md.2026-08-26-1555.bak`. The timestamp alone is
+   NOT collision-proof: `SKILL.md` is the most common filename in the tree, so two
+   basename backups in the same minute silently clobber — it happened 2026-08-26,
+   destroying `skill-authoring`'s pre-edit copy while `delegation-and-review`'s
+   survived under the identical name. The path is what disambiguates, not the clock.
 2. Make the edit.
 3. Read the file back; check the edit landed and broke no adjacent text.
 4. If the file is referenced by CLAUDE.md and you renamed/moved it — you almost
