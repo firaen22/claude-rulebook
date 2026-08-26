@@ -25,9 +25,11 @@ grok then guards 11/11.
 **Corollary: the "spec the edges" rule has been over-generalized and retracted TWICE**
 (08-04, 08-15) — say "no tier is reliable", never "no model can".
 **R-A stands as of 2026-08-25.** Partial exception: `agy 3.7-flash-low` at 15/20 — best
-measured anywhere, still below the K1 bar, exempts nothing. Measurement rule: **never
+NON-FREE edge behavior measured on any tier, still below the K1 ≥4/5-per-paraphrase bar
+(P1_terse 1/4 even for `-low` — [[workflow-agy-subordinate]]), exempts nothing. Measurement rule: **never
 compare an edge-guard number against a prior measured on a different prompt phrasing**
-(same model, same day: 9/10 new phrasing vs 4/20 frozen set, p=0.0004) — same-instrument
+(`-medium`, same model, same day: 9/10 on a new phrasing vs 4/20 on the frozen set,
+p=0.0004 — those numbers are -medium's, NOT -low's) — same-instrument
 or no comparison. Numbers: [[finding-geminimd-and-fleet-probe-2026-08-25]] Result 5.
 
 **R-B — No tier's self-report is evidence. Grade on disk.** grok returned schema-valid
@@ -127,8 +129,9 @@ single task shape, PROVISIONAL. → [[finding-chain-vs-direct-2026-08-25]]
 
 **Step 4 MEASURED THREE TIMES, all saturated across three domains, densities and an
 independent author — seeded recall is ROBUST and step 4 earns its place.** Zero tier
-differentiation on seeded recall (this retracts §2's "NOT agy post-impl" as a blanket
-rule — see that row's scope note), and the pre-registered unseeded-defect replication
+differentiation on seeded recall — weak evidence of reviewer equivalence, never an
+equivalence claim (it retracts §2's "NOT agy post-impl" as a blanket rule — see that
+row's scope note) — and the pre-registered unseeded-defect replication
 REFUTED the codex discovery edge (gap 0.2 vs frozen 0.5; the earlier 6.2/4.2/4.0 split
 is withdrawn — do not cite it). **Route step 4 on cost.** Three findings:
 [[finding-step4-seeded-review-2026-08-25]], [[finding-step4-sparse-density-2026-08-25]],
@@ -137,8 +140,9 @@ is withdrawn — do not cite it). **Route step 4 on cost.** Three findings:
 ## 5. What is NOT established (do not claim these)
 
 - No step-4 tier ranking, in either direction (see §4). Re-opening it needs an instrument
-  with ≥4 independently-authored unseeded defects — the run-3 instrument had ONE, so it
-  cannot distinguish "no edge" from "no resolving power".
+  with ≥4 unseeded defects independent of each other, authored hypothesis-blind by
+  someone else — the run-3 instrument had ONE, so it cannot distinguish "no edge" from
+  "no resolving power".
 - **Rule 3 applies per CLAIM, not per topic** — execute the review's own cited example;
   topic-crediting alone flipped run 3's verdict (5/5 → 3/5, INDETERMINATE → FAILS).
   → [[finding-step4-independent-ledger-2026-08-25]]
@@ -150,11 +154,14 @@ is withdrawn — do not cite it). **Route step 4 on cost.** Three findings:
 - Only SEVEN same-task-set comparisons exist; everything else is single-arm plus
   reasoning. The 7th is cross-TIER valid only (ranking agy > NIM > opencode > grok holds;
   every stored-prior comparison in it is retracted per the R-A instrument rule) and
-  established 0 fabrication in 54/54 honesty reps, escape clause present
-  ([[finding-geminimd-and-fleet-probe-2026-08-25]]). The six older: 3-way head-to-head;
-  codex-vs-agy Round 2 (TIE — Round 1's correctness/architecture split RETRACTED as a
-  lens artifact); free-NIM tight-spec parity; judgment-to-refuse; routing-vs-single;
-  one-window five-way ([[finding-fiveway-bench-2026-08-23]]).
+  established 0 fabrication in 54/54 honesty reps WITH the escape clause — that measures
+  "takes the out when offered"; never cite it as baseline honesty
+  ([[finding-geminimd-and-fleet-probe-2026-08-25]]). The six older: 3-way head-to-head
+  (N=12/arm, [[finding-grok-cli-bench-2026-08-23]]); codex-vs-agy Round 2 (N=60, TIE —
+  Round 1's correctness/architecture split RETRACTED as a lens artifact,
+  [[finding-agy-vs-codex-aspects]]); free-NIM tight-spec parity (N=57);
+  judgment-to-refuse (N=12); routing-vs-single (N=1016); one-window five-way (N=2/arm,
+  [[finding-fiveway-bench-2026-08-23]]).
 - Free pool won the 08-23 five-way (muse-spark 10/10 over both grok configs); the same
   run's grok default-config 1/2 "lift" is ⛔ RETRACTED (0/6 on the N=6 repeat), and
   NIM-served `nemotron-3-ultra-550b` scored the OPPOSITE of its Zen-free namesake — never
@@ -175,8 +182,8 @@ is withdrawn — do not cite it). **Route step 4 on cost.** Three findings:
   and Zen-paid grok's rc=0 with the error on stdout); retry ≥3× with backoff (NIM
   529/503/`RemoteDisconnected` are all transient — the test is persistence across ≥2
   attempts, not the shape); treat NIM catalog-404 as don't-route; and an id ending
-  `-free` vs its bare twin are DIFFERENT PRODUCTS. Shapes and case log:
-  [[finding-pool-reprobe-2026-08-23]], [[reference-nim-via-opencode]] FULL CATALOG SWEEP.
+  `-free` vs its bare twin are DIFFERENT PRODUCTS. Case log: [[finding-pool-reprobe-2026-08-23]], [[reference-nim-via-opencode]] FULL
+  CATALOG SWEEP; the Zen-paid rc=0 shape: [[reference-grok-other-harnesses]].
 - Cost comparisons are inferred, not measured — NOTHING is CLI-metered in dollars any more
   (grok CLI moved to the SuperGrok subscription 2026-08-25; the metered grok is the separate
   `openrouter/x-ai/grok-4.6` product).
