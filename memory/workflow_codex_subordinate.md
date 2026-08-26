@@ -1,19 +1,31 @@
 ---
 name: workflow-codex-subordinate
-description: "How to use Codex CLI (gpt-5.5) as a coding subordinate — invocation, division of labor, verified capability profile, co-work patterns"
+description: "How to use Codex CLI as a coding subordinate — invocation, division of labor, verified capability profile, co-work patterns. DEFAULT MODEL 2026-07-23: gpt-5.6-luna (promoted over gpt-5.5 on the hard-axis gate: ties on LRU-edge + multi-file localization, cheaper tokens; drift caveat — re-probe monthly)"
 metadata: 
   node_type: memory
   type: reference
   originSessionId: 909ab1a7-504d-490d-976b-c8b1450aec01
 ---
 
-Codex CLI (`/Users/yauch/.local/bin/codex`, v0.144.1 as of 2026-07-10, config default gpt-5.5) as a coding subordinate.
+Codex CLI (`/Users/yauch/.local/bin/codex`, v0.149.0 as of 2026-08-25; playbook default `-m gpt-5.6-luna` — always pass it, the bare config default is NOT the measured model) as a coding subordinate.
+
+> **0.144.4 RE-VERIFIED (2026-07-11, 7 deterministic probes, 1 rep each per the low-variance rule, pre-registered expected-before-actual): ALL PASS — playbook applies unchanged.** P0 invocation+config-load (PONG, `codex`/`tokens used` stdout markers intact so the `sed -n '/^codex$/,/^tokens used$/p'` extraction still works) · P1 workspace-write in-place edit (node-verified, no stray files) · P2 unstated `chunk(arr,0)` edge → explicit `RangeError` guard (matches 5.5's 2/2 safe record) · P3 inline-file review recipe: synthesis survived to stdout, caught the `let max=0` all-negative bug with concrete counterexample · P4 no-false-positive on correct bsearch ("CORRECT") · P5 `-o` captured the short verdict · P6 `-m gpt-5.6-luna` still answers; plain `gpt-5.6` still 400-rejected. NEW in 0.144.x: a warning "Skill descriptions were shortened to fit the 2% skills context budget" — codex now loads skills/plugins into context; harmless so far, but if codex output ever degrades unexplainably, check what skills it's ingesting. NOTE: npm has a SEPARATE `@openai/codex` install at /opt/homebrew that is NOT on PATH — always update via `codex update` (standalone), never npm. Would change conclusion: any probe failing on a future version, or the flaky long-answer stdout loss (P3 recipe exists because of it) recurring despite inlining.
 
 > **GPT 5.6 IS AVAILABLE (verified live 2026-07-10) — but ONLY under codenames**: `-m gpt-5.6-luna`, `-m gpt-5.6-sol`, `-m gpt-5.6-terra` all answer (PONG probe, ~10K tok each). Plain `gpt-5.6` / `gpt-5.6-codex` are REJECTED with a *generic* 400 ("not supported when using Codex with a ChatGPT account") — same error a nonsense model name gets, so that error carries zero existence signal. Codenames found via `strings` on the binary. Required CLI ≥0.144.1 (`codex update` — the standalone install at ~/.local/bin, NOT npm/brew).
 >
-> **BENCHED 2026-07-10 (4-probe × 2 reps × 4 models incl. same-day gpt-5.5 control, 32/32 runs, deterministic grading): KEEP gpt-5.5 AS DEFAULT.** Core probes fully saturated — all 4 models 2/2 on file-edit, chunk-basic, maxVal bug-catch (concrete counterexample), bsearch no-false-positive; zero separation. The only differentiator was the unstated `chunk(arr,0)` edge, and **gpt-5.5 WON it**: 5.5 = 2/2 safe (one `size<=0 → []` guard, one explicit `RangeError` throw — hand-verified), luna 1/2, sol 0/2, terra 0/2 (both infinite-loop, no guard at all — hand-verified). Latency same class for all (22–97s/probe; luna occasionally slow, 84–86s twice). If forced to pick a 5.6: **luna** (only one that ever guarded the edge). Would change conclusion: a harder-than-saturation task set, or an OpenAI statement on what luna/sol/terra actually are (A/B of the same model vs a size ladder — if A/B, the luna-vs-sol/terra edge split is noise at N=2). Grader gotcha logged: accept BOTH `module.exports = fn` and `{fn}` export shapes — all 4 models chose the direct-function export and an early destructure-only grader scored a false 0/16 on P2. **No 5.6-specific prompt tailoring needed (verified 2026-07-10)**: re-ran P2 on the two 0/2 edge-failers (sol, terra) with the edge spelled out ("if size is 0, negative, or not finite, return []") — 4/4 perfect on ALL three specified edges (size=0/negative/NaN, node-verified). The standing codex rule (airtight spec, edges explicit) fully cures 5.6's blind spot; same playbook applies unchanged.
+> **⤷ SUPERSEDED 2026-07-23 (default is now gpt-5.6-luna — see the PROMOTED block above; this block is provenance, its "KEEP gpt-5.5" verdict is NO LONGER the order).** **BENCHED 2026-07-10 (4-probe × 2 reps × 4 models incl. same-day gpt-5.5 control, 32/32 runs, deterministic grading): KEEP gpt-5.5 AS DEFAULT.** Core probes fully saturated — all 4 models 2/2 on file-edit, chunk-basic, maxVal bug-catch (concrete counterexample), bsearch no-false-positive; zero separation. The only differentiator was the unstated `chunk(arr,0)` edge, and **gpt-5.5 WON it**: 5.5 = 2/2 safe (one `size<=0 → []` guard, one explicit `RangeError` throw — hand-verified), luna 1/2, sol 0/2, terra 0/2 (both infinite-loop, no guard at all — hand-verified). Latency same class for all (22–97s/probe; luna occasionally slow, 84–86s twice). If forced to pick a 5.6: **luna** (only one that ever guarded the edge). Would change conclusion: a harder-than-saturation task set, or an OpenAI statement on what luna/sol/terra actually are (A/B of the same model vs a size ladder — if A/B, the luna-vs-sol/terra edge split is noise at N=2). Grader gotcha logged: accept BOTH `module.exports = fn` and `{fn}` export shapes — all 4 models chose the direct-function export and an early destructure-only grader scored a false 0/16 on P2. **No 5.6-specific prompt tailoring needed (verified 2026-07-10)**: re-ran P2 on the two 0/2 edge-failers (sol, terra) with the edge spelled out ("if size is 0, negative, or not finite, return []") — 4/4 perfect on ALL three specified edges (size=0/negative/NaN, node-verified). The standing codex rule (airtight spec, edges explicit) fully cures 5.6's blind spot; same playbook applies unchanged.
 >
-> **HARD-AXIS FOLLOW-UP (2026-07-10, 12/12 runs): sol offers NOTHING over 5.5 even at max reasoning — MIX MODE DEAD.** Arms 5.5-med / sol-med / sol-max × the two non-saturated frontier axes (H1: LRU cache impl incl. unstated capacity-0/negative edges, hang-detected; H2: localize a planted `arr.sort()` lexicographic bug in `median()` among 5 functions) × 2 reps. ALL arms 12/12 perfect — every LRU survived cap-0/negative (the edge that hung even claude 2/3 in the frontier bench, on free-tier models), every localization named median + mechanism + verified failing input (hand-checked: 5.5 ran the code itself as evidence). **sol-max costs 2–4× wall time (194–248s vs 51–107s) for zero gain.** VERDICT: codex default stays gpt-5.5, no tier routing within codex, no mix mode. Codex-class saturates these axes — the frontier-bench failure rates were a free-model phenomenon. Would change conclusion: a probe set that de-saturates at codex tier (multi-file integration bugs, adversarial specs), or a real-work miss by 5.5 that sol catches. Sibling to [[workflow-agy-subordinate]] — Codex is a strong code writer; delegate implementation, not just lookups. (It TIES agy on implementation of well-specified tasks per the 2-round experiment — its edge is low run-to-run variance + tighter typing, not raw "stronger." See capability profile.)
+> **UPDATED 2026-07-23 — luna PROMOTED to default for single-repo coding delegation** (supersedes the 2026-07-22 "5.5 default, luna routed" line and the 2026-07-10 "5.5 default, no tier routing" verdict below; those are kept for provenance, not as current orders). Hard-axis gate ([[finding-codex-56-family-2026-07-22]] Test 3): the exact axes 5.5 was proven on and luna wasn't — LRU + adversarial capacity=0/-1 (hang-detected) and multi-file median-bug localization+fix (graded by execution) — **luna tied 5.5 EXACTLY, H1 6/6 ×3 and H2 8/8 ×3, effort=medium, verified genuine** (luna guards cap via `Math.max(0,Math.floor(capacity))`+`===0` early-return → returns -1 not hang; H2 fix a byte-identical one-line `sort((a,b)=>a-b)`, siblings untouched). Tokens luna ~20.4K < 5.5 ~24.0K. **No measured axis left where 5.5 beats luna** (small utils, algo-traps, LRU edges, multi-file localization, cost — luna ties-or-beats all). → **Default coding delegation: `-m gpt-5.6-luna`.** Keep verifying luna's output yourself regardless (codex-class). "No mix mode / sol offers nothing" STANDS — now HARD-BACKED by Test 5 (2026-07-23): sol+terra run through the SAME H1/H2/H3 hard-axis harness (18 runs, effort=medium) both tie luna/5.5 EXACTLY (6/6·8/8·13/13 ×3, verified genuine — both guard cap 0/-1, both changed only discount.js in H3), so the whole family saturates and NO model separates; **sol is strictly DOMINATED** (~31.5K tok = MOST expensive of all four for byte-identical output), terra is co-cheapest with luna (~18K) but luna keeps default on track record. Corollary: heavy adaptive-routing INFRA is NOT worth building — no crossover task-shape where a non-luna model wins, so "adaptive model" collapses to the constant luna. The only axis that actually adapts is EFFORT; use the lightweight ladder below (a decision rule, not infra). ⚠️ **Drift flag (why this is not permanent):** luna GUARDED the exact capacity edge that sol+terra INFINITE-LOOPED on 2026-07-10 (hand-verified then) — same model strings, opposite behavior, 13 days apart. The endpoint drifts like agy's; any codex edge-safety/parity number has ~days shelf life → re-run the hardaxis H1/H2 probes before relying on luna a month out, don't reuse today's numbers. **Caveats CLOSED 2026-07-23 (Test 4):** effort=LOW re-ran H1+H2, luna 6/6 & 8/8 ×3 (still guards cap 0/-1 at low, direct-probed) — effort tier does NOT degrade luna; 6-FILE cross-module root-cause task (H3: trace index→cart→discount past a correct tax distractor), luna 13/13 ×3, changed ONLY the buggy file. luna cheaper on both. → luna-default is robust to effort tier AND file count, NOT limited to small/medium tasks. **Only reasons left to reconsider:** DRIFT (the monthly re-probe, above) and true multi-REPO / long-horizon agentic work (separate repos, tool-use loops, 10+ files — H3 was 6 files in one dir, untested beyond that). Everything up to ~6-file single-dir coding is RETIRED as a luna-vs-5.5 separator (four test sessions, zero axes where 5.5 wins). Harness: scratchpad/codex-5.6-bench/hardaxis (PREREG.md + h1/h2/h3 validated graders).
+
+> **ADAPTIVE codex routing — model + effort (2026-07-23).** Goal = efficiency without losing outcome. Outcome is already at ceiling (family saturates), so this rule only SAVES tokens; it cannot raise accuracy. Model does NOT adapt — it is the constant `gpt-5.6-luna` (dominant on every axis; sol never = +55% tokens for identical output; terra only if luna is quota-blocked). The one thing that adapts is EFFORT:
+> | Task shape | Effort | Why (evidence) |
+> |---|---|---|
+> | single-file / well-specced util / mechanical edit | `low` | Test 4: low ties medium on H1+H2 (6/6 & 8/8 ×3), still guards cap 0/-1, ~15% cheaper. No correctness cost. |
+> | **DEFAULT** — multi-file in one dir, bug localization, anything not obviously trivial | `medium` | Every hard-axis result (Tests 3–5) established here; luna 6/6·8/8·13/13. |
+> | multi-REPO / long-horizon agentic / tool-use loops / 10+ files | `high` | UNMEASURED axis — no data says medium suffices, so pay up. This rung is precautionary, not proven. |
+> Command: `codex exec -m gpt-5.6-luna -c model_reasoning_effort=<low\|medium\|high> --sandbox workspace-write --skip-git-repo-check "<prompt>"`. When unsure of task size, use `medium` (it straddles both — safe on hard tasks, negligibly dearer on easy ones). Still verify luna's output yourself (codex-class). Re-check the low↔medium equivalence if the drift re-probe (above) ever shows luna degrading.
+>
+> **⤷ PARTIALLY SUPERSEDED 2026-07-23: the "MIX MODE DEAD / sol offers nothing" half STANDS; the "codex default stays gpt-5.5" half is REPLACED by luna-default (see PROMOTED block above — luna was re-tested on these same H1/H2 axes and tied 5.5).** **HARD-AXIS FOLLOW-UP (2026-07-10, 12/12 runs): sol offers NOTHING over 5.5 even at max reasoning — MIX MODE DEAD.** Arms 5.5-med / sol-med / sol-max × the two non-saturated frontier axes (H1: LRU cache impl incl. unstated capacity-0/negative edges, hang-detected; H2: localize a planted `arr.sort()` lexicographic bug in `median()` among 5 functions) × 2 reps. ALL arms 12/12 perfect — every LRU survived cap-0/negative (the edge that hung even claude 2/3 in the frontier bench, on free-tier models), every localization named median + mechanism + verified failing input (hand-checked: 5.5 ran the code itself as evidence). **sol-max costs 2–4× wall time (194–248s vs 51–107s) for zero gain.** VERDICT: codex default stays gpt-5.5, no tier routing within codex, no mix mode. Codex-class saturates these axes — the frontier-bench failure rates were a free-model phenomenon. Would change conclusion: a probe set that de-saturates at codex tier (multi-file integration bugs, adversarial specs), or a real-work miss by 5.5 that sol catches. Sibling to [[workflow-agy-subordinate]] — Codex is a strong code writer; delegate implementation, not just lookups. (It TIES agy on implementation of well-specified tasks per the 2-round experiment — its edge is low run-to-run variance + tighter typing, not raw "stronger." See capability profile.)
 
 > GLOBAL playbook — applies to ALL projects. Examples are illustrative; the codex *behaviors*
 > (ambiguity blind spot, JS/TS NaN under-defense, low variance, calibrated review, Cloud workflow)
@@ -21,11 +33,11 @@ Codex CLI (`/Users/yauch/.local/bin/codex`, v0.144.1 as of 2026-07-10, config de
 
 ## Invocation
 - Read-only probe / Q&A:
-  `codex exec --skip-git-repo-check "<prose prompt>"`
+  `codex exec -m gpt-5.6-luna --skip-git-repo-check "<prose prompt>"`
 - Code-writing (autonomous file edits — approval mode is `never`):
-  `cd <dir> && codex exec --skip-git-repo-check -s workspace-write "$(cat /tmp/codex-spec.txt)" > /tmp/codex-out.txt 2>&1 &`
+  `cd <dir> && codex exec -m gpt-5.6-luna --skip-git-repo-check -s workspace-write "$(cat /tmp/codex-spec.txt)" </dev/null > /tmp/codex-out.txt 2>&1 &`
 - Sandbox modes: `read-only` (default) | `workspace-write` (workdir + /tmp + $TMPDIR writable) | `danger-full-access`.
-- **Vision / image input:** `-i, --image <FILE>...` attaches images. **GOTCHA (verified 2026-06-02):** the flag is greedy (`<FILE>...`), so a positional prompt placed AFTER `-i` is consumed as a second image path → codex falls back to reading the prompt from stdin and errors "No prompt provided via stdin." Fix: pipe the prompt via stdin — `echo "<prompt>" | codex exec --skip-git-repo-check -i img.png` (or put the prompt before `-i`). Confirmed reading a controlled screenshot (random token + number + status) exactly. Use for OCR, screenshot-to-bug, diagram/chart reads.
+- **Vision / image input:** `-i, --image <FILE>...` attaches images. **GOTCHA (verified 2026-06-02):** the flag is greedy (`<FILE>...`), so a positional prompt placed AFTER `-i` is consumed as a second image path → codex falls back to reading the prompt from stdin and errors "No prompt provided via stdin." Fix: pipe the prompt via stdin — `echo "<prompt>" | codex exec -m gpt-5.6-luna --skip-git-repo-check -i img.png` (or put the prompt before `-i`). Confirmed reading a controlled screenshot (random token + number + status) exactly. Use for OCR, screenshot-to-bug, diagram/chart reads. Multiple `-i` flags work for A/B comparison (`... -i img1 -i img2 -`, prompt via stdin) — a viable vision-REVIEW mode, but codex's vision has blind spots (it missed edge arcs agy caught); adjudicate any vision disagreement against a pixel crop, never on one model's read.
 - Cross-model code review: `codex exec review` / `codex review`.
 - Must be in a trusted dir OR pass `--skip-git-repo-check`.
 
@@ -97,7 +109,7 @@ Round 2 was the sound version: equal coverage (5 tasks incl. a new algorithmic e
 ## Codex Cloud (remote execution + sync) — distinct from `codex exec`
 `codex exec` runs LOCALLY on a directory. Codex Cloud runs REMOTELY on OpenAI infra against an IMPORTED GitHub repo, you sync diffs down. Auth: logged in via ChatGPT (Cloud available).
 - Import (one-time, web UI): connect a GitHub *repo* to Codex Cloud. It's a repo connection, NOT a local-folder upload.
-- Run: `codex cloud exec "<task>"` (submit) · `codex cloud list` · `codex cloud status <id>`.
+- Run: `codex cloud exec --env <ENV_ID> "<task>"` (submit; `--env` is REQUIRED, verified via `codex cloud exec --help`) · `codex cloud list` · `codex cloud status <id>`.
 - Sync down: `codex cloud diff <id>` (preview) → `codex cloud apply <id>` (git apply to local working tree).
 - TWO HARD REQUIREMENTS: (1) GitHub-repo-based — local folder w/o remote can't be imported; (2) sync needs a local git working tree (`apply` = `git apply`).
 - Fit: the diff→apply gate matches verify-before-trust — nothing lands until I've seen the diff. Good for long autonomous tasks vs. `codex exec` for fast inline hand-offs.
@@ -177,3 +189,57 @@ Ran `codex exec --skip-git-repo-check "<prompt>" < /dev/null > out 2>&1 &` for a
 - **FIX (worked every time): INLINE the target files into the prompt** (`{ cat hdr; nl -ba f1; nl -ba f2; } > prompt.txt`) so codex makes ZERO tool calls and goes straight to synthesis. The findings then render at the END of stdout — extract with `sed -n '/^codex$/,/^tokens used$/p' out`.
 - **`-o, --output-last-message <file>` reliably captures SHORT verdicts** (it caught a lone "none") but was NOT written on the lost-long-answer runs. Backup, not primary.
 - **Still earns its keep on REVIEW.** Across rounds it found 4 real Firestore concurrency bugs in a Telegram album→PDF collector: concurrent webhooks (album photos arrive as parallel updates → serverless runs them concurrently) → read-modify-write lost-update; and a non-atomic read-then-delete "claim" → double-tap duplicate + item acked-to-user-then-dropped. Fix = transactions on the SAME session doc (append-tx and claim-tx serialise). One [high] (`deleteMessage` "awaited outside try, can throw → stuck session") was a FALSE POSITIVE — that fn swallows all errors and never throws. Verify-before-acting (read the cited fn) caught the false flag and confirmed the real ones; the verification round then returned "none" = converged.
+
+## Failure mode: background call hangs to `timeout`, no output file — open-pipe-on-fd0 (verified 2026-08-25)
+Two background `codex exec` calls (part of a multi-tool-call parallel launch) died silently: no
+output file, exit via `timeout`'s kill. Root cause CONFIRMED by direct reproduction, not just
+codex's own account of itself:
+- **Mechanism (execution-verified):** codex always attempts to read fd0 as a `<stdin>` block when
+  fd0 is a pipe — true even with a prompt argument (documented in `codex exec --help`: "If stdin
+  is piped and a prompt is also provided, stdin is appended as a `<stdin>` block"). If the pipe's
+  write end doesn't close, codex blocks on that read until `timeout` kills it — no output file is
+  ever created. Reproduced directly: `sleep 30 | timeout 10 codex exec ... "OK"` → hangs, rc=124,
+  no file. Control: `echo | codex exec ... "OK"` → EOF arrives immediately, succeeds normally,
+  rc=0. The differentiator is NOT "is stdin a pipe" — it's whether that pipe's write end closes
+  before codex's read (or the timeout) does.
+- **UNRESOLVED, do not overclaim:** why the harness sometimes leaves fd0 as an open (non-EOF) pipe
+  on a background `codex exec` call and sometimes doesn't, on ostensibly identical command shapes
+  in the same session — this needs harness-internals instrumentation, not shell-side probing (a
+  `&`-backgrounded same-shell experiment can't replicate two-separate-tool-call topology and gave
+  an inconclusive negative result). Two independent AI lenses (codex self-review + grok, isolated
+  HOME) both ranked "harness/parallel-launch descriptor topology" as the top candidate cause, but
+  neither is confirmed. Do NOT treat "two background tool calls in one turn" as a proven trigger.
+- **Mitigation (execution-backed, not proven to be what fixed the ORIGINAL failures — that specific
+  causal claim was tested directly and REFUTED, see below):** `</dev/null` on the codex invocation
+  guarantees fd0 is never a pipe, so this specific hang class cannot occur. Safe to add
+  defensively to background `codex exec` calls.
+- **REFUTED, logged so it isn't retried:** hypothesized "`</dev/null` is *the* fix for background
+  codex hangs" — tested with paired controls (identical trivial-prompt background call, with and
+  without `</dev/null`); BOTH succeeded, meaning presence/absence of the redirect made no
+  observable difference in that controlled pair. The redirect prevents ONE real mechanism (open
+  pipe on fd0) but is not established as the explanation for any specific past failure — apply it
+  as a hardening default, not as a diagnosis of what already happened.
+- Also confirmed as a real, separate bug: `codex ... | tail -N; echo "EXIT=$?"` reports `tail`'s
+  exit status, not codex's — masks a real timeout/hang as `EXIT=0`. Use `${pipestatus[1]}` (zsh)
+  or `set -o pipefail` to read codex's actual exit code through a pipe.
+
+## v0.144.4 invocation traps: double-backgrounding orphans; stdin `-`; -o long verdicts OK; workspace-write blast radius (2026-07-14/16)
+- **Never double-background.** `nohup codex exec ... &` inside an already-backgrounded harness
+  call → parent shell exits 0 immediately, codex orphaned mid-run, harness reports success.
+  Cheap diagnostic BEFORE blaming the prompt: output has the echoed prompt + `user` marker but
+  NO `codex` assistant-turn marker and NO `tokens used` line. Fix: ONE backgrounding mechanism.
+- **A codex "no changes" report is not evidence — in EITHER direction.** Edits can land on
+  disk while the terminal report is lost mid-flight; and a later self-report can falsely
+  claim a file was untouched that it DID edit. Verify end-state against disk/`git status`,
+  never against codex narration — including its narrations of *failure*.
+- **Big prompts (>~10KB) via stdin `-`, not argv**: `cat prompt.txt | codex exec
+  --skip-git-repo-check -s read-only -o last.txt - > out.txt 2>&1` (79KB packet verified).
+  `-s read-only` for reviews, `-s workspace-write` for implementation.
+- **`-o` captured a 10.5KB verdict** — the older "short verdicts only" caveat did NOT
+  reproduce on v0.144.4; -o fails only when the run itself dies (see orphan trap above).
+- **workspace-write blast radius = the whole repo.** Enforcing its "only these N files"
+  constraint, codex restored NON-listed files to HEAD mid-run — silently wiping a fix I had
+  landed in the same tree (2026-07-14). While codex holds write access to a tree, land
+  nothing in it yourself: stage in scratch, merge after it exits, then audit for double-edits.
+  **`.git` is outside the sandbox** — codex can't commit its own work, so the orchestrator
+  commits after codex exits; treat workspace-write as a write LOCK on the tree until exit.
