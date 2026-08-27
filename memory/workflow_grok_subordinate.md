@@ -142,6 +142,35 @@ This is grok's real advantage over agy/opencode for graded fan-out.
   and a "reply with exactly: PONG" prompt — plain mode prints 4 bytes and no
   envelope, so it isolates transport/auth from your parser.
 
+### 🔴 A schema-valid EMPTY review — the prescribed re-shape can still fail
+
+2026-08-27, reviewing a ~200-line Python tool (misroutewatch.py). Three attempts,
+three different failure shapes, **zero usable review**:
+
+| # | packet | result |
+|---|---|---|
+| 1 | full brief, inlined code, pure judgement, `--json-schema` | `{"findings":[],"sections_with_no_defect":[]}` — 64 output / **43 reasoning** tokens on a 15k-token input |
+| 2 | same + an explicit "empty is a FAILED review" output contract | **0 bytes**, empty stderr, ~10 min |
+| 3 | trimmed to ONE question, no schema, `--output-format plain` | 259 bytes of narration, then exit ("I'll inspect the scanner… the workspace is empty") |
+
+**Attempt 1 IS the remedy this playbook prescribes** (inline everything, demand pure
+judgement, add `--json-schema`) — so the remedy has a failure case, and this is it.
+🔴 **Schema adherence is not engagement.** Every guard passed: `stopReason: end_turn`,
+`num_turns: 1`, a well-formed object satisfying the schema. A schema is a shape
+constraint, and an empty array satisfies most shapes. **The only signal was token
+count** — 43 reasoning tokens against a 15k-token brief. Guard reviews on
+`usage.output_tokens`/`reasoning_tokens`, not on parse success.
+
+Also: **tightening the contract made it worse** (2 → 0 bytes), so "re-shape, don't retry"
+does not mean "add constraint". Attempt 3 shows the idle mode surviving a *smaller*
+packet, and grok reaching for the filesystem even with the code fully inlined.
+
+Practical rule: **grok is not a reliable code reviewer at this size.** Route review to
+codex (which returned 12 findings on the identical brief, 5 verified real). Reserve grok
+for short pure-judgement calls and the X lane. If a grok review returns, check the token
+counts before reading the content — and never let silence or an empty array read as "no
+defects found".
+
 ### 🔴 "Empty" has TWO causes — separate them before blaming either
 
 The parser bug above is one. The other is grok genuinely idling: on a multi-step
