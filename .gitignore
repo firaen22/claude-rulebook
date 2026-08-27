@@ -12,8 +12,9 @@
 !skills/
 !skills/**
 
-# Hook-written side-car snapshots (*.bak-nullso) land INSIDE the whitelisted
+# Manual pre-edit side-car snapshots (*.bak-<tag>) land INSIDE the whitelisted
 # dirs above, so `*` never catches them and a wholesale `git add memory/` would
 # commit them. Last matching rule wins, so this must stay below the negations.
-# Added 2026-08-27 after two appeared during a memory/ edit.
-*.bak-nullso
+# Added 2026-08-27 after two appeared during a memory/ edit; widened same day
+# from the literal *.bak-nullso to the whole family.
+*.bak-*
