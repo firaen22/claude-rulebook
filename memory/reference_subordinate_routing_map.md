@@ -41,6 +41,23 @@ grok returned a schema-valid `findings: []` / all-claims-survived verdict on a d
 a defect that two independent lenses (Claude + codex) found and reproduced the same hour.
 A clean review verdict counts only when a second lens agrees or you reproduce the pass —
 same rule as a green test count, [[finding-test-validity-failure-modes]].
+**The MIRROR corollary (2026-08-27): grade your grader before you grade the tier.** A harness
+that validated the response ENVELOPE instead of `.structuredOutput` logged grok at 0/16 schema
+adherence — a "catastrophic model failure" that regraded to 16/16 once the parser was fixed.
+Before recording any tier's catastrophic score, re-parse one raw response by hand;
+a 0/N is far more often your instrument than the model, [[finding-schema-battery-parser-2026-08-27]].
+
+**R-D — A read-only BRIEF is not a control, and the flag that looks like one fails
+open.** grok holds `write`/`search_replace`/`run_terminal_command` and, under
+`--always-approve`, wrote OUTSIDE its `--cwd` on first ask in 5/5 uncontained configs
+(2026-08-27). An isolated cwd is a default directory, not a boundary. `--disallowed-tools`
+did not bite; neither `--sandbox` name tried confined it. **Only the positive `--tools`
+allowlist worked (2/2) — and ONE unrecognised name in that list silently voids the whole
+allowlist and restores write+shell, rc=0, no warning.** Adjacent flags fail in opposite
+directions: `--sandbox` refuses to start on a bad name, `--tools` fails open on one. This
+is the fleet-wide "read-only instruction is not a control" lesson (`delegation-and-review/SKILL.md:423`)
+landing on a THIRD tier — verify the boundary by attempting an escape, never by reading the
+flag name. [[workflow-grok-subordinate]] §CONTAINMENT.
 
 **R-C — Deliverable-is-a-scanner ⇒ the dispatch must require executing it.** Measured on
 codex only (2026-08-24, decisive force-load probe): dominant failure 5/18 runs shipped a
@@ -73,9 +90,10 @@ is not.
 | Enumerating ambiguities in a spec BEFORE building | **codex as spec-reviewer** | MEASURED N=1016; run this pass first |
 | Adversarial edge-hunting, PRE-implementation | **agy** `gemini-3.7-flash-medium` | 24/24 recall, 0/32 fabrication w/ escape clause |
 | Reviewing a large real-repo packet | **agy** `gemini-3.6-flash-high` (review pin) | pin held on measurement, N=30, p=1.000 |
-| Structured/JSON-schema fan-out, N verdicts parsed | **grok** | 16/16 adherence + free cost telemetry (SINGLE-ARM) |
+| Structured/JSON-schema fan-out, N verdicts parsed | **grok** | 16/16 (08-23 regraded) + 15/16 (08-27 fresh) adherence + free cost telemetry (SINGLE-ARM). Read `.structuredOutput` from the WHOLE buffer; a null `structuredOutput` is a failed rep — drop it, never rescue from `.text` |
 | Third review lens after codex (diff/rules-file review) | **grok, ONLY as: everything inline in the prompt + pure judgement (zero file reads) + `--json-schema` + isolated HOME** | 2/2 delivered with this shape vs 0/3 idle (narrates, exits) with read-then-analyze packets — fix is packet SHAPE, not retry, [[finding-grok-idle-vs-parser-2026-08-27]]. n=2/n=3, one task family. Its finds are real (caught a dropped order codex passed) but its all-clears are void (R-B corollary) |
 | Ordinary spec'd implementation, want to spare codex quota | **free pool first** (`muse-spark-1.2-contributor-free`), grok if the free pool is unavailable | MEASURED 08-23 same-window five-way: free 10/10 > grok-default 9/10 > grok-isolated/NIM/big-pickle 8/10 |
+| **Live X / social retrieval** (what was posted, by whom, when) | **grok — the only tier with it** | NEW 2026-08-27. Native `x_keyword_search`/`x_semantic_search`/`x_user_search`/`x_thread_fetch`; keyword search VERIFIED live against a known account. On by default, survives `--disable-web-search`. A RETRIEVAL lane only — it does nothing for grok's judgement weaknesses. 🔴 Cannot be run contained (see R-D) |
 | Anything with a loop / iteration / termination edge | codex or agy — or grok WITH the edge stated | PROVISIONAL, n=3, p=0.17 pooled |
 | Same, but the edge CANNOT be stated (unstated-edge exposure is the risk) | **agy `gemini-3.7-flash-low`** — then verify by execution regardless | 15/20 fresh-day repeat (prior 14/20, p=1.000); `-medium` 4/20 same day. NOT safe, just least-bad |
 | Post-implementation code review on a real repo | **NOT agy** | adoption 0/5, 0/5, 1/5, 3/8 across 4 sweeps. Scope note 2026-08-25: on a SMALL single-file seeded-defect review, codex and agy TIED 8/8 vs 8/8 (saturated instrument) — this row does not generalize down to small single-file review, stays scoped to large real-repo packets → [[finding-step4-seeded-review-2026-08-25]] |
@@ -100,8 +118,13 @@ is not.
   is `openrouter/x-ai/grok-4.6`, a separate product), effort tiers are FLAT (don't build effort routing). *Weakness:* slowest of
   the three (16.1s vs 8.5/9.2); provisional HANG-class miss; **ingests `~/.claude` by
   default → not an independent review lens, and any benchmark without an isolated HOME is void**;
+  HOLDS write+shell and an isolated `--cwd` does NOT contain it (only a `--tools`
+  allowlist does, and that flag fails OPEN on a typo — R-D);
   IDLES on multi-step read-then-analyze packets (narrates a plan, exits, rc=0 — re-shape
-  inline + pure judgement + schema, do not retry); its review all-clears are void per R-B.
+  inline + pure judgement + schema, do not retry); its review all-clears are void per R-B;
+  `structuredOutput` comes back NULL with a complete draft stranded in `text` ~1/16 (08-27) —
+  drop the rep, and never fall back to `.text` (the one observed orphan was a confident false
+  alarm that passed every shape check).
 - **opencode** — the free agent layer: the only free path that edits files. Isolated scratch
   dir + `timeout` + sequential by default (parallel OK with isolated `XDG_DATA_HOME` + copied auth.json). *Weakness:* no judgment-to-refuse; reliability (not
   reasoning) ceiling on multi-file; `$PWD`-not-cwd bug still live at 1.18.19 — set `env["PWD"]`

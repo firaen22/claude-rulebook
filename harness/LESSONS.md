@@ -97,14 +97,23 @@ the rule edit and ask in-session.
   (PROJECT memory, not global `~/.claude/memory/` — path corrected 2026-08-26
   after the bare `memory/` prefix sent an audit searching the wrong tree).
   Write literal absolute paths in any commit-adjacent `cd`.
-- **A read-only instruction is not a control — 3 instances, THRESHOLD MET,
-  promotion executed 2026-08-26** (2026-07-09 agy, dispatched as an adversarial
+- **A read-only instruction is not a control — 4 instances (3 by 2026-07-28,
+  a 4th on a new tier 2026-08-27), THRESHOLD MET, promotion executed 2026-08-26** (2026-07-09 agy, dispatched as an adversarial
   spec REVIEWER, "ignored the review framing, chose to IMPLEMENT" and overwrote a
   file at an absolute real-repo path; 2026-07-14 agy edited 4 files despite
   read-only in sweep-6; 2026-07-28 a review subagent deleted a stale-response
   guard from a live working tree). Only the filesystem boundary is a control.
   Now applied at `skills/delegation-and-review/SKILL.md:423` (classify by tools
   held, not by brief) with the worktree/enforced-copy clause at :431.
+  - **4th instance, 2026-08-27, found by probe not by damage — and it extends the
+    rule.** grok CLI 1.0.5 dispatched with the playbook's own "Do NOT edit any file"
+    brief wrote outside its `--cwd` on first ask; so did `--disallowed-tools` and both
+    `--sandbox` names tried (5/5 uncontained configs). Only a positive `--tools`
+    allowlist held (2/2). **New mechanism worth carrying: the control flag itself can
+    fail OPEN — one unrecognised name in `--tools` silently voids the entire allowlist,
+    rc=0, no warning, full write+shell restored.** So "I passed the containment flag" is
+    itself a self-report. Verify a boundary by ATTEMPTING AN ESCAPE, never by reading the
+    flag name. Landed as routing-map rule R-D + [[workflow-grok-subordinate]] §CONTAINMENT.
   - ⚠️ **Corrected 2026-08-26 — this counter was wrong in two ways at once, and
     the two errors masked each other.** It read "2 instances" (the 07-09 case was
     never counted) AND asserted the rule was already "Applied in
