@@ -6,7 +6,7 @@ metadata:
   type: reference
 ---
 
-# Subordinate routing map — 2026-08-23
+# Subordinate routing map — 2026-08-28
 
 Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 [[workflow-codex-subordinate]] [[workflow-agy-subordinate]] [[workflow-grok-subordinate]]
@@ -18,13 +18,16 @@ Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 measured on all five and it fails on all five: codex drifty (sol/terra 0/2 on `chunk(arr,0)`
 → family 36/36 twelve days later, same model strings); agy K1 FALSE at every tier both years
 (1/5, 0/5, 2/5 at 3.6; 3/5, 0/5, 0/5 at 3.7, N=315 combined); grok 0/16 deterministic, same
-naive loop every run; free pool 5 of 7 serving models infinite-loop — **`muse-spark-1.2-contributor-free`
-(4/4 across two days) and `nemotron-3-ultra-free` (2/2) are TWO standing exceptions**,
-re-probed 2026-08-23 and hand-verified in source. Spelling the edge out costs one line and
-grok then guards 11/11.
+naive loop every run; free pool — ⛔ **the two standing exceptions are RETRACTED 2026-08-28**:
+on a one-build N=2x4x6 re-bench `muse-spark-1.2-contributor-free` fell 2/2 → **1/2** and
+`nemotron-3-ultra-free` holds **1/2**, and by this file's own standing rule (guards it one rep
+and not the next ⇒ not an edge-guarding model) **the free pool now has ZERO reliable edge
+defenders — best in pool is 1/2**. [[finding-zen-pool-rebench-2026-08-28]]. Spelling the edge
+out costs one line and grok then guards 11/11.
 **Corollary: the "spec the edges" rule has been over-generalized and retracted TWICE**
 (08-04, 08-15) — say "no tier is reliable", never "no model can".
-**R-A stands as of 2026-08-25.** Partial exception: `agy 3.7-flash-low` at 15/20 — best
+**R-A stands as of 2026-08-28, and is now UNCONDITIONAL for the free pool** (above).
+Partial exception: `agy 3.7-flash-low` at 15/20 — best
 NON-FREE edge behavior measured on any tier, still below the K1 ≥4/5-per-paraphrase bar
 (P1_terse 1/4 even for `-low` — [[workflow-agy-subordinate]]), exempts nothing. Measurement rule: **never
 compare an edge-guard number against a prior measured on a different prompt phrasing**
@@ -47,18 +50,6 @@ adherence — a "catastrophic model failure" that regraded to 16/16 once the par
 Before recording any tier's catastrophic score, re-parse one raw response by hand;
 a 0/N is far more often your instrument than the model, [[finding-schema-battery-parser-2026-08-27]].
 
-**R-D — A read-only BRIEF is not a control, and the flag that looks like one fails
-open.** grok holds `write`/`search_replace`/`run_terminal_command` and, under
-`--always-approve`, wrote OUTSIDE its `--cwd` on first ask in 5/5 uncontained configs
-(2026-08-27). An isolated cwd is a default directory, not a boundary. `--disallowed-tools`
-did not bite; neither `--sandbox` name tried confined it. **Only the positive `--tools`
-allowlist worked (2/2) — and ONE unrecognised name in that list silently voids the whole
-allowlist and restores write+shell, rc=0, no warning.** Adjacent flags fail in opposite
-directions: `--sandbox` refuses to start on a bad name, `--tools` fails open on one. This
-is the fleet-wide "read-only instruction is not a control" lesson (`delegation-and-review/SKILL.md:423`)
-landing on a THIRD tier — verify the boundary by attempting an escape, never by reading the
-flag name. [[workflow-grok-subordinate]] §CONTAINMENT.
-
 **R-C — Deliverable-is-a-scanner ⇒ the dispatch must require executing it.** Measured on
 codex only (2026-08-24, decisive force-load probe): dominant failure 5/18 runs shipped a
 scanner whose scan never executes, FLAT across every rule/skill configuration — ambient
@@ -68,6 +59,23 @@ in the report (now baked into `30-delegation-templates.md` universal rules). Ext
 the other four tiers is REASONED, not measured — but it composes with R-B, so it costs
 nothing to require. Red-test corollary: injected failures must be reachable; a failing line
 after `exit` reports green.
+
+**R-D — A read-only BRIEF is not a control, and the flag that looks like one fails
+open.** grok holds `write`/`search_replace`/`run_terminal_command` and, under
+`--always-approve`, wrote OUTSIDE its `--cwd` on first ask in 5/5 uncontained configs
+(2026-08-27). An isolated cwd is a default directory, not a boundary. `--disallowed-tools`
+did not bite; neither `--sandbox` name tried confined it. **Only the positive `--tools`
+allowlist worked (2/2) — and ONE unrecognised name in that list silently voids the whole
+allowlist and restores write+shell, rc=0, no warning.** The verified-working list, copy it
+verbatim and never retype from memory: **`--tools read_file,grep,list_dir`** (re-verified
+2026-08-28: contained, 15KB review delivered, post-run dir diff clean). Under it grok has no
+write tool, so ask for findings on **stdout** — a recipe that asks for `FINDINGS.md` is
+telling you it is uncontained. Confirm containment the R-D way, by diffing the work dir
+afterwards; never by having read the flag. Adjacent flags fail in opposite
+directions: `--sandbox` refuses to start on a bad name, `--tools` fails open on one. This
+is the fleet-wide "read-only instruction is not a control" lesson (`delegation-and-review/SKILL.md:423`)
+landing on a THIRD tier — verify the boundary by attempting an escape, never by reading the
+flag name. [[workflow-grok-subordinate]] §CONTAINMENT.
 
 ## 1. The FIRST routing question: WHETHER vs WHAT
 
@@ -84,20 +92,37 @@ is not.
 | Task | Route to | Basis |
 |---|---|---|
 | "Should we?" / safety / soundness / accepting a design | **codex** (or Opus) | MEASURED N=12, only tier that refuses |
-| Airtight-spec implementation, single file | **free pool** (`muse-spark-1.2-contributor-free` → `nemotron-3-ultra-free` → `big-pickle`; AVOID `nemotron-3.5-lightning-free`) | MEASURED — Zen 4-probe pool bench 08-21 + P2 re-probe 08-23 (the N=57 battery is the NIM direct-curl line, not these Zen ids) |
+| Airtight-spec implementation, single file | **free pool** — `muse-spark-1.2-contributor-free` **=** `nemotron-3-ultra-free` (9/10, TIED) → `big-pickle` = `hy3-free` = `mimo-v2.5-free` (8/10). ⛔ `nemotron-3.5-lightning-free` is **NOT SERVING** (hangs 90s rc=124, and is STILL LISTED — listing is not liveness) | MEASURED — Zen whole-pool re-bench 2026-08-28, N=2x4x6 on ONE build, [[finding-zen-pool-rebench-2026-08-28]]. Supersedes the 08-21/08-23 order: muse-spark's debut 10/10 did NOT hold. **Re-list before every chain run — the pool churns within hours, and a `-free` id and its bare twin are different products.** (The N=57 battery is the NIM direct-curl line, not these Zen ids) |
 | Tight-spec pure function, no file edit needed | **NIM direct curl** | fan-out at 40rpm×3 keys; opencode wrapper is ~6/min |
 | Same, but needs the file actually edited | **opencode** (only free tier with an agent layer) | 4/4 clean on simple single-file |
 | Enumerating ambiguities in a spec BEFORE building | **codex as spec-reviewer** | MEASURED N=1016; run this pass first |
 | Adversarial edge-hunting, PRE-implementation | **agy** `gemini-3.7-flash-medium` | 24/24 recall, 0/32 fabrication w/ escape clause |
 | Reviewing a large real-repo packet | **agy** `gemini-3.6-flash-high` (review pin) | pin held on measurement, N=30, p=1.000 |
 | Structured/JSON-schema fan-out, N verdicts parsed | **grok** | 16/16 (08-23 regraded) + 15/16 (08-27 fresh) adherence + free cost telemetry (SINGLE-ARM). Read `.structuredOutput` from the WHOLE buffer; a null `structuredOutput` is a failed rep — drop it, never rescue from `.text` |
-| Third review lens after codex (diff/rules-file review) | **grok, ONLY as: everything inline in the prompt + pure judgement (zero file reads) + `--json-schema` + isolated HOME** | 2/2 delivered with this shape vs 0/3 idle (narrates, exits) with read-then-analyze packets — fix is packet SHAPE, not retry, [[finding-grok-idle-vs-parser-2026-08-27]]. n=2/n=3, one task family. Its finds are real (caught a dropped order codex passed) but its all-clears are void (R-B corollary) |
-| Ordinary spec'd implementation, want to spare codex quota | **free pool first** (`muse-spark-1.2-contributor-free`), grok if the free pool is unavailable | MEASURED 08-23 same-window five-way: free 10/10 > grok-default 9/10 > grok-isolated/NIM/big-pickle 8/10 |
+| Third review lens after codex (diff/rules-file review) | **grok — pick the shape by the MATERIAL: reviewing FILES ⇒ STAGE them in `--cwd` and tell it to read them (🔴 never inline a review target); judgement on already-inline material ⇒ keep it inline + `--json-schema`. Isolated HOME either way** | ⛔ the "always inline" form of this row is RETRACTED 2026-08-28. Three INLINED-code review packets gave schema-valid-empty / 0 bytes / narration; attempt 4 on the staged-files recipe gave 5.4KB, 5 findings, 3 real. The 0/3 "idle" was MY packet error — grok was hunting for files never written. [[finding-misroutewatch-grok-review-2026-08-28]]. Its finds are real; its all-clears are void (R-B corollary) |
+| Second reviewer AFTER codex on the same artifact | **grok on the staged-files recipe — they are COMPLEMENTARY, not redundant** | MEASURED 2026-08-28, byte-identical brief + same pre-fix file: **zero overlap on 3 real defects.** codex finds mechanism/contract bugs via contrived inputs; grok finds the realistic corpus path that actually fires them. codex missed both of grok's; grok missed codex's. n=1 file, 2 reviewers. Neither alone was sufficient |
+| Ordinary spec'd implementation, want to spare codex quota | **free pool first** (`muse-spark-1.2-contributor-free`), grok if the free pool is unavailable | MEASURED 08-23 same-window five-way: free 10/10 > grok-default 9/10 > grok-isolated/NIM/big-pickle 8/10. ⚠️ **The 10/10 is retracted** (08-28 re-bench: 9/10, edge 1/2) — the ROUTING order survives, the margin does not |
 | **Live X / social retrieval** (what was posted, by whom, when) | **grok — the only tier with it** | NEW 2026-08-27. Native `x_keyword_search`/`x_semantic_search`/`x_user_search`/`x_thread_fetch`; keyword search VERIFIED live against a known account. On by default, survives `--disable-web-search`. A RETRIEVAL lane only — it does nothing for grok's judgement weaknesses. 🔴 Cannot be run contained (see R-D) |
 | Anything with a loop / iteration / termination edge | codex or agy — or grok WITH the edge stated | PROVISIONAL, n=3, p=0.17 pooled |
 | Same, but the edge CANNOT be stated (unstated-edge exposure is the risk) | **agy `gemini-3.7-flash-low`** — then verify by execution regardless | 15/20 fresh-day repeat (prior 14/20, p=1.000); `-medium` 4/20 same day. NOT safe, just least-bad |
 | Post-implementation code review on a real repo | **NOT agy** | adoption 0/5, 0/5, 1/5, 3/8 across 4 sweeps. Scope note 2026-08-25: on a SMALL single-file seeded-defect review, codex and agy TIED 8/8 vs 8/8 (saturated instrument) — this row does not generalize down to small single-file review, stays scoped to large real-repo packets → [[finding-step4-seeded-review-2026-08-25]] |
 | Multi-file / long-horizon agentic work | **none of them — do it yourself** | UNMEASURED on all five; opencode 0 edits on 20/20 hard |
+
+### 2a. Review packet SHAPE — codex and grok need OPPOSITE shapes
+
+Measured, both directions, one task family. Getting it backwards costs a whole run and
+the failure does NOT look like a packet problem — it looks like the model being useless.
+
+| Reviewer | Shape that WORKS | What the wrong shape looks like |
+|---|---|---|
+| **grok** | **STAGE the files in `--cwd`**, tell it to read them; findings on stdout | inlined target ⇒ schema-valid `findings: []` (43 reasoning tokens on 15k input), or 0 bytes, or 259 bytes of narration. 3/3 (2026-08-28) |
+| **codex** | **INLINE the files** into the prompt (`nl -ba`) so it makes ZERO tool calls | staged files ⇒ it reads them all, announces the report, then the long final answer **vanishes from stdout and `-o` is never written**. 1/1 (2026-08-28, this map's own review) |
+
+So the same review dispatched to both needs two differently-built packets. Keep each
+under codex's ~79KB verified inline ceiling — split into passes rather than growing one.
+A dispatch that returns nothing is a SHAPE bug until proven otherwise: **re-shape, never
+retry** (tightening the output contract made grok's case strictly worse — schema-valid
+bad answer became 0 bytes).
 
 ## 3. Per-tool one-liners
 
@@ -120,8 +145,11 @@ is not.
   default → not an independent review lens, and any benchmark without an isolated HOME is void**;
   HOLDS write+shell and an isolated `--cwd` does NOT contain it (only a `--tools`
   allowlist does, and that flag fails OPEN on a typo — R-D);
-  IDLES on multi-step read-then-analyze packets (narrates a plan, exits, rc=0 — re-shape
-  inline + pure judgement + schema, do not retry); its review all-clears are void per R-B;
+  ⛔ the "IDLES on read-then-analyze packets ⇒ re-shape inline" rule is RETRACTED
+  2026-08-28 — the idling cause was an EMPTY workspace, not the read step: staged files +
+  "read them" + NO schema is the shape that delivered. **Never inline a review target.**
+  Idling still happens when it has nothing to read, and the fix is still SHAPE, never retry;
+  its review all-clears are void per R-B;
   `structuredOutput` comes back NULL with a complete draft stranded in `text` ~1/16 (08-27) —
   drop the rep, and never fall back to `.text` (the one observed orphan was a confident false
   alarm that passed every shape check).
@@ -185,7 +213,8 @@ is withdrawn — do not cite it). **Route step 4 on cost.** Three findings:
   [[finding-agy-vs-codex-aspects]]); free-NIM tight-spec parity (N=57);
   judgment-to-refuse (N=12); routing-vs-single (N=1016); one-window five-way (N=2/arm,
   [[finding-fiveway-bench-2026-08-23]]).
-- Free pool won the 08-23 five-way (muse-spark 10/10 over both grok configs); the same
+- Free pool won the 08-23 five-way (muse-spark 10/10 over both grok configs — **that 10/10
+  is retracted, 9/10 on the 08-28 one-build re-bench; the win stands, the margin does not**); the same
   run's grok default-config 1/2 "lift" is ⛔ RETRACTED (0/6 on the N=6 repeat), and
   NIM-served `nemotron-3-ultra-550b` scored the OPPOSITE of its Zen-free namesake — never
   carry a Zen-free score onto a same-named NIM id. [[finding-fiveway-bench-2026-08-23]],
@@ -198,7 +227,8 @@ is withdrawn — do not cite it). **Route step 4 on cost.** Three findings:
   agy 5/30→9/10 jump looked like drift and was pure prompt phrasing — the frozen old prompts
   still scored 4/20 vs 2/20 eleven days earlier (p=0.661). Two consequences: (a)
   `muse-spark`'s 4/4 "standing exception" above scored 5/10 on the 08-25 prompt — flagged,
-  NOT overwritten, because that comparison is instrument-crossed; (b) a re-probe only
+  NOT overwritten at the time, because that comparison was instrument-crossed. **Settled
+  2026-08-28 by a same-instrument re-bench: edge 1/2, exception withdrawn** (R-A); (b) a re-probe only
   supersedes a prior if it reuses that prior's prompt set byte-for-byte.
 - **PAID ≠ DEAD ≠ INCAPABLE.** Before any death certificate: match on the
   `Error:`/`No payment method` STRING never on rc (two billing shapes: rc=1 stderr-only,
