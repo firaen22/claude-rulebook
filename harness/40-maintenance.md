@@ -19,6 +19,7 @@ between the two, **this table wins**.
 | `20-judgment-rubrics.md` | NO thresholds; YES examples | Numeric thresholds (retry cap 2, ~3× scope, 20% spot-check) changed only with user sign-off. ADDING a good/bad example from a real session: autonomous, append-only. |
 | `30-delegation-templates.md` | YES, append-only | Add a template or a field; never delete the "report failure honestly" or edge-case lines. Structural rewrite: ASK USER. |
 | `50-letter-to-future-sessions.md` | Handoff section only | §Handoff is a live scratch area — update freely. The letter body is frozen like the diagnosis. |
+| `40-maintenance.md` (this file) | YES wording; **ASK USER** for new standing orders / thresholds | Governs itself — the gap that let the 2026-08-27 compression add a §3 standing rule with no permission bit (found by me and independently by a cross-model review, 2026-08-28). Autonomous: rewording, fixing a broken pointer, correcting a demonstrated factual error, adding an incident to an EXISTING rule. ASK USER: any NEW standing order, any numeric threshold, any §1 row change. **Compression is not a rule-addition channel** — if a compression finds an order with no home, add it and say so in the same turn, never silently. |
 | `41-file-registry.md` | YES, append/update per file | Evidence layer for this table: port history, size ledgers, probe verdicts. Update its entry in the SAME session as any port/extraction/probe touching a registered file. Never write an order here that isn't in §1. |
 | `~/.claude/harness/LESSONS.md` | YES — this is YOUR file | See §3. Create it on first lesson. |
 | Memory files (`.../memory/*.md`) | YES | Existing memory rules apply (update-in-place, no duplicates, delete wrong ones). |
@@ -67,14 +68,46 @@ an entry (this replaces scattering lessons across chat and random memory files):
 - Root cause: <one sentence with a MECHANISM, not "it failed">
 - Rule change needed: NONE | <proposed edit + which file> 
 - Status: noted | user-approved | applied-on <date>
+- Destination (required for applied-on): <file:line> "<operative sentence, pasted from a grep hit>"
 ```
 
 Rules for LESSONS.md:
-- Append-only between compressions. Never edit old entries except Status.
+- Append-only between compressions. Never edit old entries except (a) Status and
+  (b) the Destination quote line that setting `applied-on` requires. Compression-log
+  lines in the header may be annotated when a later compression falsifies them;
+  lesson entries themselves stay append-only.
 - A lesson proposing a CLAUDE.md/threshold change stays `noted` until the user
   approves — surface pending ones when relevant, don't nag every session.
 - If the same lesson recurs 3 times, that's no longer a note — promote it: draft
   the rule edit and ask the user in the current session.
+- **Never write "applied" from memory — grep the claimed destination and quote the
+  operative sentence in the same edit.** Mechanics: grep the exact destination
+  PATH the claim names (not the whole tree — a hit elsewhere proves nothing about
+  the claim); the operative sentence is the imperative rule text itself, never a
+  heading or a back-reference; ZERO matches blocks the status change — the entry
+  stays un-applied and says so. This binds FOUR moments: logging a new instance
+  on a counter, setting `applied-on`, writing or updating a closed-counter stub
+  (its "Live at" list needs the same quotes), and moving an entry in a
+  compression. Runnable form:
+  ```
+  rg -n '<distinctive phrase from the prescription>' <claimed-file>   # zero hits = NOT applied
+  rg -n 'LESSONS\.md' ~/.claude/skills ~/.claude/harness ~/.claude/memory   # find back-references before a move
+  ```
+  A destination edited by ANOTHER session between your grep and your write is the
+  known hole (it happened 2026-08-28: a section verified hours earlier had been
+  deleted by a commit made the same morning) — the grep certifies the moment it
+  ran, so quote what you saw AND the date. A counter that BELIEVES its rule is already applied never promotes,
+  so a false "applied" does not merely mislead a reader — it disables the promotion
+  mechanism silently. Incident: the "read-only instruction is not a control" counter
+  simultaneously undercounted (2 logged, 3 real) and claimed `delegation-and-review`
+  as its destination while the rule's operative clause (`isolation: 'worktree'`)
+  appeared in NO rules file; the two errors
+  masked each other and the promotion ran a month late, only because an audit
+  tripped over it. Both prior compressions overclaimed the same way — see the
+  ⚠️ CORRECTED 2026-08-26 block in the LESSONS.md header and the archive's
+  compression banners (NOT this file's §4, which covers ceilings only). Corollary: when an archived entry is
+  back-referenced BY a rules file, re-point that reference in the same edit;
+  `LESSONS.md` → `LESSONS-archive.md` pointers rot the moment the entry moves.
 
 ## §4 — Growth limits and compression
 
