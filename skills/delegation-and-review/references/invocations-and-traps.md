@@ -113,3 +113,31 @@ Measured: framing changes the output, not the model.
   never ship it. codex/the binary says what's actually there; your harness
   decides. (Family-neutral form: SKILL.md §4 "a proposed fix is a
   suggestion, not a patch".)
+
+## Weak-model tool surfaces (extracted from SKILL.md §2, 2026-08-28)
+
+- **A repeatedly-called weak-model surface earns tool design, not just a
+  better prompt — expose the task, hide the mechanism, and make failure
+  states first-class returns** (`unprobed`). Where the same weak-tier
+  subordinate calls the same underlying capability across many invocations
+  (a tool wrapping a multi-step browser flow, a scripted API sequence), the
+  leverage point shifts from the per-call prompt to the tool surface
+  itself: expose one high-level task tool per outcome, not the individual
+  mechanism steps, so a weak model composes fewer decisions per call. A
+  recurring precondition failure (an auth wall, a stale session, a rate
+  limit) that each mechanism silently swallows on its own gets promoted to
+  a distinct, named return value every wrapping tool surfaces the same
+  way — a weak model routes on an explicit state far more reliably than it
+  infers one from a generic error or a downstream symptom. Where the
+  precondition is cheap to check and expensive to discover mid-task, add a
+  dedicated cheap-probe tool and instruct the FIRST step of any task tool
+  to call it — burning the full expensive path only to fail on a
+  precondition it could have checked in one cheap call is the recurring
+  waste this prevents.
+  ✅ "collapsed six mechanism-level tools most callers chained identically
+  into one task tool; a sweep for uncovered failure modes found two
+  mechanism tools not yet returning the shared auth-wall state, fixed
+  before the surface shipped."
+  ❌ a tool surface that lets a wrong-precondition call run to its full
+  multi-step cost before failing, on a state a one-call probe would have
+  caught first.

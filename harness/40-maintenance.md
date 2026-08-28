@@ -91,6 +91,14 @@ Rules for LESSONS.md:
   compression. Runnable form:
   ```
   rg -n '<distinctive phrase from the prescription>' <claimed-file>   # zero hits = NOT applied
+  ```
+  ⚠️ **Zero hits has TWO causes — rule out the second before writing "NOT applied":**
+  the rule really is absent, OR your quoted phrase spans a LINE WRAP and no
+  line-oriented matcher can see it. Rules files are hard-wrapped at ~80 cols, so any
+  quote longer than a few words is likely to straddle a break. Caught 2026-08-28 on
+  this very rule: a destination that WAS live grepped 0. Confirm a zero before acting:
+  ```
+  python3 -c "import re,sys; print(re.sub(r'\s+',' ',open(sys.argv[1]).read()).count(sys.argv[2]))" <file> '<phrase>'
   rg -n 'LESSONS\.md' ~/.claude/skills ~/.claude/harness ~/.claude/memory   # find back-references before a move
   ```
   A destination edited by ANOTHER session between your grep and your write is the

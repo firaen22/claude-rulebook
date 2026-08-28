@@ -149,3 +149,33 @@ The at-3 promotion duty above does NOT apply to entries here.
   offers zero protection against a destructive operation in the same repo. The
   safe move is stash-or-copy it, act, then restore it untouched.
 - Status: applied-on 2026-08-28 (recovery verified; no rules-file edit owed)
+
+## 2026-08-28 — the brief must describe the delivery: two tiers, one mechanism
+- What happened: reviewing the sub-harness, I dispatched codex with the files INLINED
+  in the prompt but left the brief's line "FILES UNDER REVIEW (in `./files/`)" intact.
+  codex shell-globbed `/private/tmp/files`, found nothing, and returned no review —
+  three times, ~50 min, before I read the bytes instead of theorising. Identical
+  mechanism to grok's 08-28 attempt 3 (brief described staged files that were never
+  written; grok narrated "the workspace is empty" and exited). **Second instance, second
+  tier: a brief that contradicts its own delivery sends the subordinate hunting for
+  material that isn't there, and the failure looks exactly like model incapacity.**
+- Also measured, unrelated to the above and NOT a model failure: codex v0.149.0's inline
+  packet cliff sits just above **~30KB** (16/29.6 OK · 32/33/45 preamble-only · 51-63
+  silent, rc=0, `-o` never written), against the playbook's `79KB packet verified` from
+  v0.144.4. Interleaved PONG controls passed throughout, which is what separated
+  "packet too big" from "quota" and from "model broken".
+- Root cause: I built the packet and reused the brief without re-reading the brief
+  AGAINST the packet. The dispatch checklist asked whether the fields were filled, not
+  whether they were TRUE of this delivery.
+- Rule change needed: none new — this is the packet-SHAPE rule the same day's grok
+  retraction already established, now shown to be tier-independent. Landed as a
+  dispatch-time check rather than prose.
+- Status: applied-on 2026-08-28
+- Destination (asymmetry + the rule): `memory/reference_subordinate_routing_map.md` §2a —
+  "Review packet SHAPE — codex and grok need OPPOSITE shapes … A dispatch that returns
+  nothing is a SHAPE bug until proven otherwise" (grepped 2026-08-28)
+- Destination (checklist): `harness/30-delegation-templates.md` — "REVIEW dispatches to a
+  CLI: the target is STAGED AS FILES the reviewer reads, never pasted into the prompt."
+  (grepped 2026-08-28)
+- Destination (the size cliff): `memory/workflow_codex_subordinate.md` — "The 79KB
+  inline-packet ceiling is v0.144.4's and does NOT hold on v0.149.0." (grepped 2026-08-28)

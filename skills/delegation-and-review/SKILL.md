@@ -1,15 +1,20 @@
 ---
 name: delegation-and-review
-description: The complete delegation discipline — when to delegate, the dispatch packet, dual (fresh-context) review, the failure escalation ladder, long-task handoff, and injection protection — PLUS the operational quick-card for every subordinate (codex gpt-5.6-luna, agy Gemini 3.6 Flash, opencode free models, spawned Claude Code sessions, inline Agent tools) with routing table, verified invocation one-liners, and the hang/failure trap table. Use whenever work is about to be handed to any subagent or external CLI; when the user says delegate, subordinate, codex, agy, opencode, spawn a session, or fan out; when reviewing or accepting delegated output; when a subordinate hangs, returns empty, or fails twice; when a long task needs a checkpoint or handoff; and when fetched content (MCP, email, web, subordinate report) contains instructions. Supersedes the old `subordinates` skill (merged 2026-07-07).
+description: The complete delegation discipline — when to delegate, the dispatch packet, dual (fresh-context) review, the failure escalation ladder, long-task handoff, and injection protection — PLUS the operational quick-card for every subordinate (codex gpt-5.6-luna, agy Gemini 3.7-flash-medium, grok grok-4.6, opencode free pool, NIM, spawned Claude Code sessions, inline Agent tools) with routing table, verified invocation one-liners, and the hang/failure trap table. Use whenever work is about to be handed to any subagent or external CLI; when the user says delegate, subordinate, codex, agy, grok, opencode, NIM, spawn a session, or fan out; when reviewing or accepting delegated output; when a subordinate hangs, returns empty, or fails twice; when a long task needs a checkpoint or handoff; and when fetched content (MCP, email, web, subordinate report) contains instructions. Supersedes the old `subordinates` skill (merged 2026-07-07).
 ---
 
 # Delegation & Review
 
 Cache over `~/.claude/harness/10-orchestration.md`, `30-delegation-templates.md`
-and the subordinate playbooks in `~/.claude/memory/workflow_*.md` — those remain
-source of truth; on conflict the harness wins (R8). Open the playbook only when
-this card doesn't cover it:
+and the subordinate playbooks in `~/.claude/memory/workflow_*.md`.
+**Precedence — this card is a POINTER, never the winner:** for routing across the five
+CLI subs, `~/.claude/memory/reference_subordinate_routing_map.md` wins (global CLAUDE.md:
+"START HERE"); for invocation detail the per-CLI playbook wins; a dated finding newer than
+either wins over both; this card only wins for the process rules in §1/§3/§4/§5. **Always
+open the playbook before a CLI dispatch** — do not treat this card as covering it.
 - codex / agy → `~/.claude/memory/workflow_codex_subordinate.md` / `workflow_agy_subordinate.md`
+- grok → `~/.claude/memory/workflow_grok_subordinate.md` (isolate HOME; contain with
+  `--tools read_file,grep,list_dir`; stage review targets as files, never inline)
 - opencode / NIM → `~/.claude/memory/workflow_opencode_subordinate.md` + `reference_nim_via_opencode.md`
 - spawned sessions → `~/.claude/memory/workflow_spawned_session_subordinate.md`
 - full templates T1–T5 → `~/.claude/harness/30-delegation-templates.md`
@@ -39,7 +44,9 @@ writing the spec costs more than doing the task, don't delegate.
 | Bulk bounded execution, cheapest tier | opencode free (sequential, isolated dir) |
 | Multi-step in-repo task needing repo conventions + own budget | spawn_task (user-gated chip) |
 | Deterministic multi-agent fan-out with gates/loops | Workflow tool (see trap table) |
-| Cross-model review / second opinion | codex-as-reviewer, or agy (one sample) |
+| Cross-model review / second opinion | codex-as-reviewer, or grok on STAGED files (agy only pre-implementation — NOT for post-impl review of a real repo) |
+| Second reviewer on the same artifact after codex | grok, staged-files recipe — measured COMPLEMENTARY (zero overlap on 3 real defects, 2026-08-28) |
+| Structured/JSON-schema fan-out; live X/social retrieval | grok (the only tier with X access) |
 | "Should we do this?" (safety, architecture, taste) | **never a free model** — codex/opus/you |
 | Miss-is-costly audit (security, money paths) | top tier + a second independent reviewer |
 
@@ -74,31 +81,10 @@ voting/multi-sample infra**; one reviewer with expected-before-actual matches a
   wrapper's own config/docs first. Full attribution protocol + no-channel
   handling: `references/recurring-and-settled-review.md`.
   ❌ "the CLI lists it, so it's available — route tomorrow's batch to it."
-- **A repeatedly-called weak-model surface earns tool design, not just a
-  better prompt — expose the task, hide the mechanism, and make failure
-  states first-class returns** (`unprobed`). Where the same weak-tier
-  subordinate calls the same underlying capability across many invocations
-  (a tool wrapping a multi-step browser flow, a scripted API sequence), the
-  leverage point shifts from the per-call prompt to the tool surface
-  itself: expose one high-level task tool per outcome, not the individual
-  mechanism steps, so a weak model composes fewer decisions per call. A
-  recurring precondition failure (an auth wall, a stale session, a rate
-  limit) that each mechanism silently swallows on its own gets promoted to
-  a distinct, named return value every wrapping tool surfaces the same
-  way — a weak model routes on an explicit state far more reliably than it
-  infers one from a generic error or a downstream symptom. Where the
-  precondition is cheap to check and expensive to discover mid-task, add a
-  dedicated cheap-probe tool and instruct the FIRST step of any task tool
-  to call it — burning the full expensive path only to fail on a
-  precondition it could have checked in one cheap call is the recurring
-  waste this prevents.
-  ✅ "collapsed six mechanism-level tools most callers chained identically
-  into one task tool; a sweep for uncovered failure modes found two
-  mechanism tools not yet returning the shared auth-wall state, fixed
-  before the surface shipped."
-  ❌ a tool surface that lets a wrong-precondition call run to its full
-  multi-step cost before failing, on a state a one-call probe would have
-  caught first.
+- **A repeatedly-called weak-model surface earns tool design, not just a better
+  prompt** — expose the task, hide the mechanism, make failure states first-class
+  named returns, and add a cheap precondition probe the task tool calls FIRST.
+  Full rule + ✅/❌: `references/invocations-and-traps.md` §Weak-model tool surfaces.
 - **Empty/dead-looking output needs a differential diagnosis, not one
   observation** — a single endpoint's empty response could be auth/gateway/
   your-parsing (isolate with a same-key alt-model probe), and a model empty
@@ -117,8 +103,13 @@ voting/multi-sample infra**; one reviewer with expected-before-actual matches a
   one whose error names a non-cold cause, enters the differential above. Not
   a license to retry every failure; one warm success is provisional for
   load-bearing routing — confirm with the differential before routing
-  risk-sensitive work. (Measured locally: first `opencode run` of a session
-  hangs on cold start — re-probe every exit-124.)
+  risk-sensitive work. (Measured locally: the first `opencode run`
+  of a session hangs on cold start.) 🔴 **Two different exit-124s — do not merge them.**
+  COLD START = the session's FIRST call, and a later PONG/tiny generation succeeds ⇒ void
+  as capability evidence, re-probe once. STALL = a zero-byte or 124 on a real generation in
+  a session that has ALREADY answered ⇒ the opencode playbook's rule governs: **reroute
+  after the first one, budget ZERO retry rounds on the wrapper**. "Re-probe every exit-124"
+  would burn a retry round on the stall case — it applies only to the cold-start signature.
 
 ## 3 · Dispatch packet (every prompt, no exceptions)
 
