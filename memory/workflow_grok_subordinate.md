@@ -360,8 +360,16 @@ No comparative data behind these. They say what grok does, not what to prefer it
   NOT a reliability claim. Budget for latency: the 139KB run took ~17min at
   `num_turns: 3` with ZERO bytes on stdout/stderr until done — a silent long run at
   this size is normal, not a hang; set a deadline ≥25min before killing.
+  🔴 **NOT permission to inline a review target** — see "Stage files; never inline
+  a review target" above. Read WITH the 08-28 retraction these say something sharper:
+  a ~15KB INLINED review came back schema-valid EMPTY while these two returned real
+  findings at 4x and 9x that size. **Packet SIZE does not predict the empty.** The
+  staged-files recipe is the default because it has never failed, not because size is
+  the mechanism — which stays unexplained. Any inlined review is unguarded: check
+  `reasoning_tokens` against input size before believing it.
   Records: TG-bot-helper `multitool_improvement_workflow.md` iter 43b; this repo's
-  routing-map review 7194600.
+  routing-map review 7194600 — ⚠️ that id resolves to NO commit in either repo and no
+  surviving scratch dir (checked 2026-08-28), so the 139KB run is uncorroborated.
 
 ## Grok inside OTHER harnesses
 
