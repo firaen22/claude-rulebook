@@ -122,3 +122,30 @@ The at-3 promotion duty above does NOT apply to entries here.
   "**Naming a mechanism from a symptom is a claim, not an observation — read the
   output bytes before naming the cause.**" (grepped 2026-08-28). Ships
   `unprobed`.
+
+## 2026-08-28 — git-filter-repo hard-resets the worktree: it ate another session's uncommitted work
+- What happened: ran `git-filter-repo --replace-text --force` on `~/.claude` to
+  purge client PII from history. It rewrote 53 commits correctly, but also
+  hard-reset the working tree — silently destroying 172 uncommitted insertions
+  another session had made at 15:27 to `ground-truth-gates/SKILL.md`,
+  `skill-authoring/SKILL.md`, `skill-vetting/SKILL.md`. I had SEEN those files in
+  `git status` minutes earlier, correctly identified them as another session's
+  work, and deliberately left them uncommitted — which is exactly what made them
+  destroyable. Recovered byte-exact (172 insertions / 9 deletions, diffstat
+  matched) from the Obsidian vault copy, because the sync had run at ~15:5x,
+  after their edits and before the rewrite. Pure luck of timing.
+- Root cause: my `git bundle --all` backup captured REFS ONLY. Uncommitted
+  worktree state is not in any ref, so the backup I took specifically to make the
+  rewrite safe could not have restored the thing the rewrite actually destroyed.
+  I verified the backup existed; I never asked what it contained.
+- Rule change needed: NONE new — this is operational-rigor §4's "verify by
+  execution" and §2's baseline-before-mutation applied to backups themselves.
+  Worth carrying as a concrete instance: **a backup is not a backup until you
+  name what it does NOT cover.** For history rewrites specifically: `git stash`
+  or copy the dirty tree FIRST, or refuse to rewrite a dirty repo at all —
+  filter-repo does not warn, and `--force` suppresses the check that would have.
+- Second-order lesson: **leaving another session's uncommitted work in place is
+  not the safe option it looks like.** "Don't touch it" protects provenance but
+  offers zero protection against a destructive operation in the same repo. The
+  safe move is stash-or-copy it, act, then restore it untouched.
+- Status: applied-on 2026-08-28 (recovery verified; no rules-file edit owed)
