@@ -15,10 +15,23 @@ instead of trusting this file if anything errors.**
 - `agent-skills:code-reviewer` / `security-auditor` / `test-engineer` — review roles.
 - `claude-code-guide` — questions about Claude Code/API itself.
 
-**External CLIs (Bash):** `codex` (gpt-5.6-luna), `agy` (Gemini 3.6 Flash), `opencode`
-(free models). Playbooks in `~/.claude/memory/workflow_*.md` are the source of truth
-for invocation syntax and known traps. Re-verify a CLI still works with a 5-second
-probe (`codex exec --skip-git-repo-check "PONG"`) before batch-dispatching to it.
+**External CLIs (Bash) — there are FIVE, not three:** `codex` (`gpt-5.6-luna`), `agy`
+(Gemini `3.7-flash-medium`; review pin `3.6-flash-high`), `grok` (`~/.grok/bin/grok`,
+`grok-4.6`), `opencode` (free pool), and NIM (a model backend, not an agent — direct
+curl, or via opencode when file edits are needed). Playbooks in
+`~/.claude/memory/workflow_*.md` + `reference_nim_via_opencode.md` are the source of
+truth for invocation syntax and known traps. Three that bite before you read them:
+**grok ingests `~/.claude` by default** — isolate HOME or it is not an independent
+review lens; **opencode's `$PWD` is not its cwd** — set `env["PWD"]` AND `--dir`;
+**an empty return is never "no findings"** — agy returns empty rc=0 ~17% at ~8KB
+(always retry, ≤3×), grok can return a schema-VALID empty review that passes every
+guard (tell: `usage.reasoning_tokens` vs input size), and opencode's first real-
+generation zero-byte means reroute, not retry.
+Re-verify a CLI still works with a 5-second probe before batch-dispatching:
+`codex exec -m gpt-5.6-luna --skip-git-repo-check -s read-only "PONG"` (always pass
+`-m` — the bare config default is NOT the measured model) ·
+`~/.grok/bin/grok -p PONG --disable-web-search --no-subagents` ·
+`agy -p PONG --model gemini-3.7-flash-medium` (bare `agy -p` is NOT the pinned model).
 
 If this file's tool list disagrees with what the harness offers you, the harness
 wins — then update this file per `40-maintenance.md`.
@@ -59,6 +72,15 @@ transcript that lands in it displaces judgment.
 | Second-opinion / adversarial read | agy (one sample) or codex-as-reviewer | codex volunteers risks when ASKED to review that it hides while implementing |
 | Bulk summarization / pattern discovery | agy | prose-only prompts |
 | Acceptance review of any delegated work | fresh-context agent, §5 | NEVER the agent that did the work |
+
+🔴 **This table covers the INTERNAL (Agent-tool) tiers. For routing across the five
+external CLIs it is NOT authoritative and is not complete — `grok` and NIM have no row
+here at all. The authority is `~/.claude/memory/reference_subordinate_routing_map.md`
+(global CLAUDE.md: "START HERE"), which carries the measured evidence and the four
+fleet-wide rules R-A–R-D. On any disagreement between that map and this table, THE MAP
+WINS; fix this table in the same turn.** Its rows that this table's "second-opinion"
+row predates: agy is NOT the pick for post-implementation review of a real repo, and
+grok on the staged-files recipe is a measured third lens complementary to codex.
 
 Default model when unsure: `sonnet`. Drop to `haiku` only for tasks where a wrong
 answer is cheap and obvious (you'll instantly see it's wrong). Raise to `opus` for

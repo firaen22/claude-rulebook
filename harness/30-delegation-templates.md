@@ -135,6 +135,15 @@ The spec it must satisfy is below. You did not write this; assume nothing.
 
 SPEC + ACCEPTANCE CRITERIA: {{paste the original dispatch criteria verbatim}}.
 
+REAL INPUT DISTRIBUTION (mandatory — describe what the code actually receives in
+production): {{shape of real inputs, the weird-but-common cases, volumes — e.g.
+"transcript lines: 4,325 of them start with a `<command-name>` tag; 24,897 are
+tool_result payloads"}}. Measured 2026-08-28: two silent misses a 12-finding review
+had passed were found by the reviewer whose brief described the corpus shape — a
+reviewer given only the code reasons from CONTRIVED inputs and finds mechanism bugs;
+one given the real distribution finds the path that actually fires them. If you cannot
+describe the distribution, say so — do not invent one.
+
 METHOD (follow exactly, in this order):
 1. For each criterion, WRITE DOWN the input and the output you EXPECT if the work
    is correct — before looking at the actual code/output.
@@ -163,3 +172,9 @@ an empty report with no evidence of work is a REJECT of the review itself.
 - [ ] I know exactly what command I will run to verify the result myself.
 - [ ] Executor per routing table; escalation state noted if this is a retry
       (attempt #, prior failure trail attached).
+- [ ] REVIEW dispatches to a CLI: the target is STAGED AS FILES the reviewer reads,
+      never pasted into the prompt. An inlined review target produced schema-valid
+      EMPTY reviews that passed every existing guard (2026-08-28).
+- [ ] Schema/structured returns: check ENGAGEMENT, not just validity — compare
+      `usage.reasoning_tokens` against input size. 43 reasoning tokens on a 15k-token
+      input is a non-review that parses perfectly.
