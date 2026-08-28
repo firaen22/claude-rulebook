@@ -427,3 +427,211 @@ in the same function reads it.**
   Corollary written into `reference_subordinate_routing_map.md`'s refusal-shapes
   bullet + the NIM reference's sweep section.
 - Status: applied-on 2026-08-25
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Moved from LESSONS.md by the 2026-08-27 compression (196 lines / 5 entries,
+# over the >150-line trigger). Entries below are VERBATIM — no rewording, so no
+# BINDINGS pass was owed (skill-authoring references/distilling-rules.md
+# §Compression and restructuring passes: a word-diff is sufficient for a move,
+# never for a reword).
+#
+# Each destination was grepped and its operative sentence quoted BEFORE the move,
+# per 40-maintenance.md §3. (Cross-model review 2026-08-28 found this claim was
+# initially OVERSTATED: R-D was listed without its sentence and two destinations
+# were missing entirely — fixed below the same day. Line numbers are the grep
+# hits of the moment they were taken and rot as files change; the quoted
+# sentences are the durable check.) What was verified, and where:
+#   - "A fix is a change"            -> skills/operational-rigor/SKILL.md:260
+#     "A fix is a change, and inherits the full verification duty of one."
+#     (carries the sharpened "re-probe, don't re-read" edge at :269)
+#   - "Word-presence diffs"          -> skills/skill-authoring/SKILL.md:474
+#     "Three cuts go wrong in ways a word-diff cannot show"
+#     + references/distilling-rules.md:132 "A reword needs a BINDINGS pass"
+#     (PROVISIONAL qualifier intact)
+#   - "read-only is not a control"   -> FOUR destinations, all grepped 2026-08-28:
+#     skills/delegation-and-review/SKILL.md:423 "\"Read-only\" in a prompt is NOT
+#     a control - only the filesystem boundary is."; :431 "gets an enforced
+#     boundary BEFORE dispatch: `isolation: 'worktree'`, an enforced copy, or a
+#     frozen snapshot"; routing-map rule R-D "verify the boundary by attempting
+#     an escape, never by reading the flag name"; workflow_grok_subordinate.md
+#     §CONTAINMENT (the fail-open `--tools` table). The banner's first version
+#     listed only :423 + R-D and quoted only :423 — corrected same day after
+#     cross-model review flagged the gap (grok F8/F21).
+#   - grok idle (both entries)       -> memory/workflow_grok_subordinate.md
+#     section "Empty has TWO causes"; "The fix is packet SHAPE, not retry"
+#     (2026-08-28 correction: commit cb6a9ae — made BEFORE this compression but
+#     read only after — had deleted that section and §Tool-use short-circuit
+#     without re-homing them; both were restored, reconciled with cb6a9ae's
+#     retraction, the same day. The :145 line ref is dropped as unstable.)
+#
+# The read-only counter moved because its promotion is EXECUTED, not because it
+# aged out. Its one order that lived nowhere else - re-grep a claimed destination
+# in the same edit as the claim - was homed in 40-maintenance.md §3 BEFORE this
+# move, so nothing here is an order without a rules-file home (§4).
+# ─────────────────────────────────────────────────────────────────────────────
+
+## APPLIED RULE CHANGE — 2026-08-26 (§3: recurred ≥3×, promoted on user order)
+
+### "A fix is a change, and needs its own independent review"
+- **Recurrence: 4 instances, no cache home.** Every other lesson in the archive
+  landed in a skill or memory file; this one has been re-learned four times and
+  written down four times without ever being compiled into an always-loaded
+  rule. Grep confirms it exists nowhere in `skills/` or `harness/*.md` except as
+  narrative history in `LESSONS-archive.md`.
+- Instances: opus-pack PR #125 (applying a correct finding re-pointed an
+  antecedent and licensed quietly not-reverting user-ordered work — caught only
+  by a 2nd review round); PR #129 round-2 (round-1's own mask() fix introduced
+  two NEW defects — a DEP-UNUSED false-positive/negative pair and a
+  SCAN-INCOMPLETE boundary misfire — which a "did the described fix land" check
+  would have missed); PR #125's own entry already called itself "fourth incident
+  in this family"; and 2026-08-25 this session, where my fix for append-only
+  status rot (a reconciliation table) reproduced the exact rot it was written to
+  eliminate, wrong on 2/8 rows.
+- Mechanism that makes it recur: the reviewer who found the problem has NOT
+  verified the solution to it, and the author's attention at fix time is on the
+  finding, not on what the edit's blast radius newly touches. Checking "did the
+  described fix land" is structurally incapable of catching a defect the fix
+  introduced.
+- **APPLIED 2026-08-26** to `skills/operational-rigor/SKILL.md` §4 (Verify by
+  execution), inserted after the "a failing check has two suspects" bullet.
+  Backup: `~/.claude/backups/operational-rigor.SKILL.md.2026-08-26-fixrule.bak`.
+  Ships `unprobed` — incident-derived, never bare/ruled probed.
+
+- **Mechanism trace before shipping** (the 2026-07-14 lesson: a compiled rule is
+  executable code — run the prescribed mechanism against its motivating case and
+  the nearest edge, because distillation introduces bugs the incidents never had).
+  Prescription: *re-derive the fixed behavior from the artifact, not your fix
+  description; check what the edit newly touches.*
+  - PR #125 (antecedent re-pointed, naming duty silently dropped) → CATCHES.
+    Re-deriving means reading the edited sentence and asking what "such a
+    component" now refers to and what duty that leaves; the dropped duty is
+    visible in the artifact, invisible in the fix description.
+  - PR #129 (round-1 mask() fix introduced a DEP-UNUSED false-positive/negative
+    pair + a SCAN-INCOMPLETE boundary misfire) → CATCHES, and is the empirical
+    proof: round-2 did exactly this (re-derived from the code, not the fix
+    description) and that is how the two new defects surfaced.
+  - 2026-08-25 NIM table (fix reproduced the rot it was written to remove) →
+    catches ONLY under the sharpened wording. "Re-derive from the artifact" read
+    naively means re-reading the table, which is what produced the defect. The
+    shipped rule therefore names the ground truth as the artifact for summaries
+    and tables ("re-probe, don't re-read"). This edge is why that clause exists —
+    without it the rule would not catch its own most recent instance.
+  - Nearest edge, pure revert: re-derivation is trivial and the rule costs
+    nothing. No regress risk — verification is a read, not a change, so it does
+    not itself trigger the duty.
+- **Self-application caught two defects in this very edit** (recorded because it
+  is the rule's own first live test, N=1): the draft cited
+  `harness/LESSONS-archive.md` as holding the mechanism trace when the archive
+  holds only the incidents — the trace did not exist anywhere until this block was
+  written — and it used a bare relative path where the file's convention (line 8)
+  is `~/.claude/`-prefixed. A "did the described fix land" check passes both. Both
+  fixed before commit.
+- Status: **applied-on 2026-08-26**
+
+## RECURRENCE COUNTER (closed) — moved with its parent heading's context
+(In the source file this bullet sat under "## RECURRENCE COUNTERS (applied rules
+that are climbing toward promotion)"; that heading stayed in LESSONS.md with the
+two still-open counters. Reproduced here so the bullet is not read as part of
+the entry above.)
+
+- **A read-only instruction is not a control — 4 instances (3 by 2026-07-28,
+  a 4th on a new tier 2026-08-27), THRESHOLD MET, promotion executed 2026-08-26** (2026-07-09 agy, dispatched as an adversarial
+  spec REVIEWER, "ignored the review framing, chose to IMPLEMENT" and overwrote a
+  file at an absolute real-repo path; 2026-07-14 agy edited 4 files despite
+  read-only in sweep-6; 2026-07-28 a review subagent deleted a stale-response
+  guard from a live working tree). Only the filesystem boundary is a control.
+  Now applied at `skills/delegation-and-review/SKILL.md:423` (classify by tools
+  held, not by brief) with the worktree/enforced-copy clause at :431.
+  - **4th instance, 2026-08-27, found by probe not by damage — and it extends the
+    rule.** grok CLI 1.0.5 dispatched with the playbook's own "Do NOT edit any file"
+    brief wrote outside its `--cwd` on first ask; so did `--disallowed-tools` and both
+    `--sandbox` names tried (5/5 uncontained configs). Only a positive `--tools`
+    allowlist held (2/2). **New mechanism worth carrying: the control flag itself can
+    fail OPEN — one unrecognised name in `--tools` silently voids the entire allowlist,
+    rc=0, no warning, full write+shell restored.** So "I passed the containment flag" is
+    itself a self-report. Verify a boundary by ATTEMPTING AN ESCAPE, never by reading the
+    flag name. Landed as routing-map rule R-D + [[workflow-grok-subordinate]] §CONTAINMENT.
+  - ⚠️ **Corrected 2026-08-26 — this counter was wrong in two ways at once, and
+    the two errors masked each other.** It read "2 instances" (the 07-09 case was
+    never counted) AND asserted the rule was already "Applied in
+    `delegation-and-review`" when `isolation: 'worktree'` appeared in no rules
+    file at all. §3 says promote at 3; the third instance landed 2026-07-28, so
+    the promotion was a month overdue and only ran because an audit tripped over
+    it. **A counter that believes its rule is already applied never promotes —
+    so when you log an instance, re-grep the claimed destination in the same
+    edit.**
+
+
+## 2026-08-27 — Word-presence diffs certify words, not bindings (3 compressions, 3 escapes)
+- What happened: Three consecutive rules-file compressions (3ade6e2, 4ab2a56, 514a227)
+  were each verified by grep/token-diff and passed; external review then found a real
+  loss in every one: a pre-registration TIMING order (words all present, before/after
+  lost); a dropped NON-FREE qualifier that made the sentence false against data 8
+  lines above; 9/10-vs-4/20 numbers detached from their subject (-medium) and
+  re-attaching to the adjacent -low sentence; ">=4 independently-authored unseeded
+  defects" silently merging two independence conditions into one.
+- Root cause: token-presence checks are order-blind — a binding (subject↔number,
+  scope↔claim, condition↔condition, before↔after) can break while every word
+  survives, so the check certifies the wrong invariant.
+- Rule change needed: skill-authoring §4 or 40-maintenance §5 — after compressing any
+  rule text, re-read each compressed sentence asking WHO/WHAT the numbers and
+  qualifiers now attach to (a bindings pass, not a words pass); word-diff remains
+  necessary for extractions but is never sufficient for rewording. External lens
+  stays mandatory for compression commits (this is the existing "self-review is no
+  substitute" line — 3/3 rounds confirm it).
+- Probe (2026-08-27, same day): pre-registered synthetic probe (6-clause fixture,
+  4 planted bindings, real word-budget pressure after two design-review rounds —
+  codex and grok both found the first fixture draft satisfiable by line-joining
+  alone, 0 bindings at risk). Bare arm 3/4 clean, 1/4 real FAIL (dropped a tier's
+  numbers while keeping the adjacent tier's — the exact subject↔number break from
+  the production escapes). Ruled arm (rule text appended) 2/2 clean. n small,
+  effect consistent with the 3 production escapes above — PROVISIONAL, not proof.
+- Status: applied-on 2026-08-27 — folded into skill-authoring SKILL.md §5 step 2
+  ("three cuts" bullet) with full text + evidence in
+  `references/distilling-rules.md` §Compression and restructuring passes.
+
+
+## 2026-08-27 — grok truncates review output (2× same session)
+grok -p with a full review packet twice emitted only planning narration (563/585 bytes) and exited 0 with no report. Third attempt with a COMPACT prompt + "DO NOT narrate, output ONLY the final report" produced a complete NO FINDINGS report with checked-list. Pattern: long packet → grok dies after thinking; treat exit-0-with-no-report as REJECT and retry once with a compact report-only prompt before recording unavailable.
+- Status: **SUPERSEDED same day — title and mechanism are both wrong.** Nothing was
+  truncated; grok emitted a COMPLETE short narration and exited clean. Corrected
+  entry directly below; orders live in `memory/workflow_grok_subordinate.md`
+  §"Empty has TWO causes", evidence in
+  `finding_grok_idle_vs_parser_2026-08-27.md`. Kept unedited per §3 append-only.
+
+
+## 2026-08-27 — correction: grok does NOT truncate; it IDLES (supersedes the entry above)
+- What happened: the entry above was written from the symptom (`rc=0`, tiny output,
+  no report) and named the mechanism "truncation." Re-examining the same runs for
+  the write-up showed the output was not cut off at all — grok emitted a *complete*
+  short plan ("Next I'll locate the repo, read the changed files, and run the
+  printed commands") and exited without ever executing it. 3/3 on one multi-step
+  read-then-analyze review brief; copying every needed file INTO `--cwd` did NOT
+  fix it, so file access was never the constraint.
+- Root cause: the already-recorded tool-use short-circuit, extended from side
+  effects to analysis — **read-then-analyze is multi-step work**, and grok
+  short-circuits multi-step work by announcing it. Pure judgement under schema was
+  always clean (8/8). Truncation was never the mechanism and has still never been
+  probed on grok — `workflow_grok_subordinate.md` §"What is NOT measured" says so
+  explicitly, and the entry above contradicted it for ~9 hours.
+- Rule change needed: NONE new — the correct orders were already written to
+  `memory/workflow_grok_subordinate.md` §"Empty has TWO causes" (3-step triage;
+  read the bytes before blaming the parser; low `num_turns` demoted to suspicion)
+  and the fix is **packet SHAPE, not retry**: inline everything, demand pure
+  judgement, add `--json-schema`. That re-shape turned the identical failing review
+  into a clean 5-finding run (1/1). The stale entry's "retry once with a compact
+  prompt" is the wrong prescription — a compact prompt worked because it removed
+  the file-reading steps, not because retrying helps.
+- Unreconciled binding (do not silently pick one): the entry above cites 563/585
+  bytes, the finding cites 305/328 B. The 2026-08-26 raw runs are not on disk in
+  either tree, so neither number is verifiable now. Both describe the same failure
+  CLASS; treat the byte counts as illustrative, not as data, and do not cite them.
+- Meta-lesson, the one worth keeping: **naming a mechanism from a symptom is a
+  claim, not an observation.** "Small output + rc=0" is compatible with truncation,
+  a parser bug, and idling — three different fixes. R0 applies to my own
+  diagnoses: read the bytes before naming the cause, or the wrong fix gets
+  promoted into a rules file.
+- Status: applied-on 2026-08-27 — Status line added to the superseded entry; no
+  playbook edit needed (it already carried the correct mechanism and the explicit
+  "truncation never probed" line that flagged the conflict).
