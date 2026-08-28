@@ -269,7 +269,22 @@ the item unverified).
   rewrote (re-probe, don't re-read): a reconciliation built by reading stale text
   inherits the rot it was written to remove. Incident-derived, 4 instances
   (`~/.claude/harness/LESSONS-archive.md`), mechanism traced against each before
-  shipping (`~/.claude/harness/LESSONS.md`); not bare/ruled probed (`unprobed`).
+  shipping (`~/.claude/harness/LESSONS-archive.md`, moved there by the 2026-08-27
+  compression); not bare/ruled probed (`unprobed`).
+- **Naming a mechanism from a symptom is a claim, not an observation — read the
+  output bytes before naming the cause.** One symptom is usually compatible with
+  several mechanisms that need different fixes: a subordinate's small-output/rc=0
+  run fits truncation, a parser bug, AND the model idling after narrating a plan
+  it never ran; an empty API response fits auth, gateway, and your own parsing.
+  Naming one from the symptom alone ships the wrong fix and promotes it into a
+  rules file, where it outlives the incident. Open the artifact — the actual
+  bytes, the envelope fields, the raw response — and let it choose the mechanism.
+  R0 applies to your own diagnoses, not only to other people's claims.
+  (Incident 2026-08-27: "grok truncates review output" was written from the
+  symptom and prescribed a retry; nothing was truncated — grok emitted a complete
+  short plan and exited, and the real fix was the packet shape. The wrong rule sat
+  in LESSONS.md contradicting the grok playbook's own
+  "truncation never probed" line until a review caught it. `unprobed`.)
 - Settle empirically answerable questions by running things, not by memory (R6).
 - Writing a parser/adapter/importer or handling data whose shape you didn't define:
   fail loud on unspecified ambiguity (never emit a silently-wrong value), and verify

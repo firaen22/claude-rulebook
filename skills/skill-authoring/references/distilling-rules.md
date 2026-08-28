@@ -143,7 +143,7 @@ condense, extraction, split, re-home, or rewording pass on a rules file.
   sequencing constraint inverts or vanishes). Evidence: three consecutive
   2026-08-27 production compressions (3ade6e2, 4ab2a56, 514a227), each
   passed by grep/token-diff, each carrying a real binding loss caught only
-  by external review (LESSONS.md 2026-08-27). A same-day synthetic probe
+  by external review (LESSONS-archive.md 2026-08-27). A same-day synthetic probe
   (bare vs. ruled subagents compressing a 6-clause fixture with 4 planted
   bindings under real word-budget pressure — see the probe methodology
   below) reproduced the exact failure: bare arm 3/4 clean, 1/4 dropped a
