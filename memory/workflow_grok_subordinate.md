@@ -142,84 +142,39 @@ This is grok's real advantage over agy/opencode for graded fan-out.
   and a "reply with exactly: PONG" prompt — plain mode prints 4 bytes and no
   envelope, so it isolates transport/auth from your parser.
 
-### 🔴 A schema-valid EMPTY review — the prescribed re-shape can still fail
+### 🔴 A schema-valid EMPTY review — and the real cause: INLINED code
 
-2026-08-27, reviewing a ~200-line Python tool (misroutewatch.py). Three attempts,
-three different failure shapes, **zero usable review**:
+2026-08-27/28, reviewing a ~250-line Python tool (misroutewatch.py). Four attempts:
 
 | # | packet | result |
 |---|---|---|
-| 1 | full brief, inlined code, pure judgement, `--json-schema` | `{"findings":[],"sections_with_no_defect":[]}` — 64 output / **43 reasoning** tokens on a 15k-token input |
-| 2 | same + an explicit "empty is a FAILED review" output contract | **0 bytes**, empty stderr, ~10 min |
-| 3 | trimmed to ONE question, no schema, `--output-format plain` | 259 bytes of narration, then exit ("I'll inspect the scanner… the workspace is empty") |
+| 1 | code INLINED in prompt, pure judgement, `--json-schema` | `{"findings":[],...}` — 64 output / **43 reasoning** tokens on a 15k input |
+| 2 | same + "empty is a FAILED review" output contract | **0 bytes**, empty stderr, ~10 min |
+| 3 | trimmed to ONE question, no schema, INLINED, plain | 259 bytes of narration, then exit |
+| 4 | **files STAGED in `--cwd`**, told to read them, no schema | **5.4KB, 5 findings, 2 real silent misses** |
 
-**Attempt 1 IS the remedy this playbook prescribes** (inline everything, demand pure
-judgement, add `--json-schema`) — so the remedy has a failure case, and this is it.
-🔴 **Schema adherence is not engagement.** Every guard passed: `stopReason: end_turn`,
-`num_turns: 1`, a well-formed object satisfying the schema. A schema is a shape
-constraint, and an empty array satisfies most shapes. **The only signal was token
-count** — 43 reasoning tokens against a 15k-token brief. Guard reviews on
-`usage.output_tokens`/`reasoning_tokens`, not on parse success.
+⚠️ **The first three were MY packet error, not a grok limit.** I inlined the code and
+skipped the staged-files recipe this file already prescribes. Attempt 3's narration said
+it outright — *"The workspace is empty, so I'm checking how this scanner is typically
+wired"* — grok was hunting for files that were not there. **Retracts the earlier
+conclusion "grok is not a reliable code reviewer at this size."** It is, on the
+documented recipe. Stage files; never inline a review target.
 
-Also: **tightening the contract made it worse** (2 → 0 bytes), so "re-shape, don't retry"
-does not mean "add constraint". Attempt 3 shows the idle mode surviving a *smaller*
-packet, and grok reaching for the filesystem even with the code fully inlined.
+Two findings survive the retraction:
+- **Schema adherence ≠ engagement.** Attempt 1 was schema-VALID and empty, with
+  `num_turns:1` and `stopReason:end_turn` — every existing guard passed. The only tell was
+  `usage.reasoning_tokens` (43) against a 15k input. **Guard on reasoning/output tokens
+  relative to input size**, not on parse success.
+- **Tightening the contract can make it worse.** Adding the "empty = failure" clause took
+  attempt 1's bad-but-parseable answer to attempt 2's 0 bytes. "Re-shape, don't retry"
+  does NOT mean "add constraint" — it means change the DELIVERY (inline → staged files).
 
-Practical rule: **grok is not a reliable code reviewer at this size.** Route review to
-codex (which returned 12 findings on the identical brief, 5 verified real). Reserve grok
-for short pure-judgement calls and the X lane. If a grok review returns, check the token
-counts before reading the content — and never let silence or an empty array read as "no
-defects found".
+Value when correctly shaped: attempt 4 found two silent misses codex's 12-finding review
+missed, in code codex had already reviewed — a slash-command-triggered event dropped by a
+dedup-key collision, and a co-load bucketed on the wrong session id. Both reproduced as
+fixtures. 3 of its 5 findings were real, 1 rejected on corpus evidence.
+[[finding-misroutewatch-grok-review-2026-08-28]]
 
-### 🔴 "Empty" has TWO causes — separate them before blaming either
-
-The parser bug above is one. The other is grok genuinely idling: on a multi-step
-read-then-analyze brief it **narrates its plan and exits** ("Next I'll locate the
-repo, read the changed files") without executing — 3/3 on one review task, and
-copying every file INTO `--cwd` did NOT fix it. **The fix is packet SHAPE, not
-retry: inline everything, demand pure judgement, add `--json-schema`.** That
-re-shape turned the same failing review into a clean 5-finding run. Numbers and
-the falsifier: [[finding-grok-idle-vs-parser-2026-08-27]].
-
-Triage, in order. **Size alone does not separate the two causes — a mis-parsed
-short answer and pure narration are both small. READ the bytes.**
-1. `wc -c "FILE"; head -c 400 "FILE"` — narration announces steps it never took
-   ("Next I'll locate the repo, read the changed files"). Intent ≠ a short answer.
-2. `jq '.num_turns, .structuredOutput, .structuredOutputError' "FILE"` — **the
-   filename is load-bearing.** Omit it and `jq` reads stdin: at EOF it prints
-   NOTHING and exits 0, which a script reads as "clean." Verified 2026-08-27.
-   - **Decisive:** `structuredOutput` null / `structuredOutputError` set / the
-     required fields carrying placeholder strings.
-   - **Suspicion only:** low `num_turns`. The proven guard is `== 1` on a
-     tool-requiring task (§Tool-use short-circuit, the NEXT heading below);
-     `<= 2` on an analysis task is a prompt to go look, not a verdict — a
-     genuine run can finish in two turns, and a pure-judgement run with
-     everything inline legitimately finishes in ONE (verified 2026-08-27).
-3. Only then suspect your parser (whole-buffer `jq`, PONG probe).
-
-**Never read a schema-shaped object as evidence of work — a `"pending"` string in
-your field is grok filling the shape, not answering.** For review-class delegation
-where this bites, route to codex; agy is the substitute third lens.
-
-### 🔴 Tool-use short-circuit — the one hard safety rule
-
-**3/10 schema runs on a file-creation task made ZERO tool calls (`num_turns: 1`), wrote
-no file, and still returned `{"file_created": "chunk.js", ...}`.** Free text on the same
-prompt wrote the file 14/14. (Attribution to the flag is p=0.059 — suggestive, not
-settled. Does not matter: the rule is the same either way.)
-
-- **NEVER accept a schema field as evidence that a side effect happened.** Check the disk.
-- **Guard on `num_turns`.** `num_turns == 1` on a task that requires **CLI-side** tools
-  (`write`, `search_replace`, `run_terminal_command`, file reads) means it never used one.
-  Cheap, and it caught every instance.
-  🔴 **SCOPE (2026-08-27): worthless for the X lane.** X tools are server-side, so a real
-  retrieval and a fabricated one both return `num_turns: 1` — verified on 4/4 runs including
-  one using the independently-known-live `x_keyword_search`. There, substitute **chained
-  cross-tool ID verification** (take an ID from one tool, re-fetch with another, require the
-  text to match) plus a nonsense-input negative control.
-  [[finding-grok-xtools-smoke-2026-08-27]]
-- Pure JUDGEMENT under schema (no side effects) was clean 8/8. The risk is side-effecting
-  work specifically.
 
 ## 🔴 CONTAINMENT — grok HOLDS write+shell; only `--tools` is a control
 
