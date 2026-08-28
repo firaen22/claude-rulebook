@@ -176,6 +176,62 @@ fixtures. 3 of its 5 findings were real, 1 rejected on corpus evidence.
 [[finding-misroutewatch-grok-review-2026-08-28]]
 
 
+### 🔴 "Empty" has TWO causes — separate them before blaming either
+
+The parser bug above is one. The other is grok genuinely idling: on a multi-step
+read-then-analyze brief it **narrates its plan and exits** ("Next I'll locate the
+repo, read the changed files") without executing — 3/3 on one review task, and
+copying every file INTO `--cwd` did NOT fix it. **The fix is packet SHAPE, not
+retry.** Numbers and the falsifier: [[finding-grok-idle-vs-parser-2026-08-27]].
+(The original entry prescribed "inline everything"; 2026-08-28 retracted that for
+REVIEW targets — inlined code is what produced the schema-valid EMPTY reviews
+above. Current shape rules: judgement on ALREADY-INLINE material → keep it
+inline; reviewing FILES → stage them in `--cwd` per §Large review packets. Both
+are the same underlying order: never make grok plan multi-step file reading it
+won't execute.)
+
+Triage, in order. **Size alone does not separate the two causes — a mis-parsed
+short answer and pure narration are both small. READ the bytes.**
+1. `wc -c "FILE"; head -c 400 "FILE"` — narration announces steps it never took
+   ("Next I'll locate the repo, read the changed files"). Intent ≠ a short answer.
+2. `jq '.num_turns, .structuredOutput, .structuredOutputError' "FILE"` — **the
+   filename is load-bearing.** Omit it and `jq` reads stdin: at EOF it prints
+   NOTHING and exits 0, which a script reads as "clean." Verified 2026-08-27.
+   - **Decisive:** `structuredOutput` null / `structuredOutputError` set / the
+     required fields carrying placeholder strings.
+   - **Suspicion only:** low `num_turns`. The proven guard is `== 1` on a
+     tool-requiring task (§Tool-use short-circuit, the NEXT heading below);
+     `<= 2` on an analysis task is a prompt to go look, not a verdict — a
+     genuine run can finish in two turns, and a pure-judgement run with
+     everything inline legitimately finishes in ONE (verified 2026-08-27).
+3. Only then suspect your parser (whole-buffer `jq`, PONG probe).
+
+**Never read a schema-shaped object as evidence of work — a `"pending"` string in
+your field is grok filling the shape, not answering.** (The original entry here
+demoted grok to "route review to codex" — RETRACTED 2026-08-28, see the
+retraction above: on the staged-files recipe grok is a valid review lane.)
+
+### 🔴 Tool-use short-circuit — the one hard safety rule
+
+**3/10 schema runs on a file-creation task made ZERO tool calls (`num_turns: 1`), wrote
+no file, and still returned `{"file_created": "chunk.js", ...}`.** Free text on the same
+prompt wrote the file 14/14. (Attribution to the flag is p=0.059 — suggestive, not
+settled. Does not matter: the rule is the same either way.)
+
+- **NEVER accept a schema field as evidence that a side effect happened.** Check the disk.
+- **Guard on `num_turns`.** `num_turns == 1` on a task that requires **CLI-side** tools
+  (`write`, `search_replace`, `run_terminal_command`, file reads) means it never used one.
+  Cheap, and it caught every instance.
+  🔴 **SCOPE (2026-08-27): worthless for the X lane.** X tools are server-side, so a real
+  retrieval and a fabricated one both return `num_turns: 1` — verified on 4/4 runs including
+  one using the independently-known-live `x_keyword_search`. There, substitute **chained
+  cross-tool ID verification** (take an ID from one tool, re-fetch with another, require the
+  text to match) plus a nonsense-input negative control.
+  [[finding-grok-xtools-smoke-2026-08-27]]
+- Pure JUDGEMENT under schema (no side effects) was clean 8/8. The risk is side-effecting
+  work specifically.
+
+
 ## 🔴 CONTAINMENT — grok HOLDS write+shell; only `--tools` is a control
 
 **Verified by me 2026-08-27, grok 1.0.5, tests A-I, one probe each unless noted.**
