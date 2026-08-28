@@ -27,19 +27,23 @@ VERIFIED 2026-08-27 (sweep 18, first successful grok review): a ~100KB packet vi
 material as FILES in `--cwd` and telling grok to read them delivered 9.6KB of real
 findings, 3/4 real, including two bugs three other models missed.
 
+**COPY THIS ONE** — contained, findings on stdout (verified 2026-08-28, 15KB/15 findings):
 ```
 GDIR=<scratch>/grokdir; mkdir -p $GDIR/files
 cp <sources> $GDIR/files/; cp brief.txt $GDIR/files/00-REVIEW-BRIEF.txt
-HOME="$TMPHOME" timeout 900 ~/.grok/bin/grok -p "Read ./files/00-REVIEW-BRIEF.txt \
-  first, then every file in ./files/. Do NOT read outside ./files/. Do NOT edit any \
-  file. Write findings to ./FINDINGS.md, then print them." \
+HOME="$TMPHOME" timeout 1700 ~/.grok/bin/grok -p "Read ./files/00-REVIEW-BRIEF.txt \
+  first, then read EVERY file in ./files/. Do not read outside ./files/. You have \
+  read-only tools only, so print your complete findings report to stdout." \
   -m grok-4.6 --cwd "$GDIR" --always-approve --disable-web-search --no-subagents \
-  --output-format plain
+  --output-format plain --tools read_file,grep,list_dir
 ```
-⚠️ **This recipe is UNCONTAINED** — the "Do NOT edit" prose is not a control and the
-isolated `--cwd` is not a boundary (both disproved 2026-08-27). To contain it, add
-`--tools read_file,grep,list_dir` and take findings on stdout instead of `FINDINGS.md`.
-See §CONTAINMENT — and note `--tools` fails open on a typo.
+🔴 **Do NOT drop `--tools`, and do NOT ask for `FINDINGS.md`.** The older form of this
+recipe did both — it is **UNCONTAINED**: the "Do NOT edit any file" prose is not a
+control and the isolated `--cwd` is not a boundary (both disproved 2026-08-27, wrote
+outside `--cwd` 5/5). Under the allowlist grok has no write tool, so `FINDINGS.md`
+cannot exist — that is the point, take findings on stdout. Every name in `--tools`
+must be a real built-in: **one typo voids the whole allowlist silently, rc=0**
+(§CONTAINMENT). Use the uncontained form ONLY when grok must genuinely write.
 - Budget **~25 minutes**; it narrates a couple of lines then goes quiet for a long time.
   Do not kill it early — stdout stays near-empty until the end.
 - It COMPLIED with "do not edit" in the observed runs — but compliance is not
@@ -256,8 +260,11 @@ control (the promoted 3-instance lesson, `delegation-and-review/SKILL.md:423`).
   unknown profile prints `Refusing to start with its protections missing` and exits. Two
   adjacent flags with opposite failure directions.
 - Consequence for review dispatch: under the allowlist grok has **no write tool**, so it
-  cannot produce `FINDINGS.md`. Take findings on **stdout** instead. This also aligns with
-  [[finding-grok-idle-vs-parser-2026-08-27]] — inline + pure-judgement is the shape that works.
+  cannot produce `FINDINGS.md`. Take findings on **stdout** instead — that is the only
+  change the allowlist forces. ⚠️ It does NOT push you back to an inlined packet: the
+  containment control and the packet shape are independent axes. **Contained file review =
+  staged files in `--cwd` + `--tools read_file,grep,list_dir` + findings on stdout**
+  (see §Large review packets and the 2026-08-28 retraction above).
 - `--sandbox` profiles are user-defined in `~/.grok/sandbox.toml` (`extends = "workspace"`,
   `read_only = [...]`). A correctly-authored custom profile is UNTESTED — the two names
   tried were not confining. Do not claim sandbox containment without probing it.
@@ -386,7 +393,9 @@ exception and folds into the same 0/N record. Two orders survive it:
   this result — only on not conflating capability with routing-as-invoked.
 - **On airtight-spec single-file work, try the free pool before grok** —
   `muse-spark-1.2-contributor-free` beat BOTH grok configs in that run, 10/10 vs
-  9/10 vs 8/10.
+  9/10 vs 8/10. ⚠️ **That 10/10 is retracted** (08-28 one-build re-bench: 9/10,
+  edge 1/2, now TIED with `nemotron-3-ultra-free`). The routing order survives;
+  do not cite the margin. [[finding-zen-pool-rebench-2026-08-28]]
 
 ## What is NOT measured (do not claim these)
 - Whether the HANG-class deficit GENERALISES beyond the ONE brief (n=3) that carried
@@ -401,7 +410,11 @@ exception and folds into the same 0/N record. Two orders survive it:
   (~55KB, ~139KB) are the entire record.
 - Custom `--sandbox` profiles authored in `~/.grok/sandbox.toml` — only the two
   built-in-sounding names were tried, and neither confined writes.
-- The X tools other than `x_keyword_search`, and the whole image/video generation set.
+- The whole image/video generation set. (⚠️ **NOT** the other X retrieval tools —
+  `x_user_search`/`x_thread_fetch`/`x_semantic_search` were all smoked LIVE 2026-08-27,
+  N=1 each, see the X-lane section above. Operational catch that belongs with them:
+  **`num_turns` is BLIND on the X lane** — server-side tools always report 1, so the
+  tool-use short-circuit guard does not apply; verify with chained cross-tool IDs.)
 - Rate limits, quota behaviour, failure modes under load — 56+ runs were all rc=0 in one
   ~1h window. **Absence of observed failures at this N is not a reliability claim.**
 

@@ -233,8 +233,25 @@ codex's own account of itself:
   claim a file was untouched that it DID edit. Verify end-state against disk/`git status`,
   never against codex narration — including its narrations of *failure*.
 - **Big prompts (>~10KB) via stdin `-`, not argv**: `cat prompt.txt | codex exec
-  --skip-git-repo-check -s read-only -o last.txt - > out.txt 2>&1` (79KB packet verified).
+  -m gpt-5.6-luna --skip-git-repo-check -s read-only -o last.txt - > out.txt 2>&1`.
   `-s read-only` for reviews, `-s workspace-write` for implementation.
+- 🔴 **The 79KB inline-packet ceiling is v0.144.4's and does NOT hold on v0.149.0.**
+  Measured 2026-08-28 on v0.149.0, same flags, `reasoning_effort=high`: **63KB and 55KB
+  and 54KB each produced NO assistant turn at all** — stdout ends at the echoed prompt,
+  no `codex` marker, no `tokens used`, `-o` never written, rc=0. Interleaved controls the
+  same minutes: a PONG answered normally, **16KB → 4.4KB answer, 29.6KB → 6.8KB answer**.
+  Between those: **32KB and 33KB returned only a ~370-byte contract statement and then
+  stopped**; 45KB the same; 51KB+ nothing at all. So the cliff is just above **~30KB**,
+  and it degrades gracefully-looking (a confident preamble, no findings) before it goes
+  fully silent. **Keep an inline review packet under 30KB** — measured points are
+  16/29.6 OK, 32/33/45 preamble-only, 51/54/55/63 silent. ⚠️ The failure is SILENT and looks exactly like the model having nothing to
+  say — check for the `codex` marker, never assume an empty answer is a verdict.
+  Re-measure this boundary on any version bump; it moved once already.
+- 🔴 **A chunk must be SELF-SUFFICIENT.** Splitting by file and then asking cross-file
+  questions gets an honest refusal, not findings: fed one file of a 15-file corpus, codex
+  correctly reported "cannot verify without inventing evidence" and returned only
+  dangling-pointer noise about the files it wasn't given (2026-08-28). Put the ground
+  truth a chunk is checked against INSIDE that chunk.
 - **`-o` captured a 10.5KB verdict** — the older "short verdicts only" caveat did NOT
   reproduce on v0.144.4; -o fails only when the run itself dies (see orphan trap above).
 - **workspace-write blast radius = the whole repo.** Enforcing its "only these N files"
