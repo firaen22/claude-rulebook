@@ -172,9 +172,28 @@ an empty report with no evidence of work is a REJECT of the review itself.
 - [ ] I know exactly what command I will run to verify the result myself.
 - [ ] Executor per routing table; escalation state noted if this is a retry
       (attempt #, prior failure trail attached).
-- [ ] REVIEW dispatches to a CLI: the target is STAGED AS FILES the reviewer reads,
-      never pasted into the prompt. An inlined review target produced schema-valid
-      EMPTY reviews that passed every existing guard (2026-08-28).
+- [ ] REVIEW dispatches to a CLI: pick the packet SHAPE by executor — they are
+      OPPOSITE, and getting it backwards costs the whole run while looking like the
+      model is useless. **grok / opencode: STAGE the target as files in `--cwd`** and
+      tell it to read them (an inlined target gave schema-valid EMPTY reviews that
+      passed every existing guard, 2026-08-28). **codex: INLINE the target** (`nl -ba`)
+      so it makes ZERO tool calls — staged files make it read everything, announce the
+      report, then the final answer never reaches stdout and `-o` is never written.
+      **agy: INLINE** too — it fabricates claims about files not inlined — and ALWAYS
+      retry an empty return, whose rate scales with packet size. **Any executor not
+      named here: STAGE, and verify the shape on one throwaway packet first** — staging
+      degrades to a slow read, inlining degrades to silence.
+      Size the codex packet under ~30KB and make each chunk SELF-SUFFICIENT (v0.149.0,
+      measured 2026-08-29: 16/29.6KB fine, **32-45KB returns a confident preamble and
+      no findings — the false-green band** — 51KB+ silent at rc=0). That number is
+      VERSION-BOUND: on any codex upgrade, re-probe with one oversized packet before
+      trusting the inline route. If you chunk, EVERY chunk must be dispatched and the
+      verdicts accepted JOINTLY — a per-chunk verdict is blind to cross-chunk defects,
+      and a review reported on a subset is a review of the subset.
+      Whichever shape you pick, the BRIEF must describe that delivery — a brief that
+      says "files in ./files/" beside an inlined packet sends the reviewer hunting for
+      material that isn't there, in both tiers. (Distinct from "long output → file"
+      above: that governs what comes BACK, this governs what goes IN.)
 - [ ] Schema/structured returns: check ENGAGEMENT, not just validity — compare
       `usage.reasoning_tokens` against input size. 43 reasoning tokens on a 15k-token
       input is a non-review that parses perfectly.
