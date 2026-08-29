@@ -63,7 +63,7 @@ transcript that lands in it displaces judgment.
 | Task | First choice | Notes |
 |---|---|---|
 | Find code / understand unfamiliar repo | Agent: `Explore`, model `sonnet` | `haiku` for simple "which file defines X" |
-| Spec'd implementation with tests | codex CLI, or Agent `general-purpose` `sonnet` | codex when spec is airtight; watch its quota (fails as silent no-change) |
+| Spec'd implementation with tests | **see the routing map first** — it wins on executor choice (global CLAUDE.md: "Route with `reference_subordinate_routing_map.md`") | Airtight spec + single file → **free pool**, not codex: that is measured work and codex quota is finite. codex when the spec needs judgment, spans files, or the free pool has failed once. Watch codex quota — exhaustion is a SILENT no-change. |
 | Mechanical batch edits (pattern proven) | Agent `general-purpose` `haiku`, or codex | prove the pattern on 1–2 instances yourself first |
 | Refactor needing convention judgment | Agent `general-purpose` `opus` | codex is bad at cross-cutting taste calls |
 | Web/doc research | Agent `general-purpose` `sonnet` | require citations + confidence per claim |
