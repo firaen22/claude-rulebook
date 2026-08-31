@@ -79,10 +79,22 @@ doctrine), your user Claude skills, and `settings.local.json` permissions** by d
 - **For MEASUREMENT** this is contamination — grok-with-your-harness vs a bare comparator
   is not a comparison. Run under an isolated HOME:
   ```
-  mkdir -p "$TMPHOME" && cp -R ~/.grok "$TMPHOME/.grok"    # auth.json MUST come across
-  HOME="$TMPHOME" ~/.grok/bin/grok -p ... 
+  mkdir -p "$TMPHOME/.grok"
+  rsync -a --exclude downloads --exclude marketplace-cache --exclude sessions \
+    ~/.grok/ "$TMPHOME/.grok/"        # auth.json MUST come across
+  HOME="$TMPHOME" ~/.grok/bin/grok -p ...
+  rm -rf "$TMPHOME"                   # mktemp -d is NOT auto-cleaned
   ```
-  Missing `auth.json` = silent hang (same trap as opencode's isolated XDG). Leave grok's
+  🔴 **Never `cp -R ~/.grok`** — that drags `downloads/` (128 MB) into every run and
+  `mktemp -d` never cleans up: 16 runs leaked **2.7 GB** into `/private/var/folders`
+  (measured 2026-08-28). The excludes cut a run from ~180 MB to ~35 MB.
+  Missing `auth.json` = failure, but the SIGNATURE is version-dependent: measured
+  2026-08-29 on grok **v1.0.5** it is NOT a hang — it returns in seconds, rc=0, with
+  `Not signed in. To authenticate without a browser, run: grok login --device-code`
+  on stdout. A bare `TMPHOME=$(mktemp -d)` with no rsync reproduces it every time.
+  Read the output before diagnosing: rc=0 + a 383-byte "report" is this, not a review.
+  (The older "silent hang" note is retained as a possible signature on other versions
+  / on opencode's isolated XDG; it was not what v1.0.5 did.) Leave grok's
   own ~22 BUNDLED skills alone — vendor defaults are part of what grok is. Rule:
   **strip the operator's config, keep the vendor's.**
 - **For REAL WORK** the ingestion is a FEATURE — grok arrives already knowing your rules.
@@ -145,6 +157,17 @@ This is grok's real advantage over agy/opencode for graded fan-out.
   the value. Before reporting grok as broken, re-probe with `--output-format plain`
   and a "reply with exactly: PONG" prompt — plain mode prints 4 bytes and no
   envelope, so it isolates transport/auth from your parser.
+- 🔴 **`Error: Device not configured (os error 6)` means you dropped `-p`, not that
+  grok or your auth is broken.** `-p/--single` IS headless mode; a BARE POSITIONAL
+  prompt (`grok "review this"`) is the *initial prompt of an INTERACTIVE session*,
+  so grok tries to open its TUI and dies instantly in any session without a
+  controlling terminal. Verified 2026-08-28: 4/4 failures on the positional form —
+  including a bare PONG in both isolated and real HOME, which is what makes this
+  look like a dead lane; under `script -q` the same command opened a full
+  alt-screen TUI instead. Same command with `-p` returned `PONG` immediately.
+  `--output-format plain` does NOT imply headless. Every recipe in this file
+  already uses `-p` — the failure mode is deviating from them, so re-read the
+  recipe before diagnosing the CLI.
 
 ### 🔴 A schema-valid EMPTY review — and the real cause: INLINED code
 
@@ -241,7 +264,8 @@ settled. Does not matter: the rule is the same either way.)
 **Verified by me 2026-08-27, grok 1.0.5, tests A-I, one probe each unless noted.**
 Grok's built-in set includes `write`, `search_replace`, `run_terminal_command`. Under
 `--always-approve` it uses them without asking. A prose "Do NOT edit any file" is not a
-control (the promoted 3-instance lesson, `delegation-and-review/SKILL.md:423`).
+control (the promoted 3-instance lesson, `delegation-and-review/SKILL.md` — "Classify an agent
+by the TOOLS IT HOLDS, never by what its brief asks for", :429 at the 2026-08-29 re-grep).
 
 | Attempted control | Blocks a write OUTSIDE `--cwd`? | Evidence |
 |---|---|---|
