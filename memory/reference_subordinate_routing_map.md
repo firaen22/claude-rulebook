@@ -12,6 +12,13 @@ Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 [[workflow-codex-subordinate]] [[workflow-agy-subordinate]] [[workflow-grok-subordinate]]
 [[workflow-opencode-subordinate]] [[reference-nim-via-opencode]]
 
+> 📌 **VERSION STAMP — verified 2026-08-31 by running each binary:**
+> `grok 1.0.13 (5e9a58528b76)` · `codex-cli 0.150.1` · `opencode 1.18.25` · `agy 1.1.22`.
+> Every rc / ceiling / bug-status claim in this file and the linked playbooks is
+> **VERSION-BOUND**. Three were found stale on this date (codex 0.149.0, opencode
+> 1.18.19, grok "v1.0.5"), and opencode moved 1.18.23→1.18.25 mid-session — so a
+> stamp is a reading, not a guarantee. **Re-run `--version` before trusting a number.**
+
 ## 0. Two rules that override every row below
 
 **R-A — No tier defends unstated edges. Spec them, always.** This is the only property
@@ -115,14 +122,17 @@ the failure does NOT look like a packet problem — it looks like the model bein
 
 | Reviewer | Shape that WORKS | What the wrong shape looks like |
 |---|---|---|
-| **grok** | **STAGE the files in `--cwd`**, tell it to read them; findings on stdout | inlined target ⇒ schema-valid `findings: []` (43 reasoning tokens on 15k input), or 0 bytes, or 259 bytes of narration. 3/3 (2026-08-28) |
+| **grok** (v1.0.13) | **STAGE the files in `--cwd`**, tell it to read them; findings on stdout | inlined target ⇒ schema-valid `findings: []` (43 reasoning tokens on 15k input), or 0 bytes, or 259 bytes of narration. 3/3 (2026-08-28) |
 | **codex** | **INLINE the files** into the prompt (`nl -ba`) so it makes ZERO tool calls | staged files ⇒ it reads them all, announces the report, then the long final answer **vanishes from stdout and `-o` is never written**. 1/1 (2026-08-28, this map's own review) |
 
 So the same review dispatched to both needs two differently-built packets. Keep each
-under codex's inline ceiling — **~30KB on v0.149.0** (32-45KB returns a confident
+under codex's inline ceiling — **~30KB measured on v0.149.0** (32-45KB returns a confident
 preamble and NO findings: the false-green band; 51KB+ silent at rc=0). The older
 ~79KB figure was v0.144.4's and is RETRACTED for current builds; it is
 VERSION-BOUND, so re-probe on upgrade. Split into passes rather than growing one.
+⚠️ **UNVERIFIED ON THE INSTALLED BUILD (2026-08-31): codex is now `0.150.1`, not
+0.149.0.** The ceiling has NOT been re-probed since the bump — treat ~30KB as a prior,
+not a measurement, and stay well under it until someone re-runs the band.
 A dispatch that returns nothing is a SHAPE bug until proven otherwise: **re-shape, never
 retry** (tightening the output contract made grok's case strictly worse — schema-valid
 bad answer became 0 bytes).
@@ -158,8 +168,14 @@ bad answer became 0 bytes).
   alarm that passed every shape check).
 - **opencode** — the free agent layer: the only free path that edits files. Isolated scratch
   dir + `timeout` + sequential by default (parallel OK with isolated `XDG_DATA_HOME` + copied auth.json). *Weakness:* no judgment-to-refuse; reliability (not
-  reasoning) ceiling on multi-file; `$PWD`-not-cwd bug still live at 1.18.19 — set `env["PWD"]`
-  AND `--dir` or your verdicts are artifacts (it has manufactured two retracted findings).
+  reasoning) ceiling on multi-file; `$PWD`-not-cwd bug last CONFIRMED live at 1.18.19 — set
+  `env["PWD"]` AND `--dir` or your verdicts are artifacts (it has manufactured two retracted
+  findings). ⚠️ **Installed build is `1.18.25` (2026-08-31) — it moved 1.18.23→1.18.25 mid-session.**
+  The bug's status on 1.18.2x is UNVERIFIED; keep setting both (harmless if fixed).
+  🔴 Also measured 2026-08-31: opencode hangs in TIME-VARYING windows (8/8 hang → 4/4 pass →
+  0/6 hang → 10/10 pass, same command). Gate any bench on a stability check and treat a
+  control timeout as stop-and-re-probe, NEVER as a model score.
+  → [[finding-zen-pool-rebench-2026-08-28]]
 - **NIM** — a model backend, not an agent; `nvidia/<vendor>/<model>`. Direct curl for
   parallel fan-out; opencode-NIM only when file edits are needed. *Weakness:* catalog lies
   (listed ≠ callable); non-streaming gateway kills at ~60s and has produced FOUR false death
