@@ -26,7 +26,7 @@ inside another harness or a bench must exclude the CLI scaffold.
 - **opencode**: works via `openrouter/x-ai/grok-4.6` (metered OpenRouter credits; edge
   profile identical to CLI, [[finding-openrouter-grok-p2-2026-08-25]]). Zen's
   `opencode/grok-4.6` is billing-blocked (exits 0 with an Error on stdout).
-- **codex (0.149.0): WORKS, verified empirically 2026-08-25** — smoke test + file-write
+- **codex (verified on 0.149.0, 2026-08-25; installed build is now `0.150.1` — UNVERIFIED since the bump): WORKS** — smoke test + file-write
   task both clean, direct to OpenRouter, no proxy. Recipe (isolated CODEX_HOME):
   top-level `model = "x-ai/grok-4.6"`, `model_reasoning_effort = "low"`, and
   `[model_providers.openrouter]` with `base_url = "https://openrouter.ai/api/v1"`,

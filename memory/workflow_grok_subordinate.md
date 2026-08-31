@@ -119,7 +119,10 @@ doctrine), your user Claude skills, and `settings.local.json` permissions** by d
   🔴 **Never `cp -R ~/.grok`** — that drags `downloads/` (128 MB) into every run and
   `mktemp -d` never cleans up: 16 runs leaked **2.7 GB** into `/private/var/folders`
   (measured 2026-08-28). The excludes cut a run from ~180 MB to ~35 MB.
-  Missing `auth.json` = failure, but the SIGNATURE is version-dependent: measured
+  Missing `auth.json` = failure, but the SIGNATURE is version-dependent.
+  ⛔ **The rc=0 claim below is SUPERSEDED — re-measured 2026-08-31 on the installed
+  v1.0.13 it is `rc=1`, 383 bytes, 3/3 (json: a typed error object). See the PRE-FLIGHT
+  section above.** Kept for provenance: measured
   2026-08-29 on grok **v1.0.5** it is NOT a hang — it returns in seconds, rc=0, with
   `Not signed in. To authenticate without a browser, run: grok login --device-code`
   on stdout. A bare `TMPHOME=$(mktemp -d)` with no rsync reproduces it every time.
