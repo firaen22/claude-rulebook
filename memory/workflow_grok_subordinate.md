@@ -51,6 +51,34 @@ must be a real built-in: **one typo voids the whole allowlist silently, rc=0**
   uncontained configs (bare, --disallowed-tools, voided-allowlist, and both --sandbox names). See
   §CONTAINMENT: only a `--tools` allowlist actually stops it.
 
+## ⚡ PRE-FLIGHT: check auth BEFORE any dispatch (2026-08-31)
+
+```bash
+python3 ~/.claude/lib/grok_preflight.py --quiet || echo "grok auth dead — do not dispatch"
+```
+Exit **0** usable · **1** NOT usable · **2** usable but <30 min left (refresh before a
+long fan-out). Add `--json` for scripting, `--self-test` to prove the verdicts (8 fixtures).
+
+**Why this exists.** grok.com OAuth access tokens live **6h**, and the refresh token dies
+after ~**2 days IDLE** — `RefreshTokenRejected` then **DELETES** `~/.grok/auth.json`.
+The cost is not the re-login: a dead-auth dispatch on v1.0.5 returns in SECONDS, **rc=0**,
+with `Not signed in...` on stdout — which reads exactly like grok idling or returning an
+empty review, and gets **misattributed to the model**. This session burned real time on
+that class of confusion. Never diagnose a short grok result without checking auth first.
+
+Recovery, no browser needed:
+```bash
+~/.grok/bin/grok login --device-code
+```
+(verified present in `grok login --help` as `--device-auth`, alias `--device-code`.)
+
+**No keep-alive is installed on this machine** (verified absent 2026-08-31 — script,
+plist, launchctl entry and logs all missing). The only true never-expires option is an
+`XAI_API_KEY` from console.x.ai (the binary supports it: *"run `grok login`, set
+XAI_API_KEY, or set a model api_key/env_key"*), which is a **separate login + billing**
+decision the user has NOT taken. With a key set, preflight reports `api-key` and the
+file's expiry is irrelevant. → [[reference-grok-auth-expiry]]
+
 ## Invocation — verified working, copy exactly
 
 Single-turn headless (the delegation form):

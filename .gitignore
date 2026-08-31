@@ -18,3 +18,6 @@
 # Added 2026-08-27 after two appeared during a memory/ edit; widened same day
 # from the literal *.bak-nullso to the whole family.
 *.bak-*
+*.bak
+!lib/
+!lib/grok_preflight.py

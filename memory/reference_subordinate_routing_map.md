@@ -73,7 +73,7 @@ write tool, so ask for findings on **stdout** — a recipe that asks for `FINDIN
 telling you it is uncontained. Confirm containment the R-D way, by diffing the work dir
 afterwards; never by having read the flag. Adjacent flags fail in opposite
 directions: `--sandbox` refuses to start on a bad name, `--tools` fails open on one. This
-is the fleet-wide "read-only instruction is not a control" lesson (`delegation-and-review/SKILL.md:423`)
+is the fleet-wide "read-only instruction is not a control" lesson (`delegation-and-review/SKILL.md` — "Classify an agent by the TOOLS IT HOLDS, never by what its brief asks for", :429 at the 2026-08-29 re-grep)
 landing on a THIRD tier — verify the boundary by attempting an escape, never by reading the
 flag name. [[workflow-grok-subordinate]] §CONTAINMENT.
 
@@ -119,7 +119,10 @@ the failure does NOT look like a packet problem — it looks like the model bein
 | **codex** | **INLINE the files** into the prompt (`nl -ba`) so it makes ZERO tool calls | staged files ⇒ it reads them all, announces the report, then the long final answer **vanishes from stdout and `-o` is never written**. 1/1 (2026-08-28, this map's own review) |
 
 So the same review dispatched to both needs two differently-built packets. Keep each
-under codex's ~79KB verified inline ceiling — split into passes rather than growing one.
+under codex's inline ceiling — **~30KB on v0.149.0** (32-45KB returns a confident
+preamble and NO findings: the false-green band; 51KB+ silent at rc=0). The older
+~79KB figure was v0.144.4's and is RETRACTED for current builds; it is
+VERSION-BOUND, so re-probe on upgrade. Split into passes rather than growing one.
 A dispatch that returns nothing is a SHAPE bug until proven otherwise: **re-shape, never
 retry** (tightening the output contract made grok's case strictly worse — schema-valid
 bad answer became 0 bytes).

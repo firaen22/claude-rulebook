@@ -58,6 +58,16 @@ The diagnosis half of that handoff verified cleanly; the install half did not. C
 with [[feedback-injected-brief-drills]] — **verify every load-bearing premise of a
 mid-conversation brief before acting on it.** Do NOT assume grok auth is being kept alive.
 
+## 3b. MITIGATION SHIPPED 2026-08-31 — pre-flight check (not a daemon)
+`~/.claude/lib/grok_preflight.py` — run before any grok bench/fan-out/review.
+Exit 0 usable / 1 dead / 2 <30min. `--self-test` drives 8 fixtures through the real
+`check()` (live, expiring, expired-with-refresh, expired-dead, no-expiry, no-entry,
+deleted file, api-key-wins) and PASSES 8/8. Never prints token values.
+Chosen over the 6h LaunchAgent deliberately: a daemon runs 4x/day forever to serve
+episodic use and still fails the case it exists for (Mac off over a weekend). The
+preflight costs nothing when idle and kills the ACTUAL damage — misattributing a
+rc=0 auth failure to the model. Recovery is `grok login --device-code` (headless).
+
 ## 4. Standing constraint
 User said **paused — do not add, edit, or remove the agent unless they say so.**
 Nothing was installed, changed, or removed. If keep-alive is wanted later, note its
