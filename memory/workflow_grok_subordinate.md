@@ -6,7 +6,7 @@ metadata:
   type: reference
 ---
 
-Grok CLI (`~/.grok/bin/grok`, v1.0.5 stable, installed 2026-08-23) as a subordinate.
+Grok CLI (`~/.grok/bin/grok`, **v1.0.13 (5e9a58528b76) as of 2026-08-31** — was v1.0.5; every rc/signature claim below is version-bound, re-probe before trusting) as a subordinate.
 Evidence for every number here: [[finding-grok-cli-bench-2026-08-23]],
 [[finding-fiveway-bench-2026-08-23]], [[finding-geminimd-and-fleet-probe-2026-08-25]].
 This file is orders only.
@@ -61,10 +61,13 @@ long fan-out). Add `--json` for scripting, `--self-test` to prove the verdicts (
 
 **Why this exists.** grok.com OAuth access tokens live **6h**, and the refresh token dies
 after ~**2 days IDLE** — `RefreshTokenRejected` then **DELETES** `~/.grok/auth.json`.
-The cost is not the re-login: a dead-auth dispatch on v1.0.5 returns in SECONDS, **rc=0**,
-with `Not signed in...` on stdout — which reads exactly like grok idling or returning an
-empty review, and gets **misattributed to the model**. This session burned real time on
-that class of confusion. Never diagnose a short grok result without checking auth first.
+⚠️ **Measured 2026-08-31 on v1.0.13 (N=3): dead auth is LOUD — `rc=1`, 383 bytes, 0s
+(`--output-format json` gives `{"type":"error","message":"Not signed in..."}`).**
+This RETRACTS the 08-29 "rc=0" claim above and my own earlier "silent hang" wording —
+neither reproduces on this build. So the preflight's value is **not** rescuing you from a
+silent failure; it is (a) catching `expiring-soon` BEFORE a long fan-out dies mid-run, and
+(b) not spending a dispatch to learn auth is dead. Still check rc and stdout: a 383-byte
+rc=1 "result" is auth, not a review.
 
 Recovery, no browser needed:
 ```bash

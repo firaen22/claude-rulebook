@@ -31,17 +31,20 @@ dedup by timestamp):
 
 ## 2. Why this matters for delegation
 [[workflow-grok-subordinate]] mandates an isolated HOME with `~/.grok` rsync'd in.
-⚠️ **Correction to my own first draft of this file:** I wrote that missing `auth.json`
-causes a "silent hang". The playbook's own measured 2026-08-29 note says otherwise for
-**v1.0.5** — it returns in SECONDS, rc=0, with `Not signed in. To authenticate without a
-browser, run: grok login --device-code` on stdout. Read the output before diagnosing:
-rc=0 plus a ~383-byte "report" is an auth failure, not a review.
-The live risk is therefore **misreading a cheap rc=0 auth failure as a real (empty)
-result** — not a hang. Before any grok bench or fan-out, check `expires_at` in
-`~/.grok/auth.json`; stale auth otherwise gets misattributed to the model.
-Current state: logged in via grok.com; `XAI_API_KEY` and `GROK_API_KEY` both **unset**,
-so the CLI has no key fallback — when OAuth dies, everything dies.
-Account on the OIDC entry is a different gmail from the primary user email.
+⚠️ **TWICE-CORRECTED — measured 2026-08-31 on grok v1.0.13 (N=3):**
+My first draft said missing auth = "silent hang". The playbook's 08-29 note corrected
+that to "rc=0 in seconds". **Both are wrong on the current build.** Measured directly:
+
+| | result |
+|---|---|
+| `--output-format plain`, no auth.json | **rc=1**, 383 bytes, 0s, 3/3 |
+| `--output-format json`, no auth.json | **rc=1**, 415 bytes, `{"type":"error","message":"Not signed in..."}` |
+
+**The failure is LOUD on v1.0.13** — non-zero exit and a typed JSON error. It is NOT
+silently mistakable for an empty model result on this build. Note the version drift:
+the playbook still says **v1.0.5** in several places; the installed binary is
+**1.0.13 (5e9a58528b76)**. Any rc/signature claim in that file is version-bound and
+should be re-probed, not trusted.
 
 ## 3. 🔴 The keep-alive is NOT INSTALLED (handoff section falsified)
 A 2026-08-31 handoff described an installed 6h keep-alive and stated
