@@ -248,7 +248,8 @@ def make_interp_variant(target, workdir, mode):
     # v27 (probe hoisted to the parent, column-0 indent).
     m = re.search(r'^([ \t]*)for _p in /Library/Developer/CommandLineTools/usr/bin/python3 \\\n[ \t]*/usr/bin/python3; do',
                   src, re.M)
-    assert m, "interpreter candidate list anchor not found"
+    if not m:   # grok 2026-09-02 F9: an explicit raise, not an assert (-O strips asserts)
+        raise RuntimeError("interpreter candidate list anchor not found in %s" % target)
     indent = m.group(1)
     if mode == "allfail":
         # every candidate is the SAME failing stub -> the loop exhausts without a
@@ -324,13 +325,25 @@ def run_case(target, case, workdir):
     fo, fe = open(outf, "wb"), open(errf, "wb")
 
     hold_open = kind in ("sig_pid", "sig_grp")   # keep target alive until the signal lands
-    extra_fds, fd_keep = (), []
+    fd_keep, fd_readers, fd_writers = [], [], []
     if kind in ("fd_pipe", "fd_many"):
         n = 1 if kind == "fd_pipe" else 10
         for _ in range(n):
             r, w = os.pipe()
-            fd_keep += [r, w]
-        extra_fds = tuple(fd_keep)
+            fd_keep += [r, w]; fd_readers.append(r); fd_writers.append(w)
+
+    def _preexec(ws=tuple(fd_writers)):
+        os.setpgid(0, 0)                          # own group, NOT orphaned
+        # grok 2026-09-02 F4 (CONFIRMED by reading): pass_fds handed the pipes over
+        # at whatever numbers the parent held them, so "fd 3" / "fds 3..12" in the
+        # case labels was never true in the child. Land the WRITE ends on exactly
+        # 3..3+n-1 (via temps so a source at a target number is not clobbered),
+        # then close everything else; the harness keeps the read ends and checks
+        # them for EOF after the run (a held write end = a leaked descendant).
+        if ws:
+            for i, w in enumerate(ws): os.dup2(w, 300 + i)
+            for i in range(len(ws)): os.dup2(300 + i, 3 + i); os.close(300 + i)
+            os.closerange(3 + len(ws), 4096)
     if kind == "zero_stdin":
         fin = open("/dev/zero", "rb"); stdin_arg = fin; pipe = None
     elif kind in ("hang_stdin", "drip_stdin") or hold_open:
@@ -341,8 +354,10 @@ def run_case(target, case, workdir):
     t0 = time.time()
     p = subprocess.Popen(INVOC + [target] + argv, stdin=stdin_arg, stdout=fo, stderr=fe,
                          env=env, cwd=workdir,
-                         pass_fds=extra_fds,
-                         preexec_fn=lambda: os.setpgid(0, 0))   # own group, NOT orphaned
+                         close_fds=not fd_writers,   # fd cases close their own in _preexec
+                         preexec_fn=_preexec)
+    for w in fd_writers:          # the child holds its copies; ours would defeat the EOF check
+        os.close(w); fd_keep.remove(w)
     if stdin_arg == subprocess.PIPE:
         try:
             p.stdin.write(stdin_b); p.stdin.close()
@@ -385,8 +400,13 @@ def run_case(target, case, workdir):
                 # as exit 0 -> a signal case PASSes without ever reaching a live
                 # target. os.waitid(WNOWAIT) is the textbook fix but does not
                 # exist on macOS CPython, so state comes from ps.
-                if _proc_state(p.pid) == "Z":
+                _st = _proc_state(p.pid)
+                if _st == "Z":
                     alive_at_signal = "ZOMBIE"
+                elif _st is None:
+                    # grok 2026-09-02 F1 (CONFIRMED by reading): no ps reading was
+                    # graded as "live". Unobserved is not alive -> VOID.
+                    alive_at_signal = "STATE-UNREADABLE"
                 else:
                     alive_at_signal = True
             except OSError:
@@ -394,8 +414,8 @@ def run_case(target, case, workdir):
             try:
                 if kind == "sig_pid": os.kill(p.pid, sig_sent)
                 else: os.killpg(p.pid, sig_sent)
-            except OSError:
-                pass
+            except OSError as e:
+                alive_at_signal = "KILL-" + e.__class__.__name__   # grok F1: never a pass
             delivered = True
             if pipe is not None:
                 try: os.close(pipe); pipe = None
@@ -413,8 +433,11 @@ def run_case(target, case, workdir):
         time.sleep(0.02)
     # count survivors in the target's process group BEFORE we clean up
     orphans = 0
+    fd_held = []
     try:
-        ps = subprocess.run(["/bin/ps", "-axo", "pid=,pgid=,state=,command="],
+        # -E appends each process's environment to its command field (same-uid
+        # processes only, which is all the hook can spawn).
+        ps = subprocess.run(["/bin/ps", "-axwwEo", "pid=,pgid=,state=,command="],
                             capture_output=True, text=True, timeout=10).stdout
         seen = set()
         for ln in ps.splitlines():
@@ -431,6 +454,29 @@ def run_case(target, case, workdir):
                and int(f[0]) != p.pid and not f[2].startswith("Z") \
                and (workdir + "/interp_") in f[3]:
                 orphans += 1; seen.add(int(f[0]))
+        # grok 2026-09-02 F2+F3 (CONFIRMED by mutant M17): a descendant that left
+        # the group (setsid / double fork / set -m) and is not a stub was invisible
+        # to both clauses above, and could still write to the inherited stdout
+        # after SETTLE (M17 leaked 4 bytes after the case graded 0). This case's
+        # HOME is unique, and every descendant inherits it unless the hook
+        # scrubs its environment -- so any live process carrying it is ours.
+        _homemark = " HOME=" + home + " "
+        for ln in ps.splitlines():
+            f = ln.split(None, 3)
+            if len(f) == 4 and f[0].isdigit() and int(f[0]) not in seen \
+               and int(f[0]) != p.pid and not f[2].startswith("Z") \
+               and _homemark in (" " + f[3] + " "):
+                orphans += 1; seen.add(int(f[0]))
+        # grok F4 follow-through: a write end still held after the hook exited
+        # means some descendant (found or not) kept the inherited fd.
+        for i, r in enumerate(fd_readers):
+            try:
+                os.set_blocking(r, False)
+                os.read(r, 1)                 # b"" = every writer closed
+            except BlockingIOError:
+                fd_held.append(3 + i)
+            except OSError:
+                pass
         for spid in seen:
             try: os.kill(spid, 9)
             except OSError: pass
@@ -503,7 +549,7 @@ def run_case(target, case, workdir):
             "within_ceiling": elapsed < WALL_CEIL - 0.5 and rc not in ("TIMEOUT", "VANISHED"),
             "kind": kind, "alive_at_signal": alive_at_signal, "orphans": orphans,
             "stdout_at_exit": so_at_exit, "stdout_late_bytes": late,
-            "destroyed": destroyed}
+            "fd_held": fd_held, "destroyed": destroyed}
 
 def grade(exp, act):
     f = []
@@ -513,6 +559,8 @@ def grade(exp, act):
     if act["destroyed"] != exp["destroyed"]:          f.append("C4 " + "; ".join(act["destroyed"][:4]))
     if act.get("orphans", 0) != exp.get("orphans", 0):
         f.append(f"C3 {act.get('orphans')} process(es) abandoned in the target process group")
+    if act.get("fd_held"):
+        f.append(f"C3 inherited fd(s) {act['fd_held']} still held after exit")
     if act.get("kind") in ("sig_pid", "sig_grp") and act.get("alive_at_signal") is not True:
         f.append(f"VOID signal never landed on a live target (alive={act.get('alive_at_signal')})")
     return f
@@ -530,18 +578,27 @@ def main():
         json.dump({c[0]: EXPECT for c in cs}, f, indent=1)
     frozen = json.load(open(expf))
 
+    # Output budget: the caller is usually an LLM session reading stdout. Default
+    # prints FAIL rows and one summary line; the full per-case table always goes
+    # to TABLE-<label>.txt, and CONTRACT_VERBOSE=1 echoes it to stdout too.
+    verbose = os.environ.get("CONTRACT_VERBOSE", "") not in ("", "0")
+    tablef = os.path.join(workdir, f"TABLE-{label}.txt")
     results, fails = [], 0
-    for c in cs:
-        r = run_case(target, c, workdir)
-        r["fails"] = grade(frozen[c[0]], r)
-        if r["fails"]: fails += 1
-        results.append(r)
-        print(f"{'FAIL' if r['fails'] else 'ok  '} {r['name']:<24} rc={str(r['rc']):>7} "
-              f"out={r['stdout_bytes']:<6} orph={r.get('orphans',0):<3} {r['elapsed']:>6.2f}s  {'; '.join(r['fails'])}")
+    with open(tablef, "w") as tf:
+        for c in cs:
+            r = run_case(target, c, workdir)
+            r["fails"] = grade(frozen[c[0]], r)
+            if r["fails"]: fails += 1
+            results.append(r)
+            row = (f"{'FAIL' if r['fails'] else 'ok  '} {r['name']:<24} rc={str(r['rc']):>7} "
+                   f"out={r['stdout_bytes']:<6} orph={r.get('orphans',0):<3} {r['elapsed']:>6.2f}s  {'; '.join(r['fails'])}")
+            tf.write(row + "\n"); tf.flush()
+            if verbose or r["fails"]:
+                print(row, flush=True)
     with open(os.path.join(workdir, f"RESULT-{label}.json"), "w") as f:
         json.dump({"target": target, "md5": md5(target), "label": label,
                    "cases": len(cs), "fails": fails, "results": results}, f, indent=1)
-    print(f"\n[{label}] {len(cs)-fails}/{len(cs)} pass, {fails} FAIL   md5={md5(target)}")
+    print(f"[{label}] {len(cs)-fails}/{len(cs)} pass, {fails} FAIL   md5={md5(target)}   table={tablef}")
     sys.exit(1 if fails else 0)
 
 if __name__ == "__main__":   # so the module can be imported for unit checks

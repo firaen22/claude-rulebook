@@ -28,8 +28,9 @@ clobbered file, or abandoned spinning process is expensive.
 - `candidate/` — hook versions v22 (previously live) … v28 (INSTALLED live
   2026-09-01, md5 4472d36b, verified identical to
   `~/.claude/hooks/observe-compaction-events.sh` at repo creation).
-- `mutants/` — M1–M15 seeded-defect hooks used to mutation-validate the
-  harness (all 10 original harness defects showed as false GREENS before fix).
+- `mutants/` — M1–M17 seeded-defect hooks used to mutation-validate the
+  harness (all 10 original harness defects showed as false GREENS before fix;
+  M16/M17 were added by the 2026-09-01/02 cross-model review, see `reviews/`).
 - `scripts/` — runners (`run_full.sh`, `run_grpsig2.sh`, …), builders/patches,
   standalone repros (`repro_h1*.py`, `setsid_f2_repro.py`), v22→v27 diff.
 - `dispatch/` — subordinate dispatch packets (sol/grok/agy/nim/opencode/luna).
@@ -43,12 +44,27 @@ clobbered file, or abandoned spinning process is expensive.
 - Dual independent APPLY (sol + grok) before install.
 
 ## Known accepted limits (identical in v22, out of single-file scope)
-setsid-detaching interpreter vs group-KILL; exit-37 probe is a
-skip-broken-file check, not authentication; plain (non `-p`) invocation reads
-BASH_ENV; D-state self-test holds SIGKILL until syscall return.
+setsid-detaching interpreter vs group-KILL (the HOOK cannot reach it; the
+harness now does detect such a descendant via its inherited `HOME=`, unless the
+hook scrubs the environment); exit-37 probe is a skip-broken-file check, not
+authentication; plain (non `-p`) invocation reads BASH_ENV; D-state self-test
+holds SIGKILL until syscall return; C4 covers `$HOME`, planted canaries and the
+cwd's top level — arbitrary absolute paths need OS-level fs isolation.
 
 ## Re-running
-Paths in the top-level scripts referenced the original scratchpad layout
-(`harness-frozen3/`, working dirs); run the harness modules directly from
-`harness/` (e.g. `python3 harness/pidhang.py`) or fix paths as needed.
-Working dirs (`mrepwd_*`, `*_cwd`, `out/`) are recreated at run time.
+```
+scripts/run_all.sh [candidate.sh] [label] [--pidhang]
+```
+prints one line per instrument (contract / gap / grpsig2, plus the slow
+4-version pidhang differential with `--pidhang`) and exits 1 on any failure;
+full logs land in `$WORK` (default `$TMPDIR/hook-harness-<label>`). This is the
+token-lean entry point for an LLM session: ~4 lines instead of ~80.
+
+`contract.py` itself prints only FAIL rows and a summary by default; the full
+per-case table is always written to `TABLE-<label>.txt` in the workdir, and
+`CONTRACT_VERBOSE=1` echoes it to stdout. A 4th positional argument filters
+cases by substring (`python3 harness/contract.py candidate/v28.sh v28 /tmp/w D_pid`).
+
+The legacy `scripts/run_*.sh` / `gate*.sh` still reference the original
+scratchpad layout (`harness-frozen3/`) and are kept as history, not runners.
+`pidhang.py` must run from the repo root (it opens `candidate/v2*.sh`).

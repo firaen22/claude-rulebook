@@ -12,8 +12,15 @@ DISCARDS stop signals and every variant would falsely pass.
 """
 import os, re, signal, subprocess, sys, time, json
 
-BUSY = ('_gapwait=$(( SECONDS + 3 )); while builtin [ "$SECONDS" -lt "$_gapwait" ]; '
-        'do builtin :; done\n')
+# grok 2026-09-02 F11 (CONFIRMED by reading): delivery was a blind sleep(1.0) after
+# spawn; an oversleep past the ~2-3s window would land the signal AFTER the ignore
+# line and grade a gap-vulnerable hook exit0. The busy-wait now announces itself
+# (a redirection on a builtin: no fork) and the prober delivers only after seeing
+# the marker, recording how long after; too late or never = VOID, not a pass.
+READY = ".gap_ready"
+READY_MAX = 1.5      # seconds after the marker within which delivery still provably hits the window
+BUSY = ('builtin : > "$HOME/' + READY + '"; _gapwait=$(( SECONDS + 3 )); '
+        'while builtin [ "$SECONDS" -lt "$_gapwait" ]; do builtin :; done\n')
 TRAP_RE   = re.compile(r"^\s*(builtin\s+)?trap\s+'.*exit 0'.*\bHUP\b")
 IGNORE_RE = re.compile(r"^\s*(builtin\s+)?trap\s+''\s+TSTP")
 
@@ -42,19 +49,36 @@ def probe(path, sig, mode, home):
     outf = os.path.join(home, "gap_stdout.bin")
     fo = open(outf, "wb")
     rfd, wfd = os.pipe()
+    ready = os.path.join(home, READY)
+    try: os.unlink(ready)
+    except OSError: pass
     t0 = time.time()
     p = subprocess.Popen(["/bin/bash", "--noprofile", "--norc", "-p", path, "manual"],
                          stdin=rfd, stdout=fo, stderr=devnull, env=env,
                          preexec_fn=lambda: os.setpgid(0, 0))
     os.close(rfd)
-    time.sleep(1.0)                      # land inside the widened window
+    # wait for the busy-wait's own marker instead of sleeping blind (grok F11)
+    verdict, state = None, None
+    while time.time() - t0 < 4.0 and not os.path.exists(ready):
+        if p.poll() is not None:
+            verdict = "VOID-exited-before-signal"; break
+        time.sleep(0.005)
+    late = None
+    if verdict is None:
+        if not os.path.exists(ready):
+            verdict = "VOID-no-ready-marker"
+        else:
+            late = time.time() - os.stat(ready).st_mtime
+            if late > READY_MAX:
+                verdict = "VOID-late%.2fs" % late
     s = getattr(signal, "SIG" + sig)
     # codex 2026-09-01 F7 (CONFIRMED by reading): a target already gone before
     # delivery, or a failed kill, fell through to the exit-status read and could
     # grade "exit0" == PASS without the signal ever landing in the window. Both
     # are now VOID verdicts, which never equal "exit0" -> loud FAIL, never a pass.
-    verdict, state = None, None
-    if p.poll() is not None:
+    if verdict is not None:
+        pass
+    elif p.poll() is not None:
         verdict = "VOID-exited-before-signal"
     else:
         try:
