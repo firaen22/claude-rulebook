@@ -1,0 +1,73 @@
+# TASK — adversarial review of hook-v26.sh (replaces the REJECTED v24 approach)
+
+## Context
+v22-installed.sh is LIVE as a Claude Code PreCompact/SessionStart hook, invoked as
+`/bin/bash --noprofile --norc -p <path> <matcher>` on macOS bash 3.2.57. Contract on
+EVERY path: C1 exit 0 always; C2 zero stdout bytes; C3 never block the caller, never
+leave a blocking or CPU-burning process behind; C4 never delete/replace a pre-existing
+file. Event loss is CHEAP; hang/stdout/nonzero/destroyed-file/abandoned-spinner is
+EXPENSIVE.
+
+You reviewed v24 (set -m / process-group approach) and returned DO-NOT-APPLY with:
+F1 caller group-KILL/STOP no longer contains the worker; F2 setsid escape beats
+group-kill; F3 IFS-dependent trap sweep under plain+BASH_ENV; F4 harness pgid-scan
+blind to a moved worker. v24 is DEAD. v26 is a different mechanism that answers all
+four — verify that claim adversarially.
+
+## The v26 mechanism (diff in files/DIFF-v22-to-v26.txt — verify, don't trust)
+1. The interpreter probe is no longer a blocking command substitution. Each candidate
+   runs as a DIRECT background child of the worker with stdin/stdout/stderr pinned to
+   /dev/null; the worker polls `builtin jobs -pr` (the same pattern as the outer
+   watchdog) against a SHARED 1s budget set before the candidate loop, and on deadline
+   kills the probe BY PID. Success channel moved from stdout "1337" to exit code 37;
+   `wait` runs only in the reaped branch, never after a kill.
+2. NO process-group membership changes anywhere (no set -m). Caller-directed group
+   signals keep the exact approved v22 delivery — your F1 does not arise. A setsid()
+   candidate is still killed because the kill targets the spawned pid — your F2.
+3. `IFS=$' \t\n'` assigned immediately after the exec redirect, before any splitting
+   expansion — your F3.
+4. The harness now (a) sweeps orphans by pgid AND by command-referencing-the-stub
+   (contract.py), (b) has a new grpsig.py instrument: group-KILL mid-hang and
+   group-STOP/CONT mid-hang. Validated as a discriminator: v22 FAILS I02 (2 survivors),
+   v24 FAILS I01+I02 (your F1 mechanism, reproduced), v26 PASSES both — your F4.
+
+## Results already measured (verify what you can)
+contract.py: v22 baseline 55/56 (H01 only), v26 56/56 expected (confirm from the run
+logs or rerun); gap.py 6/6; grpsig.py PASS; bash -n clean under -p and plain.
+
+## Your job — REFUTE v26. Default DO-NOT-APPLY unless you cannot break it.
+Hunt specifically:
+ a. The inner poll loop: `case` matching of $(jobs -pr) with newline guards — a probe
+    pid that is a substring of another; jobs -pr contents when a PREVIOUS candidate's
+    killed-but-unreaped job lingers; SECONDS granularity edge (budget firing at spawn).
+ b. `wait "$_ppid"` reachability: any path where wait runs on a wedged (D-state)
+    child and blocks the worker past the outer deadline.
+ c. Exit-37 protocol: ENOEXEC fallback semantics on macOS bash 3.2 (empty script,
+    binary garbage, shebang-less text); any REAL /usr/bin/python3 or CLT python3
+    behavior that exits 37 spuriously or fails to.
+ d. The shared 1s budget vs the outer DEADLINE=2: worst-case timing overlap windows,
+    SECONDS integer-truncation both ends. Can both candidates' hangs plus overhead
+    push a live probe past the outer kill?
+ e. The abandoned-pending-KILL D-state probe: what fds can it still hold, and can any
+    of them block the CALLER (trace fd provenance — worker spawned `<&3 3<&-`, probe
+    `</dev/null >/dev/null 2>/dev/null`)?
+ f. The IFS assignment: placement vs every unquoted expansion in the file; $' '
+    support and semantics on bash 3.2.57 under -p and plain.
+ g. The trap path: terminating signal to the PARENT mid-probe-hang KILLs $wid and
+    abandons the hung probe for up to the 1s budget (documented HONEST LIMIT). Refute
+    the bound: can that orphan live LONGER than the budget, spin CPU, or hold caller
+    stdin?
+ h. Regressions on the other 55 cases and on H02/H03/H04 fixture semantics (the noisy
+    stub now needs exit 37 — confirm the harness change is sound, not a test rigged
+    to pass).
+Name the config-dependent safety class explicitly: a construct safe only because of
+this host's config/env/invocation is a finding, not a pass.
+
+## Method requirements
+- Execute, don't just read: copy files/*.sh anywhere writable and probe; if your
+  sandbox denies something, say so and label those claims [unverified].
+- expected-before-actual on every probe.
+- Findings: location (file:line) + mechanism + concrete fix, severity-ranked; every
+  claim tagged [verified: how] / [unverified].
+- Report failure honestly.
+- End with exactly one line: `VERDICT: APPLY` or `VERDICT: DO-NOT-APPLY`.

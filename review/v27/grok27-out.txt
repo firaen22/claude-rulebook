@@ -1,0 +1,129 @@
+I'll start by inventorying every file in `./files/` and reading the v27/v26/v22 sources plus the diff before judging the contract.Next I’ll read the three hook versions, the diffs, and the review brief so the contract comparison is grounded in source.I’ll now read the remaining test harnesses, the v22→v27 diff, and the result files so claims can be checked against source.I’ll read the test harnesses next and compare probe/worker topology against the A–H cases they encode.A previous run left artifacts under `work/`; I’ll read those results as evidence without executing anything myself.One more check: whether an empty `$wid` can still reach the watchdog, and whether the header’s “probe inside the child” comment is stale versus the executable path.## Inability
+
+This session has **read-only tools** (`read_file`, `grep`, `list_dir`). No interpreter, no `/bin/ps`, no `killpg`. Every execution count below is **[unverified]** unless the **source topology** independently implies it. Pre-existing `work/` contract runs scored `orphans: -1` on every case (`/bin/ps` denied there); those runs do **not** grade C3.
+
+`files/DIFF-v26-to-v27.txt` matches the v26→v27 executable delta (probe hoisted; worker reduced to `exec`). `set -m` is absent. No `unlink` / `rename` / `ftruncate` on the write path.
+
+---
+
+## Topology (what source proves)
+
+**v22** (`v22-installed.sh:619-683`): one background worker `( $("$_p" -c 'print 1337') && exec OBS_CODE ) <&3 3<&- &`. The self-test is a **`$()` grandchild**. Parent `jobs -pr` sees only `$wid`. A PID-directed catchable signal runs `kill -KILL $(jobs -pr)` (`:201`) and **does not reach the hung probe**.
+
+**v26**: same parent job table; probe is a background child **of the worker**. Same trap-orphan. Inner `_pend` and outer `end` are computed in **two processes** that share a `SECONDS` tick after fork — they can expire together.
+
+**v27** (`v27.sh:608-745`):
+
+1. `exec 3<&0` then `exec 0</dev/null` **before** any probe fork.
+2. Each candidate: `( [ -x ] && [ -f ] && builtin exec "$_p" -c '…exit 37' ) </dev/null 3<&- >/dev/null 2>/dev/null &` — stat and exec are **off** the parent’s synchronous path; `exec` replaces that subshell so `$!` **is** the interpreter and a **direct parent job**.
+3. Parent polls `jobs -pr` for `$_ppid`, `kill -KILL $_ppid` at `_pend=SECONDS+1`, `wait` only if not killed.
+4. Then, if `_chosen` is set: `( builtin exec "$_chosen" -c "$OBS_CODE" ) <&3 3<&- &`; else `wid=""` and `builtin exit 0` **before** the watchdog.
+5. `end=$(( SECONDS + DEADLINE ))` is assigned **after** the probe loop in the **same** process.
+
+OBS_CODE, traps, umask, candidate paths, and `O_EXCL` write path are unchanged from v22 aside from `IFS=$' \t\n'` (`v27.sh:193`) and the probe/worker restructure.
+
+---
+
+## Contract checks (expected before actual)
+
+### a. Direct job / trap reachability / parent-side stat
+
+**Expected:** `[ -x ]`/`[ -f ]` never run in the parent; after `builtin exec`, `jobs -pr` lists `$!`; the line-218 trap SIGKILLs that PID.
+
+**Actual (source):** `[ -x ]`/`[ -f ]` are inside `( )` (`:673-674`). Parent only assigns paths and `SECONDS`. Background `( ) &` is a parent job; `exec` keeps the PID. Trap word-splits `$(jobs -pr)` after IFS is reset.
+
+**[verified: source]** for the topology. **[unverified]** that bash 3.2.57 `jobs -pr` still lists the PID after `exec` to a non-shell — but if it did not, the poll would `wait` a live hang (C3) and the trap would miss it; that contradicts the claimed pidhang 0-orphan result, which the source **allows**.
+
+No parent-side stat path.
+
+### b. Sequencing: unbounded block / nonzero / stdout
+
+**Expected:** probe phase ≤ one `SECONDS` tick; every parent exit is 0; stdout stays the top-of-file `/dev/null`.
+
+**Actual:**
+- C1: parent exits are `builtin exit 0` or the trap. Probe `builtin exit 1` is in the child. `wait` sits in `if`/`else` (no ERR). **[verified: source]**
+- C2: `exec >/dev/null 2>/dev/null` at `:183`; probe and worker redirect 1/2. **[verified: source]**
+- Probe poll: `/bin/sleep 0.05 || true` (`:719`) — same 50ms foreground deferral v22 already has in the watchdog. TERM is deferred ≤50ms, then the trap kills `$_ppid`. **[verified: source]**
+- `wait` runs only when `jobs -pr` no longer lists `$_ppid` (`:722-723`), same “already reaped” pattern as v22’s watchdog.
+
+Probe then worker can make the **hook** last ~1s+2s ≈ 3s vs v22’s single 2s watchdog. That is still bounded; C3 is hangs/orphans, not a 2s vs 3s budget. Happy-path probe is one fast `exit 37`. **Not a new C3 defect.**
+
+### c. Empty `_chosen` / `$wid`
+
+**Expected:** no interpreter → do not enter the watchdog (empty `$wid` matches a blank line in the `case`).
+
+**Actual:** `wid=""` (`:738`) → `exec 3<&-` (`:740`, drops the event dup) → `[ -z "$wid" ]` → `builtin exit 0` (`:745`). Watchdog is unreachable. **[verified: source]**
+
+Killed-but-unwaited probe: SIGKILL already sent (`:715-717`). Runnable process dies; D-state keeps a pending KILL (v22 class).
+
+### d. fds / event delivery / abandoned stdin
+
+**Expected:** worker fd 0 is the event; abandoned probe does not hold caller stdin.
+
+**Actual:**
+
+| process | fd 0 | fd 3 |
+|---|---|---|
+| parent after `:608-616` | `/dev/null` | event dup |
+| probe `:701` | `/dev/null` | closed |
+| worker `:735` | event (`<&3`) | closed |
+| parent after `:740` | `/dev/null` | closed |
+
+`<&3` is left-to-right: dup 3→0, then close 3. Same load-bearing pattern as v22 `:682`. OBS_CODE still `select`/`read` on fd 0. **[verified: source]**
+
+Abandoned probe cannot hold the event (never had it). Abandoned worker can hold fd 0 until `os.close(0)` — **same as v22**.
+
+Nit (not a finding): probe-loop `/bin/sleep` inherits parent fd 3 for ≤50ms and is waited as a foreground child.
+
+### e. A–H / fixtures
+
+H01 hang stub is `exec`’d **into** the parent job (`:675`), then SIGKILL’d at `_pend`; leftover budget skips candidate 2 (`:665`). Event lost (cheap); no grandchild left for the trap to miss. v22 H01 **is** that grandchild leak (`v22-installed.sh:652-677` + `:201`).
+
+H02/H03: failed probe is its **own** subshell; parent continues to `/usr/bin/python3`. v22’s “failed `exec` kills the whole worker subshell” does not apply.
+
+H04 noisy: `exit 37` passes; worker `>/dev/null` swallows `printf`. Same C2 shape as v22.
+
+A/B/C/D/E/F/G: traps, IFS, DYLD unset, `O_EXCL`, stdin budget, closerange — same as v22. F-group TSTP still `trap ''` inherited SIG_IGN; no `set -m`.
+
+### f. Host / invocation
+
+Installed form remains `/bin/bash --noprofile --norc -p`. IFS reset is **stricter** than v22 on plain invocation, not looser. Pinned paths unchanged.
+
+---
+
+## Claimed measurements vs mechanism
+
+| Claim | Source | Run |
+|---|---|---|
+| pidhang: v22 10/10, v26 9/10, v27 0/N orphans | v22/v26 grandchild vs v27 direct job + trap | **[unverified]** counts; **consistent** |
+| contract.py v27 56/56; v22 55/56 H01 | H01 orphan is v22-only | **[unverified]**; C1/C2/C4 **supported** |
+| grpsig2 v27 5/5 I01+I02; v22 I02 leak | no `set -m`; probe in caller pgid; v22 `$()` grandchild survives group STOP/CONT + parent kill of `$wid` | `GRPSIG2-RESULT.txt` **[unverified here]**; topology **matches** |
+| gap.py v27 6/6 | early trap + `trap ''` still adjacent (`:181-182`); IFS is **after** that | `work/gap-run/GAP-RESULT.json` all `exit0` **[unverified here]** |
+| happy-path `.complete.json` `saw_eof:true` | worker `<&3` + unchanged OBS_CODE | **[unverified]** run; **supported** |
+| `bash -n` clean | — | **[unverified]** |
+
+Nothing in source **falsifies** those claims. The old `grpsig.py` blind 0.35s sleep **can** fire after v27’s phase-dependent `_pend` and score EPERM; `grpsig2.py`’s ready-handshake is the right instrument.
+
+---
+
+## Known limits vs live v22 — not regressions
+
+1. **Detaching interpreter + caller group-KILL.** v22 worker is also `( exec python )` in the caller’s pgid (`:619-682`). `setsid()` escapes both. No out-of-group supervisor. Same fire-and-forget limit.
+2. **Probe oracle is not auth.** v22: stdout `1337`. v27: `exit 37`. Both then `exec` the file. Safety is root-owned paths (`:661-662` = v22 `:627-628`).
+3. **Plain (non-`-p`) `BASH_ENV`.** Still runs before line 1. IFS cannot save that. Installed `-p` does not read `BASH_ENV`. Same as v22.
+4. **D-state probe.** Pending SIGKILL until the syscall returns. v27 fds 0/1/2 are `/dev/null`, fd 3 closed; leaked fds >3 last until `closerange`. Same launcher class; stdin holding is **narrower** than v22.
+
+---
+
+## Findings
+
+**No new contract defect relative to live v22.** v27 closes v22/v26 H01 (PID-directed TERM during a hung self-test) and v22 I02 (group STOP/CONT leaving a spinning `$()` grandchild) without repeating v24’s `set -m` group split.
+
+Nits, not blockers:
+- Header still says the probe runs “INSIDE the watched child” (`v27.sh:53-54`) — stale.
+- Line 658 “probe phase < DEADLINE=2” is true of the probe only; the worker watchdog is a **fresh** 2s after that.
+
+---
+
+VERDICT: APPLY
+___GROK-DONE___

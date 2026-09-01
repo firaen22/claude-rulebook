@@ -1,0 +1,261 @@
+I'll start with the review brief, then read every file in `./files/`.The directory listing looks incomplete relative to the brief. I'll enumerate everything under `./files/` and then read each file.I'll continue through the remaining files in `./files/`, including the rest of `contract.py` and `grpsig.py`.I have every file in `./files/`. Next I’ll source-trace v26 against the brief’s hunt list and write the full findings report.
+
+# Adversarial review of `hook-v26.sh`
+
+**Scope:** `./files/` only (`00-REVIEW-BRIEF.txt`, `v22-installed.sh`, `v26.sh`, `DIFF-v22-to-v26.txt`, `contract.py`, `grpsig.py`). No `gap.py`, no `RESULT-*.json`, no run logs. No execution. Every run-dependent claim is `[unverified]`.
+
+**Diff vs. brief:** `DIFF-v22-to-v26.txt` matches `v22-installed.sh` → `v26.sh` on the functional edits (IFS assignment, probe from blocking `$()` to background+pid-kill, exit 37, shared `SECONDS+1` budget). Comment-only line-number drift is real and irrelevant.
+
+---
+
+## Contract (restate)
+
+C1 exit 0; C2 zero stdout; C3 never block the caller, never leave a blocking or CPU-burning process; C4 never delete/replace a pre-existing file. Event loss is cheap. Hang / stdout / nonzero / destroyed-file / **abandoned-spinner** is expensive.
+
+---
+
+## F1–F4 (v24) — source verdict
+
+| ID | v24 defect | v26 claim | Source |
+|---|---|---|---|
+| F1 | `set -m` moves worker out of caller group | no process-group membership change | **Holds.** No `set -m` / `setpgid` / `setsid` in `v26.sh`. [verified: full-file read] |
+| F2 | setsid() candidate escapes group-kill | kill targets spawned pid | **Holds.** `builtin kill -KILL "$_ppid"` at `v26.sh:744`. [verified: source] |
+| F3 | IFS-poisoned unquoted `$(jobs -pr)` in trap | `IFS=$' \t\n'` before splitting expansions | **Holds against static IFS poison.** See (f). [verified: source order] |
+| F4 | harness pgid-scan blind to moved worker | sweep by pgid **and** stub command | **Holds as a discriminator.** `contract.py:356-364`, `grpsig.py:33-34`. This is a harness change, not a hook change. [verified: source] |
+
+v26 does not reintroduce the v24 mechanism. The remaining defects are in the **new** probe killer.
+
+---
+
+## Hunt (a) — inner `jobs -pr` / `case` / `SECONDS`
+
+**Expected:** newline-guarded `case` rejects substring pids (2923 vs 29235); a previous killed-but-unreaped job cannot make the current probe look gone; `SECONDS+1` never lets a live probe outrun the outer `DEADLINE=2` killer.
+
+**Actual (source):** inner matcher at `v26.sh:733-742` is a copy of the approved outer matcher at `v26.sh:793-800`. Pattern is `"*\n$_ppid\n*"`, word is `"\n$_prun\n"`. `$()` strips one trailing newline; the wrapping newlines restore POSIX-style line anchors.
+
+- Substring pids: `\n123\n` is not a substring of `\n12345\n`. [verified: pattern construction]
+- Lingering previous job: `_ppid=$!` is overwritten per candidate (`v26.sh:731`). A leftover pid in `_prun` does not satisfy the current pid’s newline-anchored pattern unless it is the **same integer**. Same-integer reuse requires the previous pid to have been reaped; a zombie holds the pid. [verified: kernel pid-reuse rule + source; `[unverified]` bash 3.2.57 `jobs -pr` format with two jobs — expected one pid per line, same as the outer loop]
+- `jobs -pr` as a side effect of the **second** candidate’s poll can reap the first killed zombie. Status is discarded; that is the `_pkilled=yes` path. Harmless. [verified: control flow]
+
+**`SECONDS` fire-at-spawn.** `_pend=$(( SECONDS + 1 ))` is set once, before the candidate loop (`v26.sh:653`). bash 3.2 `SECONDS` is `floor(elapsed)`. Fire time after the assignment is **~(0+, 1.0]s**, not the comment’s “~0.05s to ~1.05s”. If the worker subshell inherits a parent `SECONDS` that is already about to tick (parent setup crossed an integer boundary), the first `SECONDS -ge $_pend` is true on the first loop iteration and the just-spawned probe is killed immediately. Event loss. Cheap. [verified: bash `SECONDS` integer semantics; `[unverified]` whether a `( ) &` subshell on 3.2.57 inherits the parent tick vs. resets]
+
+**Does a live probe outrun the outer kill on the deadline path?** Inner loop order is: `jobs -pr` → deadline kill → **then** `/bin/sleep 0.05` (`v26.sh:733-748`). Max overshoot past `_pend` is one sleep (~0.05s). Second candidate after a spent budget is killed on its first iteration, before sleep (`v26.sh:743-746`). Outer `end=$(( SECONDS + 2 ))` fires ~(1.0, 2.0]s after `v26.sh:791`. Inner ~1s + 0.05s + spawn sits inside that with ~1s of margin **on the deadline path**, provided the inner killer is still alive. [verified: loop order + integer `SECONDS`; `[unverified]` wall-clock measurement]
+
+**Nested `$(jobs -pr)` inside `( ) &`:** the outer watchdog’s `$(builtin jobs -pr)` was measured on this bash in the **parent**. The inner loop is one subshell deeper. If `jobs -pr` in that context returned empty against a live probe, the inner loop would take the “gone” branch, `wait "$_ppid"` would block on the hang, the outer killer would SIGKILL `$wid`, and the probe would be the v22 H01 orphan again. [unverified: would be settled by H01 on this host — `python3 contract.py v26.sh v26 /tmp/c H01_interp_hangs`]
+
+---
+
+## Hunt (b) — `wait "$_ppid"` on a wedged child
+
+**Expected:** `wait` is unreachable for a D-state probe; if it is reachable, it must not block the **caller** past the outer deadline.
+
+**Actual:**
+
+```750:753:files/v26.sh
+      _prc=137
+      if builtin [ "$_pkilled" = no ]; then
+        if builtin wait "$_ppid" 2>/dev/null; then _prc=0; else _prc=$?; fi
+      fi
+```
+
+`wait` runs only when the inner `jobs -pr` loop took the non-match `break` (`v26.sh:741`) — i.e. bash already dropped the pid from the **running** job list. That is the same “reaped, status held in memory” assumption as the outer `wait "$wid"` (`v26.sh:809`), which v22 already shipped.
+
+- Deadline path: `_pkilled=yes`, `wait` skipped, `kill -KILL` already sent. [verified: source]
+- D-state probe, if still “running”: stays in `jobs -pr`, loop continues until `_pend`, then kill-without-wait. Worker stays killable (it is in `jobs`/`sleep`, not in D-state). Outer `kill -KILL "$wid"` still lands. [verified: control flow; `[unverified]` that bash 3.2 `jobs -r` lists D-state children — same assumption as the live v22 outer loop]
+- If `jobs -pr` **dropped** a D-state child, `wait` in the worker would block. That blocks the **worker**, not the caller: the outer loop still SIGKILLs `$wid` at `DEADLINE` without waiting (`v26.sh:813-819`). Caller is bounded. The D-state **probe** is then abandoned — the pre-existing D10 class, not a new parent hang. [verified: outer kill-without-wait]
+
+`$?` collection in `else _prc=$?` is the wait status; nothing runs between `wait` failing and the assignment. Exit 37 survives. [verified: POSIX/bash `if cmd; else $?` ]
+
+**No C3 caller-hang from this `wait`.** [verified: source]
+
+---
+
+## Hunt (c) — exit-37 / ENOEXEC / real python3
+
+**Expected:** empty file, binary garbage, shebang-less text, and python &lt; 3.7 are skipped (`!= 37`); a real CLT/`/usr/bin/python3` ≥ 3.7 returns 37 and is exec’d.
+
+**Actual:** success is `sys.exit(37 if sys.version_info >= (3, 7) else 0)` (`v26.sh:730`) plus `_prc -eq 37` (`v26.sh:754`).
+
+| Candidate | Expected rc | Mechanism |
+|---|---|---|
+| Empty file (H03) | 0 | macOS bash 3.2 ENOEXEC → run as empty script | [unverified on this host; matches the file’s own comment at `v26.sh:663-665` and v22’s shipped ENOEXEC story] |
+| Binary garbage | 0 / 126 / 127 | ENOEXEC fallback or `exec` fail; all `!= 37` | [unverified empirically] |
+| Shebang-less text | usually ≠ 37 | run as `sh` with args `-I -S -B -c …` ignored unless the text uses them | [verified: spawn argv; `[unverified]` rc] |
+| Shebang-less `exit 37` | **37, false accept** | then `exec` of the same file ignores `OBS_CODE`; worker exits 37; event lost | cheap; needs write access to a root-owned candidate path | [verified: protocol; host-config] |
+| python &lt; 3.7 | 0 | skipped | [verified: source] |
+| python ≥ 3.7 | 37 | exec `OBS_CODE` | [verified: source; `[unverified]` this host’s CLT and `/usr/bin/python3` actually exit 37 on that `-c`] |
+
+`/usr/bin/python3` is still the xcrun dispatcher (same comment as v22, `v26.sh:626-635`). **Host-config class:** if that dispatcher **forks** a child and waits instead of `execve`-replacing itself, `kill -KILL "$_ppid"` kills the shim and the real interpreter is reparented — a spinner/orphan the inner killer cannot see. CLT path is listed first and is a real binary on a healthy box. [unverified: xcrun spawn model on this host; settle with `dtruss`/`execsnoop` on `/usr/bin/python3 -I -S -B -c 'import sys; sys.exit(37)'`]
+
+Spurious 37 from a root-owned non-python at those two paths: same class as v22’s spurious `1337` on stdout. Not new. Paths are root-owned by policy (`v26.sh:636-643`).
+
+---
+
+## Hunt (d) — 1s shared budget vs outer `DEADLINE=2`
+
+**Expected:** two candidate hangs + overhead cannot leave a live probe as a child after the outer kill.
+
+**Deadline path (parent lives):** as in (a), inner killer should fire ~1s earlier than outer. A second hang is killed at spawn. [verified: source timing; `[unverified]` measurement]
+
+**The overlap the comments do not price:** the inner killer **is** `$wid`. Anything that SIGKILLs `$wid` before `_pend` (parent trap, outer deadline if inner `jobs -pr` is blind) leaves the probe with no killer. See (g). That is not a `SECONDS` truncation bug; it is a process-tree bug.
+
+Load-dependent cheap loss: a slow-but-honest first interpreter whose startup exceeds the remaining integer second is killed, and the second candidate is then killed at spawn (`v26.sh:650-652`). Priced cheap. Name it: **safe event recording on this path is load/FS dependent.**
+
+---
+
+## Hunt (e) — D-state probe fds / caller stdin
+
+**Expected:** a pending-KILL D-state probe does not hold the caller’s stdin.
+
+**Actual fd provenance:**
+
+| Process | fd 0 | fd 1,2 | fd 3 | fd 4+ |
+|---|---|---|---|---|
+| Parent after `v26.sh:608,762-763` | `/dev/null` | `/dev/null` | closed | launcher leaks |
+| Worker `v26.sh:760` `<&3 3<&- >/dev/null 2>/dev/null` | **caller stdin** | `/dev/null` | closed | inherited leaks |
+| Probe `v26.sh:730` `</dev/null >/dev/null 2>/dev/null &` | `/dev/null` | `/dev/null` | closed (never inherited) | inherited leaks |
+
+The probe does **not** get the worker’s fd 0. v22’s blocking `$()` waiter **did** inherit worker fd 0 = caller stdin; that is the H01 “orphan holding the pipe” that v26 removes. [verified: redirections]
+
+D-state probe still holds: `/dev/null` on 0/1/2, plus any non-CLOEXEC launcher fds 3+ that python closerange has not yet run. Closerange is the first **user** statement; python startup can wedge before it (`v26.sh:666-678`). That residue is launcher-owned, same as v22. It does not include the hook’s own stdin dup. [verified: source]
+
+**New stdin holder, not the probe:** inner `/bin/sleep 0.05` (`v26.sh:748`) is a **foreground** child of the worker with **no** stdin redirect, so it inherits caller stdin. If `$wid` is SIGKILLed mid-sleep, that sleep is a grandchild orphan holding the pipe for up to 0.05s (or unbounded if `/bin/sleep` itself is D-state/replaced). Outer watchdog sleep is after `exec 0</dev/null` (`v26.sh:763`) and does not have this. See finding M1.
+
+---
+
+## Hunt (f) — IFS
+
+**Expected:** `IFS=$' \t\n'` sits before every unquoted splitting expansion; `$''` works on bash 3.2.57 under `-p` and plain.
+
+**Actual placement:** `exec >/dev/null` at `v26.sh:183`, IFS at `v26.sh:193`, full trap (the one with unquoted `$(builtin jobs -pr)`) at `v26.sh:218`. Early trap (`v26.sh:181`) is `builtin exit 0` only — no split.
+
+Unquoted splitting expansions after IFS:
+
+- trap body `$(builtin jobs -pr)` — expanded at **fire** time, after IFS is set. [verified]
+- `for _v in ${!DYLD_@}` at `v26.sh:249`. [verified]
+- `_prun=$(…)` / `running=$(…)` are assignments (no word-split of the value). Case words quote them. [verified]
+- `$wid` / `$_ppid` in case **patterns** sit inside the quoted `"\n$pid\n"` segment (`*"$wid"*` with the pid inside the quotes). No split. [verified]
+
+`$''` ANSI-C quoting exists since bash 2.0. Not config-dependent. [verified: language; `[unverified]` a one-liner under this 3.2.57 `-p` and plain would settle it: `/bin/bash --noprofile --norc -p -c 'IFS=$'"'"' \t\n'"'"'; printf %q "$IFS"'`]
+
+**Config-dependent residue (not a v26 regression):** under **plain** (non `-p`) a `BASH_ENV` DEBUG trap can re-poison IFS **after** line 193. The assignment closes the static `IFS=:` finding (F3); it does not close an active DEBUG re-poison. Installed invocation is `-p`, which does not read `BASH_ENV`. Same launcher-owned class as `export -f builtin`.
+
+---
+
+## Hunt (g) — parent signal mid-probe. Bound is false.
+
+**Expected (their honest limit):** terminating signal to the parent KILLs `$wid`, abandons the hung probe, **window ≤ 1s probe budget**, no CPU spin, no caller stdin.
+
+**Actual:**
+
+Parent trap (`v26.sh:218`):
+
+```bash
+builtin kill -KILL $(builtin jobs -pr) 2>/dev/null || builtin true; builtin exit 0
+```
+
+`jobs -pr` in the **parent** lists `$wid` only. The probe is a **grandchild**. SIGKILL is not trappable; the worker’s inner loop does not run after that. Nobody ever sends the probe the `kill -KILL "$_ppid"` that the 1s bound assumes.
+
+| Question | Answer |
+|---|---|
+| Can the orphan live longer than 1s? | **Yes. Forever**, for any killable (R/S) probe. The 1s timer lives inside `$wid`. [verified: source] |
+| Can it spin CPU? | **Yes.** H01 stub is `while :; do :; done` (`contract.py:185`). A real interpreter in a tight init loop is the same class. [verified: stub + no killer] |
+| Can it hold caller stdin? | **No** (probe `</dev/null`). Inner `/bin/sleep` can, briefly — M1. [verified: redirections] |
+
+**This is not D-state.** Pid-directed SIGKILL on an R-state hang stub always completes **if someone sends it**. Someone does not.
+
+**Delivery-shape split (config-dependent safety):**
+
+- **Group-directed** TERM/KILL (harness `E_grp_*`, `grpsig.py` I01): probe is in the same pgid (no `set -m`), has SIG_DFL, **dies with the group**. I01 is expected to PASS. [verified: source; `[unverified]` run]
+- **PID-directed** catchable signal to the parent (`D_pid_TERM` etc. at `SIGDELAY=0.35s`): trap KILLs `$wid` only; probe at t=0.35s is still inside the hang (`_pend` ~1s). **Orphan spinner.** Contract tests never combine `D_pid_*` with `H01`. [verified: `contract.py:145-147` vs `141`; `SIGDELAY` at line 16]
+
+The comments at `v26.sh:700-704` say the window is “at most the shared 1s probe budget … instead of unbounded.” Two readings: (1) orphan lifetime ≤ 1s — **false**; (2) the signal is only dangerous during the ~1s probe phase — true, and then the orphan lifetime is still unbounded. The brief asked reading (1).
+
+`v26.sh:685-690` also says “the spinning-orphan class is closed by construction.” That is true **only while `$wid` lives to fire the inner kill**. The trap path kills `$wid` first.
+
+---
+
+## Hunt (h) — H02/H03/H04 fixtures / other 55
+
+**H04 noisy stub** (`contract.py:188`):
+
+```
+#!/bin/sh
+for a in "$@"; do :; done
+printf 1337
+exit 37
+```
+
+**Expected:** a “passes probe then writes stdout” fixture must speak the **new** success channel. **Actual:** `exit 37` is required for v26; `printf 1337` is vestigial v22. After `exec`, worker stdout is already `/dev/null` (`v26.sh:760`), so the printf cannot reach the caller unless `exec` dropped the redirect (it does not). C2 is still a real check: if a future edit left fd 1 on the caller, this stub would fail the case. **Not rigged.** [verified: stub + worker redirect]
+
+**H02** (`contract.py:186`, note still says “1337 probe”): stub `echo NOT1337; exit 0` → `_prc!=37` → skip. Sound for the new protocol. **Harness still only rewrites the first candidate** (`contract.py:196`); second remains `/usr/bin/python3`. H02 does not actually make “every candidate fail” unless the real dispatcher also fails. Pre-existing. [verified: `make_interp_variant`]
+
+**H03** zero-byte: ENOEXEC ≠ 37, fall through to `/usr/bin/python3`. Sound. [verified: source]
+
+**H01** hang: this is the case v22 lost (55/56). v26 should inner-kill the stub at ~1s, then kill-at-spawn the real second candidate, `exit 18`, parent exit 0, no survivors **if** `jobs -pr` in the worker subshell works and no one SIGKILLs `$wid` first. [unverified: no RESULT log in `./files/`]
+
+Regressions on A/B/C/D/E/F/G: probe rewrite does not touch write path, traps (except IFS before them), or outer watchdog. No source-level regression identified. [verified: diff; `[unverified]` 55-case rerun]
+
+---
+
+## Findings (severity-ranked)
+
+### H1 — C3 abandoned spinner; documented 1s bound is false
+**Where:** `v26.sh:218` (parent trap) × `v26.sh:700-704` (honest limit) × `v26.sh:730-746` (probe + inner kill).  
+**Mechanism:** Parent trap pid-KILLs `$wid`. Probe is not a parent job. Inner `SECONDS` killer dies with the worker. A runnable hang (`contract.py:185`) is reparented to launchd and burns CPU with no deadline.  
+**Not D10:** D-state is unkillable; this process is killable and simply never signaled.  
+**Config class:** **Safe under group-directed signals** (harness `preexec_fn=setpgid(0,0)` + I01). **Unsafe under PID-directed TERM/INT/… to the hook pid**, which is what `D_pid_*` exercises — just not combined with a hung candidate. If production Claude Code does **not** isolate the hook pgid, group signals would also kill the caller; the hook cannot `kill 0` to clean grandchildren without proving that isolation.  
+**Concrete fix:** Inside the worker subshell, install the same `kill -KILL $(builtin jobs -pr)` trap on EXIT/TERM **before** spawning a probe, **and** change the parent trap to `kill -TERM "$wid"` so that trap can run, then `kill -KILL "$wid"` for the D-state worker. Back-to-back TERM+KILL is still a race (no sleep in a trap — round 11). Closing the race without `set -m` and without `kill 0` needs the probe to be a **direct child of the parent** (parent `jobs -pr` would then list it) or a dedicated parent-owned killer pid. Do not document an unenforced 1s lifetime as a substitute.  
+**Evidence:** [verified: source]. Reproduction (not run): rewrite H01 stub as now, deliver `SIGTERM` to the hook pid at 0.35s, `ps` for `interp_hang/python3` after parent exit. Expect 1 non-zombie survivor. `[unverified]`
+
+### M1 — inner `/bin/sleep` inherits caller stdin
+**Where:** `v26.sh:748` vs worker fd 0 at `v26.sh:760`.  
+**Mechanism:** Probe phase intentionally keeps caller stdin on the worker so the later `exec` of `OBS_CODE` can read the event. Foreground `/bin/sleep 0.05` inherits that fd. SIGKILL of `$wid` during sleep orphans a pipe reader. Typical duration 0.05s; unbounded if `/bin/sleep` wedges.  
+**Fix:** `/bin/sleep 0.05 </dev/null >/dev/null 2>/dev/null || builtin true`, or stash stdin on fd 4 for the duration of the probe loop and restore it only on the exec path.  
+**Evidence:** [verified: source]. `[unverified]` whether a 0.05s orphan actually stalls a Claude Code stdin writer (pipe buffer usually absorbs a few KB).
+
+### L1 — integer `SECONDS+1` can fire at first spawn
+**Where:** `v26.sh:647-653, 743-746`.  
+**Mechanism:** Comment’s “~0.05–1.05s” is wrong; fire is the next integer tick. Cheap event loss, including “working interpreter killed, second candidate also killed, exit 18”.  
+**Fix:** if a tighter bound is required, poll a non-integer clock (not available in bash 3.2 without a fork). Otherwise correct the comment and accept load-dependent loss.  
+**Evidence:** [verified: `SECONDS` semantics]. `[unverified]` hit rate on this host.
+
+### L2 — H02 fixture still only stubs candidate 1; H02 note still says “1337”
+**Where:** `contract.py:142, 196`.  
+**Not a hook bug.** Does not make v26 look better than it is on the “all interpreters dead” path.  
+**Fix:** rewrite both paths, or point the second at another fail stub.
+
+---
+
+## Claims the brief said were already measured
+
+| Claim | Status |
+|---|---|
+| v22 contract 55/56 (H01 only) | `[unverified]` — no RESULT log in `./files/` |
+| v26 contract 56/56 | `[unverified]` same |
+| gap.py 6/6 | `[unverified]` — `gap.py` not in `./files/` |
+| grpsig.py PASS for v26; v22 fails I02; v24 fails I01+I02 | **Plausible from source** (v26 stays in caller pgid; v22 abandons cmdsub+probe after CONT+deadline; v24 `set -m` leaves the group). **Run not in `./files/`.** `[unverified]` |
+| `bash -n` clean under `-p` and plain | `[unverified]` |
+
+I01/I02 passing would **not** refute H1: I01 is group-KILL (contains the probe); I02 is group-STOP (no member left Running). H1 is PID-directed parent TERM × hung probe.
+
+---
+
+## What v26 does get right
+
+- F1/F2: no monitor mode; pid-directed inner kill still reaches a `setsid()` candidate.
+- F3: static IFS poison closed for the trap sweep.
+- Blocking `$()` waiter is gone; probe stdin is `/dev/null`; the H01 **deadline** path can kill a runnable stub without orphaning a stdin-holding cmdsub — **if** nested `jobs -pr` works.
+- `wait` after kill is skipped (D-state wait not on the kill path).
+- Exit-37 skips ENOEXEC-as-empty-script without consuming event bytes.
+- H04 harness change matches the new protocol and still grades C2.
+
+That is a real improvement on live v22’s H01. It is not a closed spinning-orphan class.
+
+---
+
+## Verdict rationale
+
+Default is DO-NOT-APPLY unless v26 cannot be broken. H1 breaks C3 on a path the contract already tests in pieces (`D_pid_TERM` + `H01`) and that the authors themselves flagged as the honest limit — then bounded incorrectly. Abandoned-spinner is the expensive side of the contract, not event loss. I01 passing does not cover it. I cannot certify 56/56 from this tree.
+
+VERDICT: DO-NOT-APPLY

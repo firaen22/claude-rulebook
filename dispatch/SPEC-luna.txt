@@ -1,0 +1,82 @@
+GOAL
+Fix stale/false DOCUMENTATION in /private/tmp/claude-501/-Users-yauch-Documents-claude-code-technique/d8a69179-c2ab-4c5b-927b-3b9417b15cb6/scratchpad/round23/edit/hook.sh. COMMENT-ONLY edit.
+This file is a shipped, three-way-approved security hook. Its comments have
+rotted: they cite line numbers that no longer hold and assert a fact about the
+system that has since been measured false. Behaviour must not change AT ALL.
+
+WHY
+The comments are the only record of why each defence exists. A future maintainer
+reading "line 164's trap" will look at line 164, find a comment, and either
+distrust the whole block or "fix" the wrong thing. One comment also states the
+live configuration is INSECURE when it is in fact secure — that misdirects
+remediation effort at the exact security control the file exists to document.
+
+HARD CONSTRAINT (this is the acceptance gate, not a preference)
+The EXECUTABLE TEXT must be BYTE-IDENTICAL before and after. Executable text =
+every line that is not blank and not a `#` comment, EXCEPT line 1 (the shebang
+`#!/bin/bash -p`) which is executable configuration and must also be unchanged.
+  - Do NOT reflow, reindent, re-quote, or re-wrap any executable line.
+  - Do NOT change trailing whitespace on any executable line.
+  - Do NOT touch the single-quoted python program held in the OBS_CODE variable.
+  - Do NOT add or remove executable lines.
+  - Adding/removing COMMENT lines is allowed (see the recompute rule below).
+
+THE SEVEN DEFECTS TO FIX (all in comments)
+
+D1. Line 71 says "...before line 121 runs". Line 121 is a comment. The construct
+    it means is the stdout/stderr redirect, which is now at line 176
+    (`exec >/dev/null 2>/dev/null`).
+
+D2. Lines 72-73 assert: "The live settings.json runs `bash <path> <matcher>`".
+    This is FALSE and was false when written. Measured 2026-08-31/09-01:
+    settings.json was already running `bash -p <path> <matcher>`, i.e. -p was
+    ALREADY present; what was missing was the absolute `/bin/bash` and
+    `--noprofile --norc`. Rewrite so the file does not claim the live config ran
+    the bare form. Keep the surrounding, still-true warning that an explicit
+    `bash` ignores the shebang and that a BASH_ENV payload RAN under the bare
+    form in the 2026-08-31 measurement (that measurement is real; only the claim
+    about what the LIVE config did is false).
+
+D3. Same block: the file never records that the hook is registered in SEVEN
+    settings.json entries, not one — PreCompact (manual, auto) and SessionStart
+    (startup, resume, clear, compact, fork). Add this. It matters because a
+    one-entry edit silently leaves six entries on the old form. Also record that
+    all seven were moved to the full form and INSTALLED on 2026-09-01.
+
+D4. Line 134 says "Line below (the redirect) is that first command". FALSE: the
+    first executable command is the early exit-0 trap at line 174; the redirect
+    is line 176. Correct it without weakening the round-17 reasoning it carries.
+
+D5-D7. Lines 163, 164, 170 and 173 each say "line 164", meaning the
+    `trap '' TSTP TTIN TTOU` statement. That statement is at line 175.
+
+RECOMPUTE RULE (this is where a careless edit fails)
+If your edit changes the total number of lines, EVERY `line NNN` reference in
+the whole file must be recomputed against the FINAL file, not the original.
+After editing, re-derive the true line numbers of these three anchors in YOUR
+output file and make every reference agree with them:
+  A1 the early trap:  the line beginning `builtin trap 'builtin exit 0' HUP`
+  A2 the stop-ignore: the line `builtin trap '' TSTP TTIN TTOU`
+  A3 the redirect:    the line `exec >/dev/null 2>/dev/null`
+The two existing "line 1" references (about the shebang) are CORRECT — leave them.
+
+EDGE CASES — spell out, do not assume
+  - If a rewrite makes a comment line exceed ~90 characters, wrap it; do not
+    leave a 139-character line (line 72 currently is one).
+  - Non-ASCII: the file already contains em dashes (—). Preserve the file's
+    existing encoding; do not transliterate existing ones, and do not introduce
+    smart quotes or non-breaking spaces.
+  - Do not "improve", reorder, deduplicate or shorten any comment that is not
+    one of D1-D7. Several comments look redundant (the BASH_ENV measurement is
+    stated twice around lines 73 and 91). Leave the redundancy alone; it is out
+    of scope.
+  - Do not add a changelog header, a version bump, or your own attribution.
+
+REPORTING FORMAT
+Edit the file in place. Then report, in at most 25 lines:
+  - the final total line count
+  - the final true line numbers of A1, A2, A3
+  - one line per defect D1-D7: FIXED or NOT-FIXED + the new line number it lives on
+  - the exact command you ran to confirm executable text is unchanged, and its result
+Tag every claim [verified: <how>] or [unverified]. If you could not do something,
+say so plainly — an honest NOT-FIXED is worth more than a false FIXED.

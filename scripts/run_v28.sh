@@ -1,0 +1,11 @@
+#!/bin/bash
+R="/private/tmp/claude-501/-Users-yauch-Documents-claude-code-technique/d8a69179-c2ab-4c5b-927b-3b9417b15cb6/scratchpad/round23"
+cd "$R/harness-frozen3"
+: > "$R/out/V28_progress.txt"
+python3 contract.py "$R/candidate/v28.sh" v28 "$R/v28_cwd"        >  "$R/out/CONTRACT_v28.log" 2>&1; echo "contract v28 exit=$?" >> "$R/out/V28_progress.txt"
+python3 contract.py "$R/candidate/v22-installed.sh" v22b "$R/v22b_cwd" > "$R/out/CONTRACT_v22b.log" 2>&1; echo "contract v22 exit=$?" >> "$R/out/V28_progress.txt"
+python3 contract.py "$R/candidate/v26.sh" v26b "$R/v26b_cwd"      >  "$R/out/CONTRACT_v26b.log" 2>&1; echo "contract v26 exit=$?" >> "$R/out/V28_progress.txt"
+python3 pidhang.py "$R/pidhang28" "$R/candidate/v28.sh" "$R/candidate/v22-installed.sh" > "$R/out/PIDHANG_v28.log" 2>&1; echo "pidhang exit=$?" >> "$R/out/V28_progress.txt"
+python3 grpsig2.py "$R/g2wd28" "$R/candidate/v28.sh" > "$R/out/GRPSIG2_v28.log" 2>&1; echo "grpsig2 exit=$?" >> "$R/out/V28_progress.txt"
+python3 gap.py "$R/gapwd28" "$R/candidate/v28.sh" > "$R/out/GAP_v28.log" 2>&1; echo "gap exit=$?" >> "$R/out/V28_progress.txt"
+echo "V28-ALL-DONE" >> "$R/out/V28_progress.txt"

@@ -1,0 +1,52 @@
+No—v24 fixes H01, but introduces a reproducible C3 regression when the caller uses group-directed `SIGKILL` or `SIGSTOP`. Review is single-lens.
+
+## Findings
+
+1. **Critical — caller group signals no longer contain the worker**
+
+   Location: [v24.sh:635](/private/tmp/claude-501/-Users-yauch-Documents-claude-code-technique/d8a69179-c2ab-4c5b-927b-3b9417b15cb6/scratchpad/round23/review/sol24/files/v24.sh:635)
+
+   Mechanism: `set -m` moves the worker into its own PGID. A caller’s `killpg(hook_pgid, SIGKILL)` kills the hook parent but misses the worker, eliminating the watchdog before it can perform the deadline kill. In the instrumented hanging-interpreter case, v22’s stub died; v24’s remained alive and spinning until harness cleanup. Group `SIGSTOP` likewise stopped v22’s entire tree, while v24’s worker continued servicing a heartbeat while its watchdog was stopped. [verified: isolated process groups, PID liveness, and heartbeat probes on Bash 3.2.57]
+
+   This is configuration-dependent: it is safe only if Claude never escalates with group-directed `KILL`/`STOP`. The live caller’s escalation policy is unknown. [unverified]
+
+   Concrete fix: launcher-level supervision must track the worker PGID and signal both groups during stop/kill escalation. A shell trap cannot repair `SIGKILL` or `SIGSTOP`; the supervisor must live outside the killed group and receive the worker PGID through a dedicated control channel.
+
+2. **High, configuration-dependent — a process group is not an escape-proof containment boundary**
+
+   Location: [v24.sh:761](/private/tmp/claude-501/-Users-yauch-Documents-claude-code-technique/d8a69179-c2ab-4c5b-927b-3b9417b15cb6/scratchpad/round23/review/sol24/files/v24.sh:761)
+
+   Mechanism: an instrumented candidate called `setsid()` before hanging. The deadline killed the worker group, but the escaped descendant survived; the retained PID kill only targets `$wid`. [verified: escaped PID/PGID remained live after hook rc 0, then was explicitly cleaned]
+
+   The pinned stock Python is assumed not to daemonize or change session, so this does not refute the current ordinary candidate. [assumed] It does mean safety depends on the interpreter and dispatcher tree preserving PGID membership.
+
+   Concrete fix: enforce this as a verified host invariant or use launcher/OS-level descendant supervision that remains effective after `setsid()`.
+
+3. **Medium, configuration-dependent — trap cleanup depends on default `IFS`**
+
+   Location: [v24.sh:201](/private/tmp/claude-501/-Users-yauch-Documents-claude-code-technique/d8a69179-c2ab-4c5b-927b-3b9417b15cb6/scratchpad/round23/review/sol24/files/v24.sh:201)
+
+   Mechanism: with plain Bash and a `BASH_ENV` setting `IFS=:`, two newline-separated results from `jobs -pr` became one loop word; neither job was killed. The secure `-p` invocation ignored `BASH_ENV` and killed both. Inherited environment `IFS` alone was reset by both fresh Bash invocations. [verified: plain result `alive=2`; secure result `alive=0`]
+
+   Concrete fix: normalize `IFS=$' \t\n'` before any worker can exist, preferably inside the full trap before splitting. The documented live `-p` invocation currently supplies the needed invariant.
+
+4. **High verification gap — the supplied orphan check cannot see v24’s worker PGID**
+
+   Location: [contract.py:345](/private/tmp/claude-501/-Users-yauch-Documents-claude-code-technique/d8a69179-c2ab-4c5b-927b-3b9417b15cb6/scratchpad/round23/review/sol24/files/contract.py:345)
+
+   The harness only counts processes with `pgid == hook_pid`. After v24, the worker and leaked descendants have `pgid == wid`, so `orphans=0` would not prove H01 containment. Its group-signal cases also omit `SIGKILL` and `SIGSTOP`. [verified: source inspection]
+
+   Concrete fix: record and inspect the worker PGID/session or track descendant PIDs directly; add group-directed `KILL` and `STOP` cases.
+
+## Confirmed behavior
+
+- Exactly four executable edit sites were found; v24 has three net additional executable lines. Both secure and plain syntax checks returned 0. [verified: `diff`, `exectext.py`, `bash -n`]
+- H01 itself was fixed: v22 left the spinning stub alive; v24 killed it in about 1.9 seconds, rc 0, zero stdout/stderr. [verified]
+- A stopped worker remained in `jobs -pr`; the gone-branch did not incorrectly enter `wait`. [verified]
+- The failing PID-floor kill did not recurse through `ERR`; final rc was 0 and the child was gone. [verified]
+- Catchable group `TERM`, the widened monitor-mode signal window, and a controlling-TTY run all exited 0/quiet without an observed surviving stub or stop. [verified]
+- Five real-hook boundary inputs—empty, one byte, 65,536 bytes, 65,537 bytes, and malformed JSON—were bounded, quiet, and preserved pre-existing sentinel content. [verified]
+- The full supplied harness observed rc 0, stdout 0, bounded timing, and no C4 destruction in all 56 cases. Its formal result was 0/56 solely because sandbox-denied `ps` produced `orphans=-1` for every case; orphan status therefore remained unknown in that run. [verified]
+- All known probe PIDs were dead afterward, review artifacts were removed, and both supplied shell hashes remained unchanged. [verified]
+
+VERDICT: DO-NOT-APPLY

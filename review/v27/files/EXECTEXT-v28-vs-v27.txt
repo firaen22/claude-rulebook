@@ -1,0 +1,5 @@
+A /private/tmp/claude-501/-Users-yauch-Documents-claude-code-technique/d8a69179-c2ab-4c5b-927b-3b9417b15cb6/scratchpad/round23/candidate/v28.sh
+  exec lines=316 sha256=9363f7faf099a50f3bfe80627a88d8032b9c440846e58a521cd1252f5bcc8339
+B /private/tmp/claude-501/-Users-yauch-Documents-claude-code-technique/d8a69179-c2ab-4c5b-927b-3b9417b15cb6/scratchpad/round23/candidate/v27.sh
+  exec lines=316 sha256=9363f7faf099a50f3bfe80627a88d8032b9c440846e58a521cd1252f5bcc8339
+EXEC-TEXT IDENTICAL -> change is comment-only
