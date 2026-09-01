@@ -1,6 +1,5 @@
 import sys, os, time, subprocess, signal, shutil
-HF=os.path.join(os.path.dirname(os.path.abspath(__file__)),"harness-frozen3")
-sys.path.insert(0,HF); import contract
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import contract
 GOOD=b'{"session_id":"abc","transcript_path":"/tmp/x.jsonl","hook_event_name":"PreCompact","trigger":"manual"}'
 
 def scan(pgid, workdir):

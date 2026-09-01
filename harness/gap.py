@@ -49,14 +49,21 @@ def probe(path, sig, mode, home):
     os.close(rfd)
     time.sleep(1.0)                      # land inside the widened window
     s = getattr(signal, "SIG" + sig)
-    try:
-        if mode == "pid": os.kill(p.pid, s)
-        else:             os.killpg(p.pid, s)
-    except OSError:
-        pass
+    # codex 2026-09-01 F7 (CONFIRMED by reading): a target already gone before
+    # delivery, or a failed kill, fell through to the exit-status read and could
+    # grade "exit0" == PASS without the signal ever landing in the window. Both
+    # are now VOID verdicts, which never equal "exit0" -> loud FAIL, never a pass.
     verdict, state = None, None
+    if p.poll() is not None:
+        verdict = "VOID-exited-before-signal"
+    else:
+        try:
+            if mode == "pid": os.kill(p.pid, s)
+            else:             os.killpg(p.pid, s)
+        except OSError as e:
+            verdict = "VOID-kill-%s" % e.__class__.__name__
     end = time.time() + 10
-    while time.time() < end:
+    while verdict is None and time.time() < end:
         try:
             wpid, st = os.waitpid(p.pid, os.WNOHANG | os.WUNTRACED)
         except ChildProcessError:
@@ -67,7 +74,7 @@ def probe(path, sig, mode, home):
             else: verdict = f"exit{os.WEXITSTATUS(st)}"
             break
         time.sleep(0.02)
-    else:
+    if verdict is None:
         verdict = "BLOCKED"
     el = round(time.time() - t0, 2)
     try:

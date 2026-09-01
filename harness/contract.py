@@ -70,6 +70,39 @@ def diff_snapshots(before, after):
             bad.append(f"MODE-CHANGED {p} {oct(b['mode'])}->{oct(a['mode'])}")
     return bad
 
+def shallow_snapshot(root, exclude=()):
+    """Top-level entries of root only (files, symlinks, dirs as opaque entries) --
+    the cwd the hook runs in. Non-recursive on purpose: per-case homes live
+    underneath and are graded separately via snapshot(home)."""
+    out = {}
+    ex = {os.path.abspath(e) for e in exclude}
+    try:
+        names = os.listdir(root)
+    except OSError:
+        return out
+    for n in names:
+        p = os.path.join(root, n)
+        if os.path.abspath(p) in ex:
+            continue
+        try:
+            st = os.lstat(p)
+        except OSError:
+            continue
+        rec = {"ino": st.st_ino, "size": st.st_size, "mtime": st.st_mtime_ns,
+               "mode": stat.S_IMODE(st.st_mode), "type": "l" if stat.S_ISLNK(st.st_mode)
+               else ("d" if stat.S_ISDIR(st.st_mode) else "f")}
+        if rec["type"] == "f":
+            try: rec["md5"] = md5(p)
+            except OSError: rec["md5"] = "UNREADABLE"
+        elif rec["type"] == "l":
+            rec["target"] = os.readlink(p)
+        elif rec["type"] == "d":
+            # directories: identity only. Their mtime changes whenever the hook
+            # (legitimately) creates a file inside, so it must not count.
+            rec["mtime"] = 0; rec["size"] = 0
+        out[n] = rec
+    return out
+
 # ---------------------------------------------------------------- canary tree
 CANARY_TEXT = b"CANARY-DO-NOT-TOUCH\n" * 8
 
@@ -282,6 +315,12 @@ def run_case(target, case, workdir):
 
     outf = os.path.join(workdir, f"o_{name}.out")
     errf = os.path.join(workdir, f"o_{name}.err")
+    # codex 2026-09-01 F1 (CONFIRMED by reading): only the planted canaries and
+    # EXPECTED-*.json were graded, so a hook deleting/replacing any REAL cwd file
+    # (payload.sh, a prior case's capture) scored destroyed=[]. Snapshot the
+    # cwd's own top-level entries too; this case's capture files are excluded
+    # because the harness itself truncates them just below.
+    before_cwd = shallow_snapshot(workdir, exclude={outf, errf})
     fo, fe = open(outf, "wb"), open(errf, "wb")
 
     hold_open = kind in ("sig_pid", "sig_grp")   # keep target alive until the signal lands
@@ -447,6 +486,8 @@ def run_case(target, case, workdir):
     _skip_after = True
     destroyed = diff_snapshots(before, after)
     destroyed += ["CWD/" + x for x in diff_snapshots(before_ext, snapshot(ext_root))]
+    destroyed += ["CWDFILE/" + x for x in
+                  diff_snapshots(before_cwd, shallow_snapshot(workdir, exclude={outf, errf}))]
     if _exp_before is not None:
         _now = md5(_expf) if os.path.exists(_expf) else None
         if _now != _exp_before:

@@ -153,10 +153,17 @@ def one_trial_I02(hook, workdir, home, stubmark):
         return ("ERR", "I02 killpg STOP after landed probe: %r" % e)
     time.sleep(0.4)
     rr = ps_rows()
-    if rr is not None:
-        running = [r for r in members(rr, p.pid, stubmark) if r[2].startswith("R")]
-        if running:
-            fails.append("running while STOPPED: %s" % [(r[0], r[2], r[3][:40]) for r in running])
+    if rr is None:
+        # codex 2026-09-01 F8 (CONFIRMED by reading): a missing ps sample here used
+        # to skip the R-state check and the trial still counted as landed-clean.
+        # No observation is not a clean observation -> VOID, retried.
+        try: os.killpg(p.pid, signal.SIGCONT)
+        except OSError: pass
+        _drain_void(p, wfd, outf, stubmark)
+        return ("VOID", None)
+    running = [r for r in members(rr, p.pid, stubmark) if r[2].startswith("R")]
+    if running:
+        fails.append("running while STOPPED: %s" % [(r[0], r[2], r[3][:40]) for r in running])
     try: os.killpg(p.pid, signal.SIGCONT)
     except OSError: pass
     try: os.close(wfd)

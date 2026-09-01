@@ -20,7 +20,7 @@ clobbered file, or abandoned spinning process is expensive.
 
 ## Layout
 - `harness/` — frozen, mutation-validated harness (harness-frozen3):
-  `contract.py` (56 single-shot cases), `pidhang.py` (pid-directed SIGTERM
+  `contract.py` (57 single-shot cases), `pidhang.py` (pid-directed SIGTERM
   during a hung interpreter self-test), `grpsig2.py` (group KILL / STOP-CONT
   with ready-handshake + double-sampled survivors; replaces the racy
   `grpsig.py`, kept for comparison), `gap.py` (launcher startup-window stop
@@ -37,7 +37,7 @@ clobbered file, or abandoned spinning process is expensive.
   is the fullest statement of contract, history, and known limits.
 
 ## Headline results (2026-09-01)
-- v28: contract 56/56, pidhang 0 orphans, grpsig2 5/5 both cases, gap 6/6.
+- v28: contract 57/57, pidhang 0 orphans, grpsig2 5/5 both cases, gap 6/6.
 - Live v22 reproducibly FAILS grpsig2 I02 (orphaned spinning probe grandchild).
 - v26 returned DO-NOT-APPLY (grandchild orphan Critical); v27/v28 fix it.
 - Dual independent APPLY (sol + grok) before install.
