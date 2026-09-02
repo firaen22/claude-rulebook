@@ -85,11 +85,14 @@ See §3. Create it on first lesson.
 
 Existing memory rules apply (update-in-place, no duplicates, delete wrong ones).
 
-Index-line length, measured 2026-09-02 (`awk 'length>150' MEMORY.md`, four project
-indexes): most lines over 150 chars; longest 601 (moira), 551
-(claude-code-technique), 389 (market-index), 306 (TG-bot-helper). The §4 ≤150 rule
-is prospective (new/edited lines only, owner decision 2026-09-02); these legacy
-lines are migration debt for a separate task, not a side quest.
+Index-line length: the legacy debt was MIGRATED 2026-09-02 — 226 of 279 entries
+across all 17 project indexes trimmed to ≤150 CHARACTERS, detail moved into the
+topic files. Three lines in claude-code-technique are deliberately left over: one
+is structurally impossible (its title+link prefix alone is 156 chars) and two
+assert facts their global targets do not carry, so trimming them would have
+destroyed the only copy. The earlier note here said "~170 over 150, four indexes";
+both halves were wrong — it counted four of the seventeen indexes, and it measured
+with macOS `awk`, which counts BYTES (see §4). Measure with python `len`.
 
 ## ~~`~/.claude/skills/subordinates/SKILL.md`~~ `~/.claude/skills/delegation-and-review/SKILL.md` (merged 2026-07-07)
 

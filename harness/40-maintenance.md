@@ -175,6 +175,8 @@ Rules for LESSONS.md:
   you touched against the pre-edit backup — a hit is a trim into the topic file, not a
   wrap; untouched legacy lines are separate debt (`41-file-registry.md`, Memory files):
   `diff -u <backup> MEMORY.md | awk '/^\+[^+]/{s=substr($0,2); if(length(s)>150) print length(s)": "s}'`
+  (macOS `awk` counts BYTES whatever the locale — an em-dash is 3 — so it fires a
+  little early on CJK/punctuation-heavy lines; that direction never misses one.)
 - Cadence: no scheduled maintenance. Compress on threshold-hit only. Do not
   "tidy" these files as a side quest during other work (R3: surgical changes).
 
