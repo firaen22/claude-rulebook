@@ -9,6 +9,10 @@ Curated from the round-23 working tree (session scratchpad, 2026-09-01).
 Working directories, per-run homes, and raw run outputs were excluded;
 review stderr/stdout logs are kept as evidence.
 
+Cross-model reviewed (codex luna/sol + grok, 2026-09-01/02): 57/57 contract
+cases, gap 6/6, grpsig2 5/5 x2, pidhang discriminated; mutants M14/M16/M17
+fail as intended. Full trail in `reviews/2026-09-01-cross-model-harness-review.md`.
+
 ## Contract (every path)
 - C1 exit status 0 always
 - C2 zero bytes on stdout
