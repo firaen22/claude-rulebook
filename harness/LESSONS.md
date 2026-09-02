@@ -231,3 +231,46 @@ The at-3 promotion duty above does NOT apply to entries here.
   NOT verified; the PRE mid-session re-run is closed as not-completable without
   reverting the live CLAUDE.md. Evidence:
   `claude code technique/experiments/cross-model-review-trigger-reprobe-2026-09-02/`.
+
+### 2026-09-02 — harness audit against 22 of one session's own incidents: the shared-tree rules lived only in caches
+- What happened: cross-family review (grok-4.6 + codex luna, staged-files recipe;
+  then codex sol acceptance ×2, cap reached; then a grok + sol ADVICE round on the
+  sign-off set) of the seven rules files against 22 incidents mined from this
+  session's transcript. Reproduced on disk before editing: `~/.claude/CLAUDE.md`,
+  `10-`, `20-`, `30-` had ZERO hits for backup/stash/dirty-tree/bare-HEAD — the rules
+  behind the three worst incidents (filter-repo wiping 172 foreign uncommitted lines,
+  2026-08-28; a codex packet diffed from bare `HEAD` on the shared tree, 2026-08-29; a
+  stale `/tmp` scratch `cp`'d over a shared MEMORY.md, 2026-09-02) existed only in
+  skill caches. Also found: a false quote in `10-orchestration.md` §2 ("START HERE"),
+  a self-declared-stale count in `40-maintenance.md` §4, the §1 self-row ordering both
+  "ASK USER for new orders" and "add it and say so", and CLAUDE.md line 3 carrying
+  history that line 1 bans.
+- Root cause: rules were written cache-first and never written back to the harness
+  source; §5 write-back runs source→cache only. Second: my first shared-tree checkbox
+  inherited the shape of the worst incident (mutation-only) and missed the read-only
+  packet case. Third: my own review round reordered the §2 agy/codex row — a
+  routing-strategy change I did not list for sign-off; the advice round caught it.
+  Fourth: I recommended "approve all / defer all"; both advisers rejected that in the
+  same places (a third copy of load-skill-first; a threshold the corpus already fails
+  170×; two zero-growth contradictions I had deferred). Rewordings were authored by
+  me from the findings, not pasted.
+- Rule change needed: applied — see Destination. All standing-order-class and
+  CLAUDE.md edits landed on the user's explicit sign-off ("proceed with codex" =
+  sol's set), per §1. The agy-row edit was reverted. The ~150 MEMORY.md threshold is
+  owner-set and PROSPECTIVE (new/edited lines only); legacy over-length lines are a
+  separate task.
+- Status: applied-on 2026-09-02.
+- Destination: `CLAUDE.md` line 61 "the one syntax, everywhere"; line 95 "load the
+  `operational-rigor` skill (repo-baseline) first"; line 3 dates removed.
+  `10-orchestration.md` §0 "Bash cwd is reset to the project dir after every call" /
+  "records which rebuild each arm inherited"; §2 "A phase boundary does not reset
+  this gate"; §4 "recomputed from the cited evidence before you publish it" /
+  "output, not idleness". `20-judgment-rubrics.md` §3 "a diff or review packet is
+  built from that backup, never bare `HEAD`"; §5 "`tail -N` is display only"; §6
+  "narrowing a claim is not correcting it". `40-maintenance.md` §1 self-row "draft
+  it, ASK USER in the same turn, and leave it unapplied until approved"; §1 step 3
+  "landed AT THE LOCUS the diagnosis named"; §3 "NO exemptions, \"pre-existing\"
+  included"; §4 "a NEW or EDITED line is ≤150 characters"; §5 "never changes
+  precedence". `41-file-registry.md` Memory files "is prospective (new/edited lines only".
+  `50-letter` Handoff 2026-09-02 "advisory history, not standing rules".
+  `cross-model-review/SKILL.md` §2 "never bare `HEAD`"; §5 "separately NAMED artifacts".

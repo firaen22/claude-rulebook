@@ -19,7 +19,7 @@ between the two, **this table wins**.
 | `20-judgment-rubrics.md` | NO thresholds; YES examples | Numeric thresholds (retry cap 2, ~3× scope, 20% spot-check) changed only with user sign-off. ADDING a good/bad example from a real session: autonomous, append-only. |
 | `30-delegation-templates.md` | YES, append-only | Add a template or a field; never delete the "report failure honestly" or edge-case lines. Structural rewrite: ASK USER. |
 | `50-letter-to-future-sessions.md` | Handoff section only | §Handoff is a live scratch area — update freely. The letter body is frozen like the diagnosis. |
-| `40-maintenance.md` (this file) | YES wording; **ASK USER** for new standing orders / thresholds | Governs itself — the gap that let the 2026-08-27 compression add a §3 standing rule with no permission bit (found by me and independently by a cross-model review, 2026-08-28). Autonomous: rewording, fixing a broken pointer, correcting a demonstrated factual error, adding an incident to an EXISTING rule. ASK USER: any NEW standing order, any numeric threshold, any §1 row change. **Compression is not a rule-addition channel** — if a compression finds an order with no home, add it and say so in the same turn, never silently. |
+| `40-maintenance.md` (this file) | YES wording; **ASK USER** for new standing orders / thresholds | Governs itself — the gap that let the 2026-08-27 compression add a §3 standing rule with no permission bit (found by me and independently by a cross-model review, 2026-08-28). Autonomous: rewording, fixing a broken pointer, correcting a demonstrated factual error, adding an incident to an EXISTING rule. ASK USER: any NEW standing order, any numeric threshold, any §1 row change. **Compression is not a rule-addition channel** — if a compression finds an order with no home, draft it, ASK USER in the same turn, and leave it unapplied until approved (row reworded 2026-09-02 on user sign-off; the old "add it and say so" contradicted this row's own ASK USER). |
 | `41-file-registry.md` | YES, append/update per file | Evidence layer for this table: port history, size ledgers, probe verdicts. Update its entry in the SAME session as any port/extraction/probe touching a registered file. Never write an order here that isn't in §1. |
 | `~/.claude/harness/LESSONS.md` | YES — this is YOUR file | See §3. Create it on first lesson. |
 | `~/.claude/memory/reference_subordinate_routing_map.md` | YES for facts; **ASK USER** for route-table strategy | Global CLAUDE.md routes THROUGH this file, so it WINS over `10-orchestration.md` §2 on executor choice — and must therefore carry at least that file's permission bar, not the blanket memory-file YES. Autonomous: model availability, measured scores, liveness (a pool churns hourly). ASK USER: changing which executor a task SHAPE routes to. Added 2026-08-29 after a cross-model audit found the winning table was autonomously editable while the losing one was gated. |
@@ -47,7 +47,11 @@ between the two, **this table wins**.
    destroying `skill-authoring`'s pre-edit copy while `delegation-and-review`'s
    survived under the identical name. The path is what disambiguates, not the clock.
 2. Make the edit.
-3. Read the file back; check the edit landed and broke no adjacent text.
+3. Read the file back; check the edit landed AT THE LOCUS the diagnosis named (grep
+   that bullet/row/identifier — unchanged means the fix missed, as the 2026-09-02
+   CLAUDE.md patch did) and broke no adjacent text. If a table row changed, run the
+   §4 `awk` row check on the file before reporting — a correction once took a row
+   from 140 to 171 fields.
 4. If the file is referenced by CLAUDE.md and you renamed/moved it — you almost
    certainly shouldn't have. Restore from backup.
 
@@ -115,9 +119,12 @@ Rules for LESSONS.md:
   masked each other and the promotion ran a month late, only because an audit
   tripped over it. Both prior compressions overclaimed the same way — see the
   ⚠️ CORRECTED 2026-08-26 block in the LESSONS.md header and the archive's
-  compression banners (NOT this file's §4, which covers ceilings only). Corollary: when an archived entry is
-  back-referenced BY a rules file, re-point that reference in the same edit;
-  `LESSONS.md` → `LESSONS-archive.md` pointers rot the moment the entry moves.
+  compression banners (NOT this file's §4, which covers ceilings only). Corollary —
+  NO exemptions, "pre-existing" included: when an archived entry is back-referenced
+  BY a rules file, re-point that reference in the same edit; a reverse-sweep hit
+  waved through as "not caused by my move" is still an unrepaired pointer (it
+  happened 2026-08-29). `LESSONS.md` → `LESSONS-archive.md` pointers rot the moment
+  the entry moves.
 
 ## §4 — Growth limits and compression
 
@@ -160,10 +167,14 @@ Rules for LESSONS.md:
   evidence file and leave the standing rule. This is calibrated, not arbitrary —
   `40-maintenance.md` hid 6,605 words behind 103 lines for a month (64 w/line, one
   row at **2,716 fields** = 2,712 words) until the 2026-08-26 split into
-  `41-file-registry.md`. Its longest legitimate row today is 119 fields (a live hook
-  hazard), so 150 clears every real rule while firing on that defect 18× over — and
-  would have fired in 2026-07.
-- MEMORY.md index: one line per memory, always. Content in memory files only.
+  `41-file-registry.md`. Run the `awk` above for today's longest row — never cite a
+  number here (the one this sentence carried went stale twice in one day, 2026-08-29);
+  150 clears every real rule while firing on that defect 18× over.
+- MEMORY.md index: one line per memory; a NEW or EDITED line is ≤150 characters
+  (owner-set 2026-09-02, prospective). Content in memory files only. Check the lines
+  you touched against the pre-edit backup — a hit is a trim into the topic file, not a
+  wrap; untouched legacy lines are separate debt (`41-file-registry.md`, Memory files):
+  `diff -u <backup> MEMORY.md | awk '/^\+[^+]/{s=substr($0,2); if(length(s)>150) print length(s)": "s}'`
 - Cadence: no scheduled maintenance. Compress on threshold-hit only. Do not
   "tidy" these files as a side quest during other work (R3: surgical changes).
 
@@ -183,5 +194,7 @@ choice, a routing or verification rule), update the matching line in
 (merged 2026-07-07) in the same session. The same rule covers the other three
 skill caches registered in §1 when their harness sources change. The card is a cache;
 a stale cache silently overrides the corrected playbook because it loads first.
-Evidence, N counts, and history stay in the playbooks — the card gets only the
-changed operational line.
+Load order is why you refresh in-session; it never changes precedence — on a live
+conflict R8 still applies (the harness wins, LESSONS gets the entry), and a loaded
+cache is not a license to skip its source. Evidence, N counts, and history stay in
+the playbooks — the card gets only the changed operational line.

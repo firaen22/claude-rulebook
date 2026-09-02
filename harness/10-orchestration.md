@@ -27,6 +27,11 @@ review lens; **opencode's `$PWD` is not its cwd** — set `env["PWD"]` AND `--di
 (always retry, ≤3×), grok can return a schema-VALID empty review that passes every
 guard (tell: `usage.reasoning_tokens` vs input size), and opencode's first real-
 generation zero-byte means reroute, not retry.
+Two more, measured 2026-09-02: **Bash cwd is reset to the project dir after every
+call** — `cd` does not carry; use absolute paths or `git -C <abs>` in each call.
+**A subagent's CLAUDE.md + skill list is the parent's LAST system-prompt rebuild**
+(`/compact` refreshes it), not session start — a before/after subagent experiment
+records which rebuild each arm inherited.
 Re-verify a CLI still works with a 5-second probe before batch-dispatching:
 `codex exec -m gpt-5.6-luna --skip-git-repo-check -s read-only "PONG"` (always pass
 `-m` — the bare config default is NOT the measured model) ·
@@ -62,7 +67,9 @@ transcript that lands in it displaces judgment.
 
 **Cross-family REVIEW rows below (codex-as-reviewer, agy, "second opinion") are
 gated by the `cross-model-review` skill — load it before dispatching any of them;
-this table only picks WHO.** (2026-09-02, [[finding-cross-model-review-trigger-2026-09-02]])
+this table only picks WHO. A phase boundary does not reset this gate: in "fix X,
+then review", load it immediately before dispatching the review.** (2026-09-02,
+[[finding-cross-model-review-trigger-2026-09-02]]; the phase-boundary miss was 2/4)
 
 | Task | First choice | Notes |
 |---|---|---|
@@ -80,7 +87,7 @@ this table only picks WHO.** (2026-09-02, [[finding-cross-model-review-trigger-2
 🔴 **This table covers the INTERNAL (Agent-tool) tiers. For routing across the five
 external CLIs it is NOT authoritative and is not complete — `grok` and NIM have no row
 here at all. The authority is `~/.claude/memory/reference_subordinate_routing_map.md`
-(global CLAUDE.md: "START HERE"), which carries the measured evidence and the four
+(global CLAUDE.md routes THROUGH it), which carries the measured evidence and the four
 fleet-wide rules R-A–R-D. On any disagreement between that map and this table, THE MAP
 WINS; fix this table in the same turn.** Its rows that this table's "second-opinion"
 row predates: agy is NOT the pick for post-implementation review of a real repo, and
@@ -109,8 +116,14 @@ Fill-in templates per task type: `30-delegation-templates.md`.
 - Conclusions + `file:line` pointers. NOT file contents, NOT full diffs, NOT logs.
 - Anything >30 lines goes to a file (scratchpad or agreed path); the report returns
   the path plus a ≤3-line summary.
-- Every claim tagged: `[verified: <how>]` or `[unverified]`. An agent saying "tests
-  pass" must include the command it ran and the exit status.
+- Every claim tagged `[verified: <how>]`, `[relayed: <source>]`, or `[assumed]` (the
+  global CLAUDE.md syntax). An agent saying "tests pass" must include the command it
+  ran and the exit status.
+- A quantitative claim sourced from a subordinate is recomputed from the cited
+  evidence before you publish it (e.g. `rg -c '<label>' <evidence-file>`) — "8 genuine
+  reviews" was 2 in the file it cited (2026-09-02). Mismatch = the claim does not ship.
+- A returned artifact path is output, not idleness: `ls -l` it before classifying
+  the return (a 19.6 KB grok design was once declared "idle", 2026-09-02).
 - Findings format: location + mechanism + suggested fix, severity-ranked.
 - "I could not do X because Y" is a valid, welcome report. Fabricated success is the
   #1 failure mode of every subordinate — say so in the prompt.

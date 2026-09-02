@@ -65,6 +65,13 @@ harness first.
 
 ## Handoff — live section (update freely, per 40-maintenance)
 
+- 2026-09-02: body item #1 above ("a standing-reminder bullet now lives in global
+  CLAUDE.md") is HISTORY — that bullet was removed 2026-07-05 (see below). The body
+  is frozen, so this line is the correction; do not restore the bullet. More
+  generally: the body's order-shaped sentences ("don't remeasure", "Do not retry")
+  are advisory history, not standing rules — the rules live in CLAUDE.md and
+  `10`–`40`; where they differ, those files win.
+
 - 2026-07-03 (this session): full harness written — the 6 files in
   `~/.claude/harness/` plus rewrites of global CLAUDE.md and the
   claude-code-technique project CLAUDE.md. Adversarially reviewed by a

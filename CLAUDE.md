@@ -1,6 +1,6 @@
 # CLAUDE.md — global rules (all projects)
 
-Current-state orders only — evidence, history, and retractions live in the file each line points at. Rewritten 2026-07-03; slimmed to the 100-line ceiling 2026-08-26.
+Current-state orders only — evidence, history, and retractions live in the file each line points at.
 
 ## The harness system — read the file that matches your situation
 
@@ -58,7 +58,7 @@ these rules or `~/.claude/harness/`, the harness wins; log it in LESSONS.md.
 
 ## Reporting style
 - BLUF: verdict first (yes / no / partially-because), then evidence.
-- Tag every claim: verified-by-me vs relayed-from-subordinate vs assumed.
+- Tag every claim `[verified: <how>]`, `[relayed: <source>]`, or `[assumed]` — the one syntax, everywhere.
 - Hold destructive/outward actions — push, deploy, delete, send a message/email,
   place an order or purchase, install/upgrade a tool, or any MCP call that modifies
   state outside the local filesystem — name exactly what they trigger; wait for
@@ -92,7 +92,7 @@ Every tier shares one weakness — **unstated edge cases**: spec it, no tier sub
 
 ## Read BEFORE using the tool, not after it misbehaves
 Browser pane / claude-in-chrome → `~/.claude/memory/reference_browser_pane_gotchas.md`;
-Obsidian MCP → `~/.claude/memory/reference_obsidian_mcp_gotchas.md`.
+Obsidian MCP → `~/.claude/memory/reference_obsidian_mcp_gotchas.md`; shell/git on `~/.claude` or a memory repo → load the `operational-rigor` skill (repo-baseline) first.
 
 ## Measured and closed — do not rebuild
 No voting/aggregation infra; no scaffold/disposition preambles (keep only the

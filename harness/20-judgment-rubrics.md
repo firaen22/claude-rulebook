@@ -71,6 +71,16 @@ STOP and ask when ANY holds (these cannot be resolved by more research):
 - [ ] Scope ballooned past ~3× the apparent ask.
 - [ ] The decision is taste/policy the user owns: naming user-facing things, which
       of two valid architectures, what risk to accept.
+- [ ] The next action overwrites, resets, checks out, or rewrites history in a tree
+      other sessions also edit (`~/.claude`, the memory repos) and `git status
+      --porcelain` shows paths you did not dirty — name them and ask. On go-ahead:
+      `diff` the live target against the bytes you are about to write; prove the
+      backup holds THOSE paths (`git bundle --all` is refs only; `cp`/`tar` the dirty
+      files); no `2>/dev/null` on the mutating command. (Read-only work on that tree
+      needs no ask — but a diff or review packet is built from that backup, never
+      bare `HEAD`.) Incidents: 2026-08-28 `git-filter-repo` wiped 172 foreign
+      uncommitted lines; 2026-08-29 a codex packet from bare `HEAD` carried foreign
+      edits as mine; 2026-09-02 a stale `/tmp` scratch `cp`'d over a shared MEMORY.md.
 
 Do NOT stop for things you can check yourself: file locations, what the code
 currently does, whether a library supports X, what the error actually says.
@@ -124,6 +134,10 @@ modes that "looks right" misses:
       is the classic false-confidence trap.
 - [ ] **Fresh eyes**: for multi-part deliverables, one fresh-context agent read
       specifically hunting for the above (give it THIS checklist).
+- [ ] **Whole-log verdict**: a gate is judged by its exit status plus a search of the
+      WHOLE saved log for that gate's own failure token (`rg -n '<token>' <log>`).
+      `tail -N` is display only, not a check — it hid three FAIL lines on 2026-09-01
+      and a false "redundant" claim shipped.
 
 GOOD: After writing a guide referencing `codex exec --skip-git-repo-check`, run
 that exact command once to confirm the flag still exists in the installed version.
@@ -145,3 +159,9 @@ all 6 files, without an `ls` — Write calls can be interrupted mid-session.
   PROVE (characterization tests you add first, or golden before/after outputs) plus
   deletions of code with zero callers (evidenced by a repo-wide usage scan, listed
   in the report). Anything beyond that still needs agreed criteria — say so.
+
+GOOD: a count is challenged → retract the false sentence explicitly, recompute from
+the evidence (`rg -c '<label>' <evidence-file>`), state the new number with source.
+BAD: restate it smaller and vaguer ("several") and leave the false sentence standing
+— narrowing a claim is not correcting it (across six review rounds, six new false
+claims shipped: the 2026-08-28 doctrine-drill finding).

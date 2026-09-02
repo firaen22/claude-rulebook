@@ -78,7 +78,9 @@ Everything here is a rule about *how to choose*, never *what to choose*.
 The reviewer sees ONLY what you inline — it cannot see your repo or your
 uncommitted tree. Put in the packet: the diff/plan, the facts it needs, an
 explicit rubric, and a required structured verdict (last line `PROCEED` or
-`FIX <list>`). Regenerate it from the CURRENT diff each round.
+`FIX <list>`). Regenerate it from the CURRENT diff each round — on a shared dirty
+tree, from the diff against YOUR task backup, never bare `HEAD` (a bare-`HEAD` diff
+once carried another session's uncommitted edits into a packet as the author's).
 
 - **Nothing secret leaves your machine.** The packet goes to a third-party
   model: no tokens, keys, `.env`, PII, or private customer data; minimize, and
@@ -236,6 +238,10 @@ stop and escalate with the trail — never loop "until all PROCEED" unbounded.
   a gap.
 - **Partial failure ≠ dual gate.** One reviewer OK + one quota/timeout is a
   single-lens review: record the missing lens, don't claim cross-model.
+- **Parallel reviewers write to separately NAMED artifacts** (`<reviewer>-out`,
+  `<reviewer>-rc`) and are merged by name, never by return order — two verdicts
+  were once attributed to the wrong reviewer by arrival order (local incident,
+  2026-08-31; `unprobed` as a rule, incident-derived).
 
 ## 6. On failure / unavailable
 
