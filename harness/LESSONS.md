@@ -213,7 +213,13 @@ The at-3 promotion duty above does NOT apply to entries here.
   the description alone routes these asks; the historical misses were the MAIN
   session model mid-task with a large context — fresh-context routing ≠ mid-session
   routing, and this harness cannot separate "large context dilutes the description"
-  from "hard route wins". The fix is harmless and unmeasured, not verified. POST arm
-  (fresh session, post-fix snapshot) queued as a spawn_task chip; a MID-SESSION
-  probe is the experiment the mechanism actually needs. Evidence:
+  from "hard route wins". **POST arm run same day (session started after `455e60c`,
+  precondition-checked snapshot): 5/6 fire (Skill first tool in 4/6), C1/C2 0/2,
+  B1 none — vs PRE 6/6.** Net: the CLAUDE.md pointer has NO measurable effect on
+  fresh-context routing in either direction, and does not over-trigger. The single
+  POST miss was the "fix first, then review" shape (F2), the closest analogue to a
+  mid-session second-phase review; suggestive at N=1, not evidence. The fix stays
+  as harmless and unmeasured, NOT verified; a MID-SESSION probe (long-context main
+  session, with/without the pointer) is still the experiment the mechanism needs.
+  Evidence:
   `claude code technique/experiments/cross-model-review-trigger-reprobe-2026-09-02/`.
