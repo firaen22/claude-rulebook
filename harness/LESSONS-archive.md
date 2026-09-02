@@ -635,3 +635,240 @@ grok -p with a full review packet twice emitted only planning narration (563/585
 - Status: applied-on 2026-08-27 — Status line added to the superseded entry; no
   playbook edit needed (it already carried the correct mechanism and the explicit
   "truncation never probed" line that flagged the conflict).
+
+
+## Moved here by the 2026-08-29 compression (LESSONS.md was 181 lines / 4 dated entries + 3 counter bullets)
+
+LINE trigger only (>150); the >20-entry trigger was nowhere near met — 4 dated
+entries. All four carried `Status: applied-on 2026-08-28`. Moved verbatim (sliced
+by line range, not retyped).
+
+**Every destination re-grepped against the LIVE file before the move**, per the
+duty the 08-26 audit installed. Result — all 10 destination claims resolve, but
+FOUR of the citations were stale in ways a Status line would have hidden:
+
+- `skills/delegation-and-review/SKILL.md:444` → now **:449**, operative sentence
+  live and unchanged: "While ANY subordinate holds write access to a tree, land
+  nothing in it yourself: stage in scratch, merge after it exits."
+- `skills/delegation-and-review/SKILL.md:423` → now **:429** (first stated as
+  :428 — that is the sibling "Read-only" sentence; caught by a cross-model
+  reviewer that re-opened the file instead of trusting the arithmetic), and the quoted
+  paraphrase "classify by tools held, not by brief" is not the file's wording.
+  Live text: "Classify an agent by the TOOLS IT HOLDS, never by what its brief
+  asks for."
+- `skills/delegation-and-review/SKILL.md:431` → now **:436**: "`isolation:
+  'worktree'`, an enforced copy, or a frozen snapshot (§4). Mandatory, not
+  preferred, on any repo that deploys from the branch under review."
+- `harness/30-delegation-templates.md` — the quoted sentence "the target is
+  STAGED AS FILES the reviewer reads, never pasted into the prompt" **no longer
+  exists**. It was not deleted: it was REPLACED 2026-08-29 by a stronger
+  per-executor rule that inverts the shape for codex/agy (grok+opencode STAGE,
+  codex+agy INLINE, unknown executors STAGE and verify on a throwaway packet).
+  The old quote is now WRONG as a general order. Anything citing it must be
+  re-pointed at the live checklist item, not at this sentence.
+
+The sentence that REPLACED it, and which anything citing the old quote must now
+point at — note it INVERTS the old order for two executors, so a session obeying
+the old sentence with codex or agy gets the wrong shape:
+`harness/30-delegation-templates.md` — "**grok / opencode: STAGE the target as
+files in `--cwd`** … **codex: INLINE the target** (`nl -ba`) so it makes ZERO tool
+calls … **agy: INLINE** too … **Any executor not named here: STAGE, and verify the
+shape on one throwaway packet first**."
+
+Unchanged and verified live — operative sentence quoted, line as locator only
+(the line numbers below WILL drift; the sentences are the citation):
+- `memory/reference_subordinate_routing_map.md` R-D (:77) — "verify the boundary
+  by attempting an escape, never by reading the flag name."
+- `memory/reference_subordinate_routing_map.md` §2a (:123) — "A dispatch that
+  returns nothing is a SHAPE bug until proven otherwise."
+- `memory/workflow_grok_subordinate.md` §CONTAINMENT (:52) — "only a `--tools`
+  allowlist actually stops it."
+- `skills/operational-rigor/SKILL.md` (:278, was cited :274) — "Naming a mechanism
+  from a symptom is a claim, not an observation — read the output bytes before
+  naming the cause."
+- `memory/workflow_codex_subordinate.md` (:238) — "The 79KB inline-packet ceiling
+  is v0.144.4's and does NOT hold on v0.149.0."
+- `harness/40-maintenance.md` (:22) — "Compression is not a rule-addition channel
+  — if a compression finds an order with no home, add it and say so in the same
+  turn, never silently."
+- `~/.claude/projects/-Users-yauch-Documents-claude-code-technique/memory/feedback_hook_block_read_the_repo_line.md`
+  — exists (PROJECT memory, not global `~/.claude/memory/`).
+
+**"All 10 resolve" means the DESTINATION resolves, not that the prescription
+still holds.** One of the ten (the 30-delegation quote) resolves to a file whose
+rule now inverts the moved entry's own wording. Read that as: path live,
+prescription superseded — never as blanket confirmation that the archived entry's
+advice is still correct.
+
+**Method note worth more than the moves.** My first grep pass reported THREE of
+these destinations missing. All three were live; the patterns missed on casing and
+paraphrase ("classify by tools held" vs "Classify an agent by the TOOLS IT HOLDS").
+A failed grep is not evidence of absence — widen the pattern and search the tree
+before recording rot. Had I trusted pass one, this compression would have
+"discovered" three homeless orders and re-added them on top of live text.
+
+**One unsupported claim dropped, recorded so the deletion is visible.** The
+08-28 cross-model entry's Status line read "applied-on 2026-08-28, except the two
+`noted` items below." No `noted` item existed below it — the entry that follows is
+itself `applied-on`. Same shape as the 08-25 banner's phantom "open external
+thread": a claim never supported by an entry, not one that aged out. Dropped as
+unsupported, not resolved.
+
+## 2026-08-28 — cross-model review of the 08-27 compression (codex + grok)
+- What happened: user-ordered review of the compression + §3 rule by codex
+  (inline packet, read-only) and grok (staged-files recipe, `--tools` contained,
+  containment verified by post-run dir diff). codex: 4 findings. grok: 23, incl.
+  3 CRITICAL my own verification pass missed — the closed-counter stub was a
+  REWORD that dropped 2 of 4 destinations, the archived counter lost its section
+  heading (a section-membership binding the "verbatim, no BINDINGS pass owed"
+  claim didn't cover), and the new §3 rule collided with append-only.
+  Reproducing codex's mildest finding also exposed that commit `cb6a9ae`
+  (another session, same morning) had deleted the grok playbook's §"Empty has
+  TWO causes" triage AND §"Tool-use short-circuit" hard safety rule without
+  re-homing them — restored same day, reconciled with that commit's legitimate
+  retraction. All fixes applied 2026-08-28; UNVERIFIABLE-tagged banner claims
+  were re-grepped against live destinations before accepting.
+- Root cause (of the misses): my compression verified MOVED TEXT (verbatim) and
+  ORDER HOMES (grep) but never re-derived the REWRITTEN summaries against their
+  originals — the exact "a fix is a change" / bindings-pass duty the moved
+  entries themselves prescribe. Section membership is a binding; a stub is a
+  reword.
+- Rule change needed: one PENDING item needs user sign-off (below); everything
+  else was fixable within existing autonomous-edit permissions.
+- Status: applied-on 2026-08-28, except the two `noted` items below.
+
+## 2026-08-28 — two governance gaps closed on user order
+- **`40-maintenance.md` had no row in its own §1 permissions table** (found by me
+  and independently by grok F15) — so the 08-27 compression's addition of a §3
+  standing rule was self-authorized with no permission bit governing it.
+- **A general diagnostic order was homed nowhere** (grok F9): the grok-SPECIFIC
+  triage lives in the playbook, but the general rule survived only in the
+  archive — which §4 forbids as a home.
+- Root cause, both: a file that governs every other file's edit permissions never
+  had its own row, and a compression is a tempting silent channel for adding one.
+  The new row closes the channel explicitly.
+- Rule change needed: both applied on user order 2026-08-28.
+- Status: applied-on 2026-08-28
+- Destination (§1 row): `harness/40-maintenance.md:22` — "| `40-maintenance.md`
+  (this file) | YES wording; **ASK USER** for new standing orders / thresholds |
+  … **Compression is not a rule-addition channel** …" (grepped 2026-08-28)
+- Destination (diagnostic rule): `skills/operational-rigor/SKILL.md:274` —
+  "**Naming a mechanism from a symptom is a claim, not an observation — read the
+  output bytes before naming the cause.**" (grepped 2026-08-28). Ships
+  `unprobed`.
+
+## 2026-08-28 — git-filter-repo hard-resets the worktree: it ate another session's uncommitted work
+- What happened: ran `git-filter-repo --replace-text --force` on `~/.claude` to
+  purge client PII from history. It rewrote 53 commits correctly, but also
+  hard-reset the working tree — silently destroying 172 uncommitted insertions
+  another session had made at 15:27 to `ground-truth-gates/SKILL.md`,
+  `skill-authoring/SKILL.md`, `skill-vetting/SKILL.md`. I had SEEN those files in
+  `git status` minutes earlier, correctly identified them as another session's
+  work, and deliberately left them uncommitted — which is exactly what made them
+  destroyable. Recovered byte-exact (172 insertions / 9 deletions, diffstat
+  matched) from the Obsidian vault copy, because the sync had run at ~15:5x,
+  after their edits and before the rewrite. Pure luck of timing.
+- Root cause: my `git bundle --all` backup captured REFS ONLY. Uncommitted
+  worktree state is not in any ref, so the backup I took specifically to make the
+  rewrite safe could not have restored the thing the rewrite actually destroyed.
+  I verified the backup existed; I never asked what it contained.
+- Rule change needed: NONE new — this is operational-rigor §4's "verify by
+  execution" and §2's baseline-before-mutation applied to backups themselves.
+  Worth carrying as a concrete instance: **a backup is not a backup until you
+  name what it does NOT cover.** For history rewrites specifically: `git stash`
+  or copy the dirty tree FIRST, or refuse to rewrite a dirty repo at all —
+  filter-repo does not warn, and `--force` suppresses the check that would have.
+- Second-order lesson: **leaving another session's uncommitted work in place is
+  not the safe option it looks like.** "Don't touch it" protects provenance but
+  offers zero protection against a destructive operation in the same repo. The
+  safe move is stash-or-copy it, act, then restore it untouched.
+- Status: applied-on 2026-08-28 (recovery verified; no rules-file edit owed)
+
+## 2026-08-28 — the brief must describe the delivery: two tiers, one mechanism
+- What happened: reviewing the sub-harness, I dispatched codex with the files INLINED
+  in the prompt but left the brief's line "FILES UNDER REVIEW (in `./files/`)" intact.
+  codex shell-globbed `/private/tmp/files`, found nothing, and returned no review —
+  three times, ~50 min, before I read the bytes instead of theorising. Identical
+  mechanism to grok's 08-28 attempt 3 (brief described staged files that were never
+  written; grok narrated "the workspace is empty" and exited). **Second instance, second
+  tier: a brief that contradicts its own delivery sends the subordinate hunting for
+  material that isn't there, and the failure looks exactly like model incapacity.**
+- Also measured, unrelated to the above and NOT a model failure: codex v0.149.0's inline
+  packet cliff sits just above **~30KB** (16/29.6 OK · 32/33/45 preamble-only · 51-63
+  silent, rc=0, `-o` never written), against the playbook's `79KB packet verified` from
+  v0.144.4. Interleaved PONG controls passed throughout, which is what separated
+  "packet too big" from "quota" and from "model broken".
+- Root cause: I built the packet and reused the brief without re-reading the brief
+  AGAINST the packet. The dispatch checklist asked whether the fields were filled, not
+  whether they were TRUE of this delivery.
+- Rule change needed: none new — this is the packet-SHAPE rule the same day's grok
+  retraction already established, now shown to be tier-independent. Landed as a
+  dispatch-time check rather than prose.
+- Status: applied-on 2026-08-28
+- Destination (asymmetry + the rule): `memory/reference_subordinate_routing_map.md` §2a —
+  "Review packet SHAPE — codex and grok need OPPOSITE shapes … A dispatch that returns
+  nothing is a SHAPE bug until proven otherwise" (grepped 2026-08-28)
+- Destination (checklist): `harness/30-delegation-templates.md` — "REVIEW dispatches to a
+  CLI: the target is STAGED AS FILES the reviewer reads, never pasted into the prompt."
+  (grepped 2026-08-28)
+- Destination (the size cliff): `memory/workflow_codex_subordinate.md` — "The 79KB
+  inline-packet ceiling is v0.144.4's and does NOT hold on v0.149.0." (grepped 2026-08-28)
+
+
+## Compression-pass narrative history (moved out of LESSONS.md 2026-08-29)
+
+Moved here because the log had grown to 51 of LESSONS.md's 100 lines — a live
+rules file turning into a maintenance history. LESSONS.md keeps a one-line-per-pass
+ledger; the full narrative for each pass is below, verbatim as it stood.
+
+Compressed 2026-07-12: six applied entries (2026-07-05 → 2026-07-12) moved
+verbatim to `LESSONS-archive.md`.
+Compressed 2026-08-25 at 243 lines / 19 entries: ALL 19 entries (2026-07-11 →
+2026-08-25) moved verbatim to `LESSONS-archive.md`. Its summary line — "what
+survives here is only what is NOT closed: one promoted rule-change proposal
+awaiting approval, one open external thread, and the recurrence counters" — was
+already stale before the 08-27 pass: the proposal was applied 08-26, and the
+"open external thread" had no entry in the pre-compression file at all — a
+claim never supported by an entry, not one that aged out. Dropped as
+unsupported, not resolved; recorded here so the deletion is visible. No `noted` entry existed in
+the 08-27 pre-image, so this compression removed none (§4 forbids that);
+whether 07-12 or 08-25 compressed a `noted` entry away was NOT re-checked.
+Compressed 2026-08-27 at 196 lines (wc -l) / 7 items (4 dated or applied
+entries + 3 counter bullets) — LINE trigger only (>150); the >20-entry trigger
+was nowhere near met. Moved verbatim, 5 objects: the applied "a fix is a change"
+rule change, the applied "word-presence diffs" entry, both grok output-empty
+entries (the "truncates" claim, superseded; its idle correction), and the
+read-only-is-not-a-control counter now that its promotion is EXECUTED. Left in
+place: the two still-climbing counters. **Every destination was grepped and its operative sentence
+quoted in the archive banner before the move** — the check both earlier
+compressions skipped. One order found homed nowhere (re-grep a claimed
+destination in the same edit) was written into `40-maintenance.md` §3 first;
+two rules files back-referencing moved entries were re-pointed in the same edit.
+Compressed 2026-08-29 at 181 lines / 4 dated entries + 3 counter bullets — LINE
+trigger only again. All 4 entries were `applied-on 2026-08-28`; moved verbatim by
+line-range slice (not retyped) and the archive tail byte-compared against the
+slice. All 10 destinations re-grepped LIVE first: all resolve, but 3 line numbers
+had drifted, 1 quoted paraphrase never matched the file's wording, and 1 quoted
+sentence had been REPLACED by a stronger rule that INVERTS it for two executors —
+corrections quoted in the archive banner. My first grep pass called 3 of those
+destinations missing and all 3 were live: **a failed grep is not evidence of
+absence.** One unsupported Status clause ("except the two `noted` items below",
+with no such items) dropped and recorded, same shape as the 08-25 phantom.
+That failed-grep order was homed in the same edit rather than left in this log or
+the archive (§4 forbids both as homes): `skills/delegation-and-review/references/
+discovery-sweep.md` §"A failed grep is not evidence of absence" — "re-search on a
+DISTINCTIVE content word from the rule rather than its cited phrasing … Cite
+destinations by an operative SENTENCE you paste verbatim, not by line number or
+paraphrase."
+
+⚠️ **CORRECTED 2026-08-26.** The 07-12 and 08-25 blocks above used to claim every
+moved entry "was verified applied by grepping its rule in the destination cache
+before the move." That was false, and is corrected at the archive's banners —
+read those, not a Status line. Both were re-audited 2026-08-26 at PRESCRIPTION
+granularity: the 08-25 pass named destinations for only 9 of 19 and verified
+those 9 (4 failures among the 10 it never named); the 07-12 pass named no
+destinations at all (5 of 10 prescriptions not live as written). Evidence:
+`claude code technique/experiments/lessons-applied-audit-2026-08-26/`.
+**Moving an entry here closes nothing. Before writing "applied", grep the
+destination and quote the operative sentence — a "compiled into §N" reference
+decays as files are reorganized and nothing re-checks it.**
