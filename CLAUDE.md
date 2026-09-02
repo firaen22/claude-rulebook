@@ -75,12 +75,12 @@ these rules or `~/.claude/harness/`, the harness wins; log it in LESSONS.md.
 
 ## Subordinate CLIs — pick with the routing map, dispatch from the playbook
 
-**Route with `~/.claude/memory/reference_subordinate_routing_map.md`, then open the
-playbook before dispatching — the per-CLI traps live there, not here.** Filenames
-below are in `~/.claude/memory/`. Shared frontier weakness of every tier: **unstated
-edge cases** — spec edge behavior explicitly in every hand-off; no effort tier
-substitutes for that.
-- **codex** = spec'd implementer + reviewer → `workflow_codex_subordinate.md`
+**A cross-family REVIEW dispatch loads the `cross-model-review` skill FIRST — it owns
+the packet, verdict check, and merge gate; the map/playbooks below only pick WHO and
+HOW.** Then route with `~/.claude/memory/reference_subordinate_routing_map.md` and
+open the playbook before dispatching. Filenames below are in `~/.claude/memory/`.
+Every tier shares one weakness — **unstated edge cases**: spec it, no tier substitutes.
+- **codex** = spec'd implementer + REVIEWER (loads the skill first) → `workflow_codex_subordinate.md`
 - **agy** (Gemini Flash) = adversary / edge-finder → `workflow_agy_subordinate.md`
 - **grok** (xAI) = structured/JSON-schema output → `workflow_grok_subordinate.md`
 - **opencode** = free models, full agent, **EDITS FILES** → `workflow_opencode_subordinate.md`

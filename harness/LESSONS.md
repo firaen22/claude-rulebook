@@ -179,3 +179,33 @@ The at-3 promotion duty above does NOT apply to entries here.
   (grepped 2026-08-28)
 - Destination (the size cliff): `memory/workflow_codex_subordinate.md` — "The 79KB
   inline-packet ceiling is v0.144.4's and does NOT hold on v0.149.0." (grepped 2026-08-28)
+### 2026-09-02 — a skill's description loses to a hard route that names it nowhere
+- Observed: a sampled (not exhaustive) transcript pass found genuine cross-family
+  review dispatches where `cross-model-review` never loaded even though CLAUDE.md's
+  own `codex = ... reviewer` bullet or the routing map's review rows fired the
+  dispatch — including the literal ask "review with codex and grok" (2026-08-25
+  03:34, classified OTHER by the sampling subagent's own classifier despite being
+  a genuine acceptance-gate review, a discrepancy the classifier itself did not
+  catch). A cross-model review of the original diagnosis (codex `gpt-5.6-luna`,
+  grok `grok-4.6`, both FIX verdicts) found the first-drafted evidence write-up
+  overclaimed precision the sampled data didn't support ("8 genuine reviews ran
+  without it" — the sample contains only 2 occasions classified GENUINE-REVIEW,
+  both misses) and the first-drafted CLAUDE.md patch left the actual competing
+  hard route (the codex bullet) untouched, so the collision it was meant to fix
+  would have persisted. Both defects were confirmed by reading the real files,
+  not accepted on the reviewers' say-so.
+- Candidate mechanism (not causally established — the sample shows misses
+  co-occurring with available hard routes, not that the routes caused them): a
+  skill `description` is a soft match the model must volunteer; a route already
+  sitting in an always-loaded file (CLAUDE.md, the routing map) is a hard match
+  already in context. A nearby paragraph pointing at the skill may not help if
+  the reader's eyes go straight to the bullet/row — untested until the re-probe.
+- Rule: when a skill gates a dispatch that CLAUDE.md or the routing map already
+  hard-routes, the hard-route text ITSELF (the bullet, the table row/header) must
+  point at the skill — not just a preceding sentence a scanning reader can skip.
+- Status: patched 2026-09-02, unverified (CLAUDE.md `codex` bullet now says
+  "loads the skill first"; routing map §2 and 10-orchestration.md §2 and
+  30-delegation-templates.md T5 each got a header note before their review
+  rows). A real before/after re-probe — inside an actual session context with
+  CLAUDE.md and the routing map loaded, not a bare Agent-tool subagent, per
+  the cross-model review's methodological objection — is owed and NOT yet run.

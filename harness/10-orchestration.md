@@ -60,6 +60,10 @@ transcript that lands in it displaces judgment.
 
 ## §2 — Routing table (task type → executor)
 
+**Cross-family REVIEW rows below (codex-as-reviewer, agy, "second opinion") are
+gated by the `cross-model-review` skill — load it before dispatching any of them;
+this table only picks WHO.** (2026-09-02, [[finding-cross-model-review-trigger-2026-09-02]])
+
 | Task | First choice | Notes |
 |---|---|---|
 | Find code / understand unfamiliar repo | Agent: `Explore`, model `sonnet` | `haiku` for simple "which file defines X" |

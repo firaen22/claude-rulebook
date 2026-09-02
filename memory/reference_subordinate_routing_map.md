@@ -96,6 +96,14 @@ is not.
 
 ## 2. Route-to table
 
+> **Cross-family REVIEW dispatches are gated by the `cross-model-review` skill — load
+> it before using any row below.** This table picks the reviewer; the skill owns the
+> packet, the exit-0≠verdict check, and the merge condition. A 2026-09-02 sampled
+> transcript pass found genuine review occasions where a reviewer bullet/row here
+> fired the dispatch and the skill never loaded — including the literal ask "review
+> with codex and grok" (2026-08-25). Exact hit/miss counts are unverified (sample,
+> not exhaustive) — see [[finding-cross-model-review-trigger-2026-09-02]].
+
 | Task | Route to | Basis |
 |---|---|---|
 | "Should we?" / safety / soundness / accepting a design | **codex** (or Opus) | MEASURED N=12, only tier that refuses |

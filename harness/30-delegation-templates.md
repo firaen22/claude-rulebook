@@ -127,7 +127,10 @@ tagged [inference] like any other unverified claim.
 Executor: FRESH-context agent that did not produce the work. `agent-skills:
 code-reviewer` sonnet for briefed scope; opus (+ second opinion from codex/agy)
 for miss-is-costly surfaces. Give it the spec and the location of the work —
-NEVER the producer's claims or self-assessment.
+NEVER the producer's claims or self-assessment. **A second opinion from a
+DIFFERENT model family (codex/agy/grok) is a cross-model-review skill dispatch
+— load that skill first; it owns the packet/verdict/merge gate, this template
+only picks WHO.** (2026-09-02, [[finding-cross-model-review-trigger-2026-09-02]])
 
 ```
 ROLE: Independent acceptance reviewer. The work is at {{paths/diff/branch}}.
