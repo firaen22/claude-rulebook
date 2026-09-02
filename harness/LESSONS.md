@@ -218,8 +218,16 @@ The at-3 promotion duty above does NOT apply to entries here.
   B1 none — vs PRE 6/6.** Net: the CLAUDE.md pointer has NO measurable effect on
   fresh-context routing in either direction, and does not over-trigger. The single
   POST miss was the "fix first, then review" shape (F2), the closest analogue to a
-  mid-session second-phase review; suggestive at N=1, not evidence. The fix stays
-  as harmless and unmeasured, NOT verified; a MID-SESSION probe (long-context main
-  session, with/without the pointer) is still the experiment the mechanism needs.
-  Evidence:
+  mid-session second-phase review; suggestive at N=1, not evidence. **MID-SESSION
+  arm run same day (sonnet subagents, ask sent into ~180k of doctrine context):
+  PRE snapshot 3/5 fire (M3 "fix them all…" MISS; M2 "proceed…" HALTED to ask
+  review-vs-fix, fired once answered), control silent.** Large context alone does
+  not reproduce the misses. The pre-registered "re-run the misses" step landed on
+  the POST snapshot by accident — `/compact` rebuilds the subagent CLAUDE.md from
+  disk, so "start-time snapshot" was wrong; it is last-rebuild snapshot — and both
+  fired 2/2 (N=1 each, directional only). The "fix, then review" phrasing flips 2/4
+  across all four arms regardless of the pointer: that is the historical miss shape,
+  and the pointer is not shown to fix it. The fix stays harmless and unmeasured,
+  NOT verified; the PRE mid-session re-run is closed as not-completable without
+  reverting the live CLAUDE.md. Evidence:
   `claude code technique/experiments/cross-model-review-trigger-reprobe-2026-09-02/`.
