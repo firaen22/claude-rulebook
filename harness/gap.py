@@ -11,6 +11,23 @@ Non-orphaned process group is mandatory: in an orphaned group the kernel
 DISCARDS stop signals and every variant would falsely pass.
 """
 import os, re, signal, subprocess, sys, time, json
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import contract   # build_home / snapshot / diff_snapshots: C3+C4 graded here too (sol F5)
+
+def survivors(pgid, home):
+    """Live non-zombie processes in the hook's group or carrying its HOME (see
+    contract.py's orphan scan). None = ps unusable (never 'no survivors')."""
+    r = subprocess.run(["/bin/ps", "-axwwEo", "pid=,pgid=,state=,command="],
+                       capture_output=True, text=True, timeout=10)
+    if r.returncode != 0 or not r.stdout.strip():
+        return None
+    mark = " HOME=" + home + " "; out = []
+    for ln in r.stdout.splitlines():
+        f = ln.split(None, 3)
+        if len(f) == 4 and f[0].isdigit() and f[1].isdigit() and int(f[0]) != pgid \
+           and not f[2].startswith("Z") and (int(f[1]) == pgid or mark in (" " + f[3] + " ")):
+            out.append(int(f[0]))
+    return out
 
 # grok 2026-09-02 F11 (CONFIRMED by reading): delivery was a blind sleep(1.0) after
 # spawn; an oversleep past the ~2-3s window would land the signal AFTER the ignore
@@ -40,7 +57,8 @@ def instrument(src, dst):
 
 def probe(path, sig, mode, home):
     env = {"HOME": home, "PATH": "/usr/bin:/bin", "TERM": "dumb"}
-    os.makedirs(os.path.join(home, ".claude", "session-state", "observed"), exist_ok=True)
+    contract._rmtree(home); os.makedirs(home)
+    contract.build_home(home, "")
     devnull = open(os.devnull, "wb")
     # sol 2026-09-01 (CONFIRMED): stdout went to /dev/null and grading looked only
     # at exit status, so a mutant leaking bytes in the stop-signal window PASSED.
@@ -52,6 +70,7 @@ def probe(path, sig, mode, home):
     ready = os.path.join(home, READY)
     try: os.unlink(ready)
     except OSError: pass
+    before = contract.snapshot(home, exclude=[ready, outf])
     t0 = time.time()
     p = subprocess.Popen(["/bin/bash", "--noprofile", "--norc", "-p", path, "manual"],
                          stdin=rfd, stdout=fo, stderr=devnull, env=env,
@@ -68,8 +87,11 @@ def probe(path, sig, mode, home):
         if not os.path.exists(ready):
             verdict = "VOID-no-ready-marker"
         else:
-            late = time.time() - os.stat(ready).st_mtime
-            if late > READY_MAX:
+            try:
+                late = time.time() - os.stat(ready).st_mtime
+            except OSError:            # sol F10: marker vanished between exists() and stat()
+                late = None; verdict = "VOID-ready-marker-vanished"
+            if late is not None and late > READY_MAX:
                 verdict = "VOID-late%.2fs" % late
     s = getattr(signal, "SIG" + sig)
     # codex 2026-09-01 F7 (CONFIRMED by reading): a target already gone before
@@ -101,11 +123,21 @@ def probe(path, sig, mode, home):
     if verdict is None:
         verdict = "BLOCKED"
     el = round(time.time() - t0, 2)
+    # sol 2026-09-02 F5 (CONFIRMED by reading): killpg below destroyed any survivor
+    # before it could be counted, and no canary was graded. Scan first, grade C4.
+    surv = survivors(p.pid, home)
+    if surv is None:      verdict += "+SURV?"                      # unknown, never clean
+    elif surv:            verdict += "+SURV%d" % len(surv)
     try:
         os.killpg(p.pid, signal.SIGCONT); os.killpg(p.pid, signal.SIGKILL)
         os.waitpid(p.pid, 0)
     except (OSError, ChildProcessError):
         pass
+    for spid in (surv or []):
+        try: os.kill(spid, 9)
+        except OSError: pass
+    destroyed = contract.diff_snapshots(before, contract.snapshot(home, exclude=[ready, outf]))
+    if destroyed:         verdict += "+C4:" + ";".join(destroyed[:3])
     try: os.close(wfd)
     except OSError: pass
     devnull.close()

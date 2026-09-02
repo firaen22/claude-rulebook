@@ -48,8 +48,37 @@ notes on gap.py refer to that round.
 | F10 | gap.py anchor miss scored `pass: False` instead of INCONCLUSIVE | **rejected-with-reason** (S3, not in FIX list) | fail-closed by design; the row carries `note: NO-EARLY-TRAP-ANCHOR` |
 | F11 | gap.py blind `sleep(1.0)`: an oversleep past the widened window lands the signal after `trap '' TSTP` and grades a vulnerable hook `exit0` | **FIXED** — busy-wait writes `$HOME/.gap_ready` (builtin redirection, no fork); prober waits for the marker, delivers, records `late`; `>1.5s` or no marker → `VOID-…` | reproduced by reading; v28 6/6 `exit0`, mutant M14 still `exit0+C2LEAK1B` ×6 after the change |
 
-### Verdict on the dual gate
+### Verdict on the dual gate (round 1+2)
 Both families produced confirmed, non-empty verdicts. Every FIX item is reproduced-and-fixed
 or rejected-with-reason above; no item is deferred. Post-fix re-verification (this round):
 v28 contract 57/57, gap 6/6, grpsig2 5/5 both cases, pidhang DISCRIMINATED; mutants M14,
-M16, M17 all FAIL as intended. Dual-lens **PROCEED** on the harness at this commit.
+M16, M17 all FAIL as intended. Dual-lens **PROCEED** on the harness at commit `4cf965b`.
+
+## codex `gpt-5.6-sol` (effort high) — round 3 on `4cf965b` — VERDICT: FIX F1..F10 (2026-09-02)
+
+Packet: the four `harness/*.py`, `ROUND2-DIFF.patch` (692e4a0..4cf965b), v28.sh + M17 for
+context, brief with a round-2 addendum listing the already-rejected classes so they would
+not be re-litigated (none were). rc=0, 10.9KB body, model confirmed in the codex log.
+
+| id | claim | disposition | evidence |
+|---|---|---|---|
+| F1 | fd EOF check: a single `os.read(r,1)` that returns a byte scores the fd clean while a descendant still holds it | **FIXED** — drain until EOF; `EAGAIN` = held; other `OSError` = unknown (`3?Exc`), never clean | probe hook (detached child writes 1 byte to fd 3, holds 4s): OLD harness scored the fd clean (child caught only via HOME attribution); NEW adds `C3 inherited fd(s) [3] still held`. The false GREEN needs F2 evasion as well — this is now an independent second detector |
+| F2 | HOME attribution is removable (`env -i`); grpsig2 lacked it entirely; proposes pre-spawn PID baseline + fail-closed on unattributed survivors | **PARTIAL** — grpsig2 now attributes by HOME too (`ps -E`, `HOMEMARK`); the env-scrub gap stays a documented limit (README); the PID-baseline remedy **rejected-with-reason** | a same-UID pid-set diff on a live macOS host catches launchd user agents spawning during a 7-minute run → nondeterministic false REDs; an attribution the hook must actively defeat is the deterministic option available in userland |
+| F3 | pidhang graded only survivors: rc, stdout bytes, canary tree discarded | **FIXED** — stdout captured, `rc!=0`, bytes, `diff_snapshots(home)` → `DIRTY` landed trial, fails the differential | reproduced by reading (`stdout=DEVNULL`, `returncode` never read) |
+| F4 | `shallow_snapshot` graded only the cwd's top level; nested pre-existing files invisible to C4 | **FIXED** — recursive `cwd_snapshot(workdir)` excluding this case's home, canary tree, capture files and run-level TABLE/RESULT | probe hook `rm -f ./hostilebin/python3`: OLD harness `1/1 pass` (false GREEN), NEW `FAIL … C4 CWDFILE/DELETED hostilebin/python3` |
+| F5 | gap.py `killpg` before any survivor scan; no C4 | **FIXED** — `survivors()` (pgid + HOME) scanned before cleanup → `+SURVn` / `+SURV?`; home built with canaries and diffed → `+C4:` | same class as grok F6 (pidhang); v28 still 6/6 `exit0`, M14 still `+C2LEAK1B` ×6 |
+| F6 | grpsig2 I01 never read its stdout capture; neither case graded C4 | **FIXED** — I01 grades bytes; both cases diff against a per-target `HOME_BEFORE` snapshot | reproduced by reading |
+| F7 | `ps` rc≠0 with empty stdout parsed as an empty process table → 0 survivors | **FIXED** in all three instruments — rc≠0 or empty → `RuntimeError`/`None`, which every caller already treats as unknown/VOID | confirmed: `/bin/ps -p <bad>` exits 1 with empty stdout |
+| F8 | fixed temp fd 300 exceeds a 256 soft `RLIMIT_NOFILE` → `dup2` fails in `preexec_fn`, no case result | **FIXED** — temps at `max(max(ws), 3+n)+1` | confirmed: `launchctl limit maxfiles` soft = 256 on this Mac (this session ran at 1048576, which is why the bug did not surface) |
+| F9 | pidhang `rmtree(ignore_errors)` then `makedirs` → `FileExistsError` on a mode-000 leftover | **FIXED** — `contract._rmtree` (chmods on error) | reproduced by reading; the same fixture class (observed/ at 0o500) already bit contract.py once |
+| F10 | gap.py `exists()` then `stat()` on the ready marker, unhandled `OSError` | **FIXED** — `VOID-ready-marker-vanished` | reproduced by reading |
+
+Post-fix: see the run block appended below.
+
+Post-fix run (2026-09-02, after the sol round): v28 contract 57/57, gap 6/6 `exit0`,
+grpsig2 I01 5/5 + I02 5/5 landed clean, pidhang DISCRIMINATED (v22 10/10 leak, v26 10/10
+leak, v27 0, v28 0; blocked=0 dirty=0); mutants M14 (`+C2LEAK1B` ×6), M16 (`C4 CWDFILE/
+DELETED payload.sh`), M17 (`C3 1 process abandoned`) all FAIL as intended; probe hooks for
+sol F1 and F4 FAIL under the new harness and passed (F4) / were fd-clean (F1) under `4cf965b`.
+Three families (codex luna, grok, codex sol) have now produced confirmed verdicts on this
+tree; every item is fixed, partial-with-documented-limit (sol F2), or rejected-with-reason.

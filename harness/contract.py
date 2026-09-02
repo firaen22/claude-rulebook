@@ -25,12 +25,18 @@ def md5(p):
             h.update(c)
     return h.hexdigest()
 
-def snapshot(root):
-    """Every regular file + symlink under root: identity that a delete/replace changes."""
+def snapshot(root, exclude=()):
+    """Every regular file + symlink under root: identity that a delete/replace changes.
+    exclude: absolute paths (files or directory subtrees) the harness itself mutates
+    during the run; they are skipped, never graded."""
     out = {}
+    ex = tuple(os.path.abspath(e) for e in exclude)
     for dp, dns, fns in os.walk(root, followlinks=False):
+        dns[:] = [d for d in dns if not os.path.abspath(os.path.join(dp, d)).startswith(ex)]
         for n in fns + dns:
             p = os.path.join(dp, n)
+            if ex and os.path.abspath(p).startswith(ex):
+                continue
             try:
                 st = os.lstat(p)
             except OSError:
@@ -70,38 +76,23 @@ def diff_snapshots(before, after):
             bad.append(f"MODE-CHANGED {p} {oct(b['mode'])}->{oct(a['mode'])}")
     return bad
 
-def shallow_snapshot(root, exclude=()):
-    """Top-level entries of root only (files, symlinks, dirs as opaque entries) --
-    the cwd the hook runs in. Non-recursive on purpose: per-case homes live
-    underneath and are graded separately via snapshot(home)."""
-    out = {}
-    ex = {os.path.abspath(e) for e in exclude}
-    try:
-        names = os.listdir(root)
-    except OSError:
-        return out
-    for n in names:
-        p = os.path.join(root, n)
-        if os.path.abspath(p) in ex:
-            continue
-        try:
-            st = os.lstat(p)
-        except OSError:
-            continue
-        rec = {"ino": st.st_ino, "size": st.st_size, "mtime": st.st_mtime_ns,
-               "mode": stat.S_IMODE(st.st_mode), "type": "l" if stat.S_ISLNK(st.st_mode)
-               else ("d" if stat.S_ISDIR(st.st_mode) else "f")}
-        if rec["type"] == "f":
-            try: rec["md5"] = md5(p)
-            except OSError: rec["md5"] = "UNREADABLE"
-        elif rec["type"] == "l":
-            rec["target"] = os.readlink(p)
-        elif rec["type"] == "d":
-            # directories: identity only. Their mtime changes whenever the hook
-            # (legitimately) creates a file inside, so it must not count.
+def cwd_snapshot(workdir, home, ext_root, outf, errf):
+    """The cwd the hook runs in, recursively, minus what the harness itself writes
+    during this case (this case's home and canary tree are graded separately;
+    the capture files and the run-level TABLE/RESULT files are harness-owned).
+    sol 2026-09-02 F4 (CONFIRMED by probe): the earlier top-level-only listing
+    left every nested pre-existing file (hostilebin/python3, other cases' homes)
+    ungraded -- a hook deleting one scored destroyed=[]."""
+    ex = [home, ext_root, outf, errf]
+    ex += [os.path.join(workdir, n) for n in os.listdir(workdir)
+           if n.startswith(("TABLE-", "RESULT-"))]
+    snap = snapshot(workdir, exclude=ex)
+    # top-level directories: identity only -- their mtime moves whenever a file
+    # is legitimately created inside (the hook writes its own records there).
+    for rel, rec in snap.items():
+        if rec["type"] == "d":
             rec["mtime"] = 0; rec["size"] = 0
-        out[n] = rec
-    return out
+    return snap
 
 # ---------------------------------------------------------------- canary tree
 CANARY_TEXT = b"CANARY-DO-NOT-TOUCH\n" * 8
@@ -321,7 +312,7 @@ def run_case(target, case, workdir):
     # (payload.sh, a prior case's capture) scored destroyed=[]. Snapshot the
     # cwd's own top-level entries too; this case's capture files are excluded
     # because the harness itself truncates them just below.
-    before_cwd = shallow_snapshot(workdir, exclude={outf, errf})
+    before_cwd = cwd_snapshot(workdir, home, ext_root, outf, errf)
     fo, fe = open(outf, "wb"), open(errf, "wb")
 
     hold_open = kind in ("sig_pid", "sig_grp")   # keep target alive until the signal lands
@@ -341,8 +332,12 @@ def run_case(target, case, workdir):
         # then close everything else; the harness keeps the read ends and checks
         # them for EOF after the run (a held write end = a leaked descendant).
         if ws:
-            for i, w in enumerate(ws): os.dup2(w, 300 + i)
-            for i in range(len(ws)): os.dup2(300 + i, 3 + i); os.close(300 + i)
+            # sol 2026-09-02 F8 (CONFIRMED: launchctl maxfiles soft=256 on this Mac,
+            # so a Terminal-launched run has fds <256 only): temps sit just above
+            # every source and target instead of at a fixed high number.
+            base = max(max(ws), 3 + len(ws)) + 1
+            for i, w in enumerate(ws): os.dup2(w, base + i)
+            for i in range(len(ws)): os.dup2(base + i, 3 + i); os.close(base + i)
             os.closerange(3 + len(ws), 4096)
     if kind == "zero_stdin":
         fin = open("/dev/zero", "rb"); stdin_arg = fin; pipe = None
@@ -437,8 +432,13 @@ def run_case(target, case, workdir):
     try:
         # -E appends each process's environment to its command field (same-uid
         # processes only, which is all the hook can spawn).
-        ps = subprocess.run(["/bin/ps", "-axwwEo", "pid=,pgid=,state=,command="],
-                            capture_output=True, text=True, timeout=10).stdout
+        _psr = subprocess.run(["/bin/ps", "-axwwEo", "pid=,pgid=,state=,command="],
+                              capture_output=True, text=True, timeout=10)
+        if _psr.returncode != 0 or not _psr.stdout.strip():
+            # sol 2026-09-02 F7 (CONFIRMED: ps exits 1 with empty stdout on error):
+            # an empty listing is not an empty process table -> orphans=-1 below
+            raise RuntimeError("ps failed rc=%d" % _psr.returncode)
+        ps = _psr.stdout
         seen = set()
         for ln in ps.splitlines():
             f = ln.split(None, 3)
@@ -470,13 +470,17 @@ def run_case(target, case, workdir):
         # grok F4 follow-through: a write end still held after the hook exited
         # means some descendant (found or not) kept the inherited fd.
         for i, r in enumerate(fd_readers):
+            # sol 2026-09-02 F1 (CONFIRMED by probe): a single read returned a byte
+            # some descendant had written and the fd was scored clean while still
+            # held. Drain: clean only on EOF (b""), held on EAGAIN, unknown on error.
             try:
                 os.set_blocking(r, False)
-                os.read(r, 1)                 # b"" = every writer closed
+                while os.read(r, 65536):
+                    pass
             except BlockingIOError:
                 fd_held.append(3 + i)
-            except OSError:
-                pass
+            except OSError as e:
+                fd_held.append("%d?%s" % (3 + i, e.__class__.__name__))
         for spid in seen:
             try: os.kill(spid, 9)
             except OSError: pass
@@ -533,7 +537,7 @@ def run_case(target, case, workdir):
     destroyed = diff_snapshots(before, after)
     destroyed += ["CWD/" + x for x in diff_snapshots(before_ext, snapshot(ext_root))]
     destroyed += ["CWDFILE/" + x for x in
-                  diff_snapshots(before_cwd, shallow_snapshot(workdir, exclude={outf, errf}))]
+                  diff_snapshots(before_cwd, cwd_snapshot(workdir, home, ext_root, outf, errf))]
     if _exp_before is not None:
         _now = md5(_expf) if os.path.exists(_expf) else None
         if _now != _exp_before:

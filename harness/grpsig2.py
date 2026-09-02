@@ -43,9 +43,15 @@ PAYLOAD    = b'{"session_id":"grpsig2","transcript_path":"/dev/null","hook_event
 
 
 def ps_rows():
+    """-E appends the environment to command= so members() can also attribute a
+    descendant that left the group by its inherited HOME (sol 2026-09-02 F2).
+    None on any ps failure, including rc!=0 with empty stdout (sol F7)."""
     try:
-        out = subprocess.run(["/bin/ps", "-axo", "pid=,pgid=,state=,command="],
-                             capture_output=True, text=True, timeout=10).stdout
+        r = subprocess.run(["/bin/ps", "-axwwEo", "pid=,pgid=,state=,command="],
+                           capture_output=True, text=True, timeout=10)
+        if r.returncode != 0 or not r.stdout.strip():
+            return None
+        out = r.stdout
     except Exception:
         return None
     rows = []
@@ -55,9 +61,16 @@ def ps_rows():
             rows.append((int(f[0]), int(f[1]), f[2], f[3]))
     return rows
 
+HOMEMARK = {}      # stubmark -> " HOME=<home> " token, set by run_target
+HOME_BEFORE = {}   # home -> pre-run canary snapshot, set by run_target
+
 def members(rows, pgid, stubmark):
-    """Non-zombie processes in the hook's group OR any stub of this run."""
-    return [r for r in rows if (r[1] == pgid or stubmark in r[3]) and not r[2].startswith("Z")]
+    """Non-zombie processes in the hook's group, any stub of this run, or any
+    process still carrying this run's HOME (left the group)."""
+    hm = HOMEMARK.get(stubmark)
+    return [r for r in rows
+            if (r[1] == pgid or stubmark in r[3] or (hm and hm in (" " + r[3] + " ")))
+            and not r[2].startswith("Z")]
 
 def probe_alive(rows, pgid, stubmark):
     """The hung interpreter probe, alive AND in the hook's process group."""
@@ -138,7 +151,13 @@ def one_trial_I01(hook, workdir, home, stubmark):
     surv = real_survivors(p.pid, stubmark)
     sweep(p.pid, stubmark)
     if surv is None: return ("VOID", None)            # ps vanished -> retry
-    return ("OK", surv)
+    fails = list(surv)
+    # sol 2026-09-02 F6 (CONFIRMED by reading): I01 never looked at its stdout
+    # capture or the canary tree. Bytes written before the KILL are C2 bytes.
+    ob = os.path.getsize(os.path.join(workdir, "grp.out"))
+    if ob: fails.append("%dB stdout" % ob)
+    fails += ["C4 " + d for d in contract.diff_snapshots(HOME_BEFORE[home], contract.snapshot(home))]
+    return ("OK", fails)
 
 def one_trial_I02(hook, workdir, home, stubmark):
     p, wfd, outf = spawn(hook, workdir, home)
@@ -182,6 +201,7 @@ def one_trial_I02(hook, workdir, home, stubmark):
     sweep(p.pid, stubmark)
     if surv is None: return ("VOID", None)            # ps vanished -> retry
     if surv: fails.append("%d survivor(s): %s" % (len(surv), surv))
+    fails += ["C4 " + d for d in contract.diff_snapshots(HOME_BEFORE[home], contract.snapshot(home))]
     return ("OK", fails)
 
 def run_case(trial_fn, hook, workdir, home, stubmark):
@@ -210,6 +230,8 @@ def run_target(target, outroot):
     contract.build_home(home, "")
     hook = contract.make_interp_variant(target, workdir, "hang")
     stubmark = os.path.join(workdir, "interp_hang")
+    HOMEMARK[stubmark] = " HOME=" + home + " "
+    HOME_BEFORE[home] = contract.snapshot(home)      # C4 baseline for every trial (sol F6)
     l1, t1, f1 = run_case(one_trial_I01, hook, workdir, home, stubmark)
     l2, t2, f2 = run_case(one_trial_I02, hook, workdir, home, stubmark)
     return [("I01_grp_KILL", l1, t1, f1), ("I02_grp_STOP", l2, t2, f2)]
