@@ -85,14 +85,27 @@ See §3. Create it on first lesson.
 
 Existing memory rules apply (update-in-place, no duplicates, delete wrong ones).
 
-Index-line length: the legacy debt was MIGRATED 2026-09-02 — 226 of 279 entries
+Index-line length: the legacy debt was MIGRATED 2026-09-02 — 228 of 279 entries
 across all 17 project indexes trimmed to ≤150 CHARACTERS, detail moved into the
-topic files. Three lines in claude-code-technique are deliberately left over: one
-is structurally impossible (its title+link prefix alone is 156 chars) and two
-assert facts their global targets do not carry, so trimming them would have
-destroyed the only copy. The earlier note here said "~170 over 150, four indexes";
-both halves were wrong — it counted four of the seventeen indexes, and it measured
-with macOS `awk`, which counts BYTES (see §4). Measure with python `len`.
+topic files. ONE line is deliberately left over, in claude-code-technique: its
+title+link prefix alone is 156 chars, so no hook content can reach the cap.
+The earlier note here said "~170 over 150, four indexes"; both halves were wrong
+— it counted four of the seventeen indexes, and it measured with macOS `awk`,
+which counts BYTES (see §4). Measure with python `len`.
+
+The migration surfaced three index lines asserting facts their link targets did
+not carry. Each was resolved from evidence rather than by making one side match
+the other, and in each case a DIFFERENT side was wrong: the grok hook's
+"unstated edge 0/34" was an index-only sum of two differently-instrumented runs
+(28 isolated-HOME + 6 default-config) that the playbook never states — corrected
+to its headline 0/28; the Groq hook's "confirmed 2026-09-01" was REAL and the
+playbook was simply missing the write-back — the 09-01 re-check is now recorded
+in its suspension banner; and TG-bot's "live 2026-08-27" was real but blanket,
+sourced from a user confirmation recorded only in `agent_upgrade_phase1.md`, so
+it was written into all seven topic files it covers WITH the distinction that a
+deployment confirmation is not a per-feature behavioural test. **An index line
+that outruns its topic file is a write-back gap as often as it is an error —
+find the evidence before deleting the claim.**
 
 ## ~~`~/.claude/skills/subordinates/SKILL.md`~~ `~/.claude/skills/delegation-and-review/SKILL.md` (merged 2026-07-07)
 
