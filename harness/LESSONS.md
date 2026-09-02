@@ -203,9 +203,17 @@ The at-3 promotion duty above does NOT apply to entries here.
 - Rule: when a skill gates a dispatch that CLAUDE.md or the routing map already
   hard-routes, the hard-route text ITSELF (the bullet, the table row/header) must
   point at the skill — not just a preceding sentence a scanning reader can skip.
-- Status: patched 2026-09-02, unverified (CLAUDE.md `codex` bullet now says
-  "loads the skill first"; routing map §2 and 10-orchestration.md §2 and
-  30-delegation-templates.md T5 each got a header note before their review
-  rows). A real before/after re-probe — inside an actual session context with
-  CLAUDE.md and the routing map loaded, not a bare Agent-tool subagent, per
-  the cross-model review's methodological objection — is owed and NOT yet run.
+- Status: patched 2026-09-02 (CLAUDE.md `codex` bullet now says "loads the
+  skill first"; routing map §2, 10-orchestration.md §2, 30-delegation-templates.md
+  T5 each got a header note). **Re-probe run same day, PRE arm: the candidate
+  mechanism did NOT reproduce.** Fresh sonnet subagents holding the OLD CLAUDE.md
+  snapshot fired `cross-model-review` on 6/6 firing phrasings (Skill was the FIRST
+  tool call in 5/6 — before any disk file, so the new map/harness notes are not the
+  cause either); collision controls 0/2; grader POS/NEG sound. So in fresh context
+  the description alone routes these asks; the historical misses were the MAIN
+  session model mid-task with a large context — fresh-context routing ≠ mid-session
+  routing, and this harness cannot separate "large context dilutes the description"
+  from "hard route wins". The fix is harmless and unmeasured, not verified. POST arm
+  (fresh session, post-fix snapshot) queued as a spawn_task chip; a MID-SESSION
+  probe is the experiment the mechanism actually needs. Evidence:
+  `claude code technique/experiments/cross-model-review-trigger-reprobe-2026-09-02/`.
