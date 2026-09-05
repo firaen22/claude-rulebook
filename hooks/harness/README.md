@@ -10,9 +10,20 @@ Curated from the round-23 working tree (session scratchpad, 2026-09-01).
 Working directories, per-run homes, and raw run outputs were excluded;
 review stderr/stdout logs are kept as evidence.
 
-Cross-model reviewed (codex luna/sol + grok, 2026-09-01/02): 57/57 contract
-cases, gap 6/6, grpsig2 5/5 x2, pidhang discriminated; mutants M14/M16/M17
-fail as intended. Full trail in `reviews/2026-09-01-cross-model-harness-review.md`.
+Cross-model reviewed across three dates, four rounds — codex (luna/sol) and grok
+throughout, plus gemini 3.6 on the first 2026-09-06 round. Current results,
+re-run 2026-09-06: 57/57 contract cases, gap 6/6, grpsig2 5/5 x2, pidhang
+discriminated, `run_all --pidhang` rc 0.
+- 2026-09-01/02 — the review this tree was curated from; mutants M14/M16/M17
+  fail as intended. Trail: `reviews/2026-09-01-cross-model-harness-review.md`.
+- 2026-09-05 — the `HOME=` orphan clause does not reach platform binaries;
+  fixed by cwd attribution, then re-reviewed (M18). See "Orphan detection" below.
+- 2026-09-06 — the last two documented holes closed: A06 could not enforce
+  `WALL_CEIL`, and C2 was graded from a file the hook could `ftruncate`
+  (M19–M22). See "Other findings" below.
+
+**Read the dated sections, not this summary, before trusting any single number** —
+each round restates what its predecessor got wrong.
 
 ## Contract (every path)
 - C1 exit status 0 always
