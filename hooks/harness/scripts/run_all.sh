@@ -32,8 +32,23 @@ CAND="${POS[0]:-$ROOT/candidate/v28.sh}"
 case "$CAND" in /*) ;; *) CAND="$PWD/$CAND" ;; esac
 LABEL="${POS[1]:-$(basename "${CAND%.sh}")}"
 [ -f "$CAND" ] || { echo "run_all.sh: candidate not found: $CAND" >&2; exit 2; }
-WORK="${WORK:-${TMPDIR:-/tmp}/hook-harness-$LABEL}"
-chmod -R u+rwx "$WORK" 2>/dev/null; rm -rf "$WORK"; mkdir -p "$WORK"
+# The default WORK is UNIQUE per run. It used to be $TMPDIR/hook-harness-$LABEL, so
+# two concurrent runs with the same label shared one directory: each rm -rf'd the
+# other's files, and -- since survivors are attributed by cwd == workdir -- run A
+# counted and SIGKILLed run B's leaked descendant before B scanned, and B then
+# reported 1/1 pass on a leaking hook (measured 2026-09-05: a FALSE GREEN). An
+# explicit WORK=... is honoured as before; never point two live runs at one dir.
+if [ -z "${WORK:-}" ]; then
+  # LABEL is grading metadata; only a slash-free form goes into the pathname
+  # (`run_all.sh v28.sh release/28` made mktemp look for a nonexistent parent).
+  _safe="$(printf '%s' "$LABEL" | tr -c 'A-Za-z0-9._-' '_')"
+  WORK="$(mktemp -d "${TMPDIR:-/tmp}/hook-harness-$_safe.XXXXXX")" || { echo "run_all.sh: mktemp failed" >&2; exit 2; }
+else
+  # An explicit WORK is about to be rm -rf'd: refuse if any live process still
+  # has its cwd under it (another run), instead of deleting that run's files.
+  python3 -c 'import sys; sys.path.insert(0, sys.argv[2]); import contract; contract.require_exclusive_workdir(sys.argv[1], "run_all", lock=False)' "$WORK" "$ROOT/harness" || exit 2
+  chmod -R u+rwx "$WORK" 2>/dev/null; rm -rf "$WORK"; mkdir -p "$WORK"
+fi
 bad=0
 run() {  # name, command...
   local name="$1"; shift

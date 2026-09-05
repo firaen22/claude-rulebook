@@ -17,10 +17,15 @@ import contract, grpsig2
 GOOD=b'{"session_id":"abc","transcript_path":"/tmp/x.jsonl","hook_event_name":"PreCompact","trigger":"manual"}'
 CAP=6.0; MAXTRIES=40
 
-def scan(pgid, workdir, home):
-    """Survivors, or None when ps is unusable (sol F7: rc!=0 + empty stdout is not an empty table)."""
+def scan(pgid, workdir, home, cwd_pre=None):
+    """Survivors, or None when ps is unusable (sol F7: rc!=0 + empty stdout is not an empty table).
+    cwd_pre: contract.cwd_pids(workdir) taken before Popen; the out-of-group HOME= clause is
+    inert for macOS platform binaries (mutant M18), so pids whose cwd is the workdir and were
+    not in cwd_pre are survivors too. None cwd_pre or unusable lsof -> whole scan unknown (None)."""
     r=subprocess.run(["/bin/ps","-axwwEo","pid=,pgid=,state=,command="],capture_output=True,text=True,timeout=10)
     if r.returncode!=0 or not r.stdout.strip(): return None
+    cwd_now=contract.cwd_pids(workdir)
+    if cwd_now is None or cwd_pre is None: return None
     ps=r.stdout
     surv=[]; seen=set(); homemark=" HOME="+home+" "
     for ln in ps.splitlines():
@@ -32,6 +37,10 @@ def scan(pgid, workdir, home):
         if len(f)==4 and f[0].isdigit() and int(f[0]) not in seen and int(f[0])!=pgid and not f[2].startswith("Z") \
            and ((workdir+"/interp_") in f[3] or homemark in (" "+f[3]+" ")):   # grok F2: out-of-group descendants
             surv.append((int(f[0]),f[2])); seen.add(int(f[0]))
+    states={int(f[0]):f[2] for f in (ln.split(None,3) for ln in ps.splitlines()) if len(f)>=3 and f[0].isdigit()}
+    for cpid in sorted(cwd_now-cwd_pre):                    # M18: cwd survives execve; HOME= does not reach /bin binaries
+        if cpid not in seen and cpid!=pgid and not states.get(cpid,"").startswith("Z"):
+            surv.append((cpid,states.get(cpid,"?"))); seen.add(cpid)
     return surv
 
 def one(hook, sig, offset, workdir):
@@ -47,6 +56,7 @@ def one(hook, sig, offset, workdir):
     before=contract.snapshot(home)
     outf=os.path.join(workdir,"ph.out"); fo=open(outf,"wb")
     rfd,wfd=os.pipe()
+    cwd_pre=contract.cwd_pids(workdir)                       # M18: baseline for scan()'s cwd clause
     p=subprocess.Popen(contract.INVOC+[target,"manual"],stdin=rfd,stdout=fo,stderr=subprocess.DEVNULL,env=env,cwd=workdir,preexec_fn=lambda:os.setpgid(0,0))
     os.close(rfd)
     try: os.write(wfd,GOOD[:20])
@@ -66,7 +76,7 @@ def one(hook, sig, offset, workdir):
     if p.poll() is None and alive is True:
         alive="BLOCKED"                                      # grok F6: scan BEFORE destroying the group
     time.sleep(0.35)
-    surv=scan(p.pid, workdir, home)
+    surv=scan(p.pid, workdir, home, cwd_pre)
     for pid,_ in (surv or []):
         try: os.kill(pid,9)
         except OSError: pass
@@ -89,6 +99,10 @@ def one(hook, sig, offset, workdir):
 
 def trials(hook, tag, n=10):
     wd=os.path.join(os.path.dirname(os.path.abspath(__file__)),"mrepwd_"+tag)
+    # This path is fixed per tag, so two concurrent pidhang runs SHARE it. Refuse
+    # before rmtree (never delete a live run's files), and before any cwd-attributed
+    # kill could land on the other run's processes.
+    contract.require_exclusive_workdir(wd, "pidhang")
     contract._rmtree(wd)
     os.makedirs(wd)
     landed=0; maxorph=0; orphaned_runs=0; blocked=0; void=0; dirty=0; tries=0; offsets=[0.0,0.1,0.2]; why=[]

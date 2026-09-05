@@ -62,15 +62,45 @@ def ps_rows():
     return rows
 
 HOMEMARK = {}      # stubmark -> " HOME=<home> " token, set by run_target
+CWD_PRE = {}       # hook pid (== pgid) -> (workdir, pre-spawn cwd_pids), set by spawn
 HOME_BEFORE = {}   # home -> pre-run canary snapshot, set by run_target
 
-def members(rows, pgid, stubmark):
+def members(rows, pgid, stubmark, cw=None):
     """Non-zombie processes in the hook's group, any stub of this run, or any
     process still carrying this run's HOME (left the group)."""
     hm = HOMEMARK.get(stubmark)
-    return [r for r in rows
-            if (r[1] == pgid or stubmark in r[3] or (hm and hm in (" " + r[3] + " ")))
-            and not r[2].startswith("Z")]
+    # 2026-09-05 (mutant M18): the HOME= token is not emitted by ps -E for macOS
+    # platform binaries, so a setsid'd /bin/sleep was invisible here. Add the pids
+    # whose cwd is this trial's workdir and were not there before spawn -- an
+    # identity that survives execve (see contract.cwd_pids). Callers that GRADE
+    # (real_survivors) resolve cw themselves and treat None as unknown -> VOID;
+    # here None degrades to best-effort, which is right only for cleanup (sweep)
+    # and the I02 running-state probe.
+    if cw is None:
+        cw = cwd_extra(pgid) or set()
+    out = [r for r in rows
+           if (r[1] == pgid or stubmark in r[3] or (hm and hm in (" " + r[3] + " "))
+               or r[0] in cw)
+           and not r[2].startswith("Z")]
+    # UNION, not AND: a cwd-attributed pid counts even if the ps table (taken before
+    # lsof) lacks its row -- otherwise a survivor born in that gap is dropped.
+    seen = {r[0] for r in out}
+    states = {r[0]: r[2] for r in rows}
+    for cpid in sorted(cw):
+        if cpid not in seen and not states.get(cpid, "").startswith("Z"):
+            out.append((cpid, -1, states.get(cpid, "?"), "<cwd-attributed, not in ps sample>"))
+    return out
+
+def cwd_extra(pgid):
+    """cwd-attributed pids for this hook: (now - pre - {hook}), or None when UNKNOWN
+    (no baseline recorded, or lsof unusable at either sample). Unknown is not empty."""
+    pre = CWD_PRE.get(pgid)
+    if pre is None or pre[1] is None:
+        return None
+    now = contract.cwd_pids(pre[0])
+    if now is None:
+        return None
+    return now - pre[1] - {pgid}
 
 def probe_alive(rows, pgid, stubmark):
     """The hung interpreter probe, alive AND in the hook's process group."""
@@ -104,9 +134,11 @@ def spawn(hook, workdir, home):
     outf = open(os.path.join(workdir, "grp_%03d.out" % _SPAWN_N[0]), "wb")
     errf = open(os.path.join(workdir, "grp_%03d.err" % _SPAWN_N[0]), "wb")
     rfd, wfd = os.pipe()
+    _pre = contract.cwd_pids(workdir)        # baseline for members()' cwd clause
     p = subprocess.Popen(["/bin/bash", "--noprofile", "--norc", "-p", hook, "manual"],
                          stdin=rfd, stdout=outf, stderr=errf, env=env, cwd=workdir,
                          preexec_fn=lambda: os.setpgid(0, 0))
+    CWD_PRE[p.pid] = (workdir, _pre)
     os.close(rfd)
     try: os.write(wfd, PAYLOAD)
     except OSError: pass
@@ -126,16 +158,25 @@ def wait_probe_landed(p, stubmark, budget):
     return False
 
 def real_survivors(pgid, stubmark):
-    """Double-sampled: survivor iff present & non-zombie in TWO samples SURV_GAP apart."""
+    """Double-sampled: survivor iff present & non-zombie in TWO samples SURV_GAP apart.
+    None = UNKNOWN (ps or lsof unusable) -> the trial is VOID, never landed-clean.
+    Measured 2026-09-05 before this: with lsof broken, M18 scored 5/5 landed clean
+    on both cases while 10 detached /bin/sleep survivors sat in the workdir -- the
+    cwd clause is the ONLY one that can see that class, so its absence is not 'no
+    survivors' (codex sol + grok, both CONFIRMED by execution)."""
+    cw = cwd_extra(pgid)
+    if cw is None: return None
     r1 = ps_rows()
     if r1 is None: return None
-    s1 = {r[0] for r in members(r1, pgid, stubmark)}
+    s1 = {r[0] for r in members(r1, pgid, stubmark, cw)}
     if not s1:
         return []
     time.sleep(SURV_GAP)
+    cw2 = cwd_extra(pgid)
+    if cw2 is None: return None
     r2 = ps_rows()
     if r2 is None: return None
-    m2 = {r[0]: r for r in members(r2, pgid, stubmark)}
+    m2 = {r[0]: r for r in members(r2, pgid, stubmark, cw2)}
     return [(pid, m2[pid][2], m2[pid][3][:70]) for pid in (s1 & set(m2))]
 
 def _drain_void(p, wfd, outf, stubmark):
@@ -202,7 +243,17 @@ def one_trial_I02(hook, workdir, home, stubmark):
         except OSError: pass
         _drain_void(p, wfd, outf, stubmark)
         return ("VOID", None)
-    running = [r for r in members(rr, p.pid, stubmark) if r[2].startswith("R")]
+    # This probe GRADES ("running while STOPPED"), so the cwd tri-state must be
+    # resolved here too: members() alone turns an unknown cwd scan into an empty
+    # set, and an out-of-group platform-binary child running during the STOP
+    # could then be omitted (codex 2026-09-05 r2). Unknown -> VOID, retried.
+    _cw = cwd_extra(p.pid)
+    if _cw is None:
+        try: os.killpg(p.pid, signal.SIGCONT)
+        except OSError: pass
+        _drain_void(p, wfd, outf, stubmark)
+        return ("VOID", None)
+    running = [r for r in members(rr, p.pid, stubmark, _cw) if r[2].startswith("R")]
     if running:
         fails.append("running while STOPPED: %s" % [(r[0], r[2], r[3][:40]) for r in running])
     try: os.killpg(p.pid, signal.SIGCONT)
@@ -260,6 +311,7 @@ def run_case(trial_fn, hook, workdir, home, stubmark):
 def run_target(target, outroot):
     label = os.path.basename(target)
     workdir = os.path.join(outroot, "grpsig2_" + label)
+    contract.require_exclusive_workdir(workdir, "grpsig2")   # before rmtree: never delete a live run's files
     contract._rmtree(workdir)
     os.makedirs(workdir)
     home = os.path.join(workdir, "home")

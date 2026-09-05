@@ -18,6 +18,141 @@ SIGDELAY  = 0.35          # when to deliver a signal after spawn
 SETTLE    = 1.5           # how long to keep watching stdout AFTER the parent exits
 INVOC     = ["/bin/bash", "--noprofile", "--norc", "-p"]   # the installed form
 
+LSOF = "/usr/sbin/lsof"
+
+def cwd_pids(workdir, under=False):
+    """PIDs of this user's live processes whose cwd is `workdir` (or, with
+    under=True, is `workdir` or anywhere beneath it), or None when lsof is
+    unusable (never an empty set -- unknown is not clean).
+
+    Why cwd: out-of-group survivors used to be attributed by the inherited
+    `HOME=` in `ps -axwwEo command=`. macOS emits NO environment for platform
+    binaries -- a `/bin/sleep` row is 18 chars with no HOME= where a
+    CommandLineTools python3 row is 5000+ chars with it -- so a setsid'd
+    descendant that execs /bin/sleep, /bin/sh or /bin/bash was invisible and
+    scored orph=0 while alive with ppid 1 (mutant M18; measured 2026-09-05).
+    cwd survives execve and fd-closing, every graded instrument spawns the hook
+    with cwd=workdir, and the workdir is unique to the run -- so a live process
+    whose cwd is the workdir and was NOT there before Popen is the hook's.
+    Defeated only by a hook that chdir()s away, the same residual class as the
+    environment scrub. lsof reports realpath (/private/var/...), so compare that."""
+    want = os.path.realpath(workdir)
+    try:
+        # cwd="/" so lsof's OWN row can never match the workdir: launched from
+        # inside the workdir, the harness's lsof child inherited that cwd, showed
+        # up in `now` but not `pre`, and scored v28 orph=1 (false red, measured).
+        r = subprocess.run([LSOF, "-a", "-d", "cwd", "-u", str(os.getuid()), "-Fpn"],
+                           capture_output=True, text=True, timeout=10, cwd="/")
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    # Unknown is never an empty set. lsof exits 0 here in normal operation --
+    # measured 30/30 under concurrent process churn -- and 1 means "some file
+    # could not be inspected", i.e. the listing may be PARTIAL: seeing our own
+    # row proves one row exists, not that the target descendant was listed
+    # (codex 2026-09-05 r2). Any nonzero status is unknown, as is a listing that
+    # does not contain THIS process (which always has a cwd).
+    if r.returncode != 0 or not r.stdout.strip():
+        return None
+    allpids, match, cur = set(), set(), None
+    for ln in r.stdout.splitlines():
+        if ln.startswith("p"):
+            cur = int(ln[1:]) if ln[1:].isdigit() else None
+            if cur is not None: allpids.add(cur)
+        elif ln.startswith("n") and cur is not None \
+             and (ln[1:] == want or (under and ln[1:].startswith(want + "/"))):
+            match.add(cur)
+    if os.getpid() not in allpids:
+        return None            # completeness sentinel failed: partial/malformed output
+    match.discard(os.getpid())
+    return match
+
+def _ancestors():
+    """This process and its parent chain up to pid 1 (bounded), via ps -o ppid=."""
+    out, pid = set(), os.getpid()
+    # Walk to pid 1 with a visited set; a failed/malformed ps reply stops the walk
+    # and an older ancestor in the workdir would then read as foreign -- that is
+    # a loud refusal (fail-closed), never a false green (codex 2026-09-05 r2, low).
+    while pid > 1 and pid not in out and len(out) < 4096:
+        out.add(pid)
+        try:
+            r = subprocess.run(["/bin/ps", "-o", "ppid=", "-p", str(pid)],
+                               capture_output=True, text=True, timeout=5)
+            nxt = int(r.stdout.strip() or 0)
+        except (OSError, ValueError, subprocess.TimeoutExpired):
+            break
+        if nxt <= 0: break
+        pid = nxt
+    out.add(1)
+    return out
+
+_LOCKS = []
+
+def _lock_path(workdir):
+    return os.path.join(os.environ.get("TMPDIR", "/tmp"),
+                        "hook-harness-%s.lock" % hashlib.sha1(
+                            os.path.realpath(workdir).encode()).hexdigest()[:16])
+
+def require_exclusive_workdir(workdir, who, lock=True):
+    """Refuse to grade in a workdir another run occupies or holds.
+
+    Survivors are attributed by cwd under workdir and then SIGKILLed, so the
+    workdir must be ours alone. Measured 2026-09-05: two concurrent runs sharing
+    one dir -> run A counted AND killed run B's leaked descendant (orph=5), so
+    run B then scored 1/1 pass on a leaking hook -- a false green.
+
+    Two checks, because an occupancy snapshot alone is racy (codex r2): (1) an
+    ATOMIC lock file keyed by the workdir's realpath, O_CREAT|O_EXCL, held for
+    the life of this process (stale lock from a dead pid is reclaimed); (2) no
+    live process other than our own ancestors may have its cwd AT OR UNDER the
+    workdir -- under, because gap's probes run in child dirs. Exit 2, printed in
+    the FAIL shape run_all.sh greps for. lsof unusable also refuses: every cwd
+    clause downstream would be blind. lock=False is for run_all.sh's pre-rm-rf
+    check on an explicit WORK, which must not hold the lock its instruments need."""
+    if lock:
+        lp = _lock_path(workdir)
+        # Write the pid to a private temp file first, then link() it into place:
+        # link() is atomic and fails if the lock exists, so the lock file can never
+        # be observed EMPTY. With open(O_EXCL)+write, a second run reading the file
+        # between those two calls saw holder=0, judged it stale, unlinked it and
+        # acquired -- both runs then graded the same workdir (hit once under load).
+        tmp = "%s.%d" % (lp, os.getpid())
+        with open(tmp, "w") as f: f.write(str(os.getpid()))
+        for attempt in (1, 2):
+            try:
+                os.link(tmp, lp)
+                os.unlink(tmp)
+                _LOCKS.append(lp)
+                import atexit
+                atexit.register(lambda p=lp: (os.path.exists(p) and os.unlink(p)))
+                break
+            except FileExistsError:
+                try: holder = int(open(lp).read().strip() or 0)
+                except (OSError, ValueError): holder = 0
+                alive = False
+                if holder > 0:
+                    try: os.kill(holder, 0); alive = True
+                    except ProcessLookupError: alive = False
+                    except PermissionError: alive = True
+                if alive or attempt == 2:
+                    try: os.unlink(tmp)
+                    except OSError: pass
+                    print("FAIL %s: workdir %s is LOCKED by live pid %s (%s) -- another run in "
+                          "progress; use a fresh directory" % (who, workdir, holder, lp)); sys.exit(2)
+                try: os.unlink(lp)          # stale: holder is dead
+                except OSError: pass
+    occ = cwd_pids(workdir, under=True)
+    if occ is None:
+        print("FAIL %s: lsof unusable (%s) -- cwd survivor attribution impossible; not grading"
+              % (who, LSOF)); sys.exit(2)
+    # The harness's own ancestors (the shell it was launched from) may legitimately
+    # sit in the workdir; they predate every Popen so the per-case diff already
+    # excludes them, and they cannot be a hook descendant. Anything else is foreign.
+    occ -= _ancestors()
+    if occ:
+        print("FAIL %s: workdir %s is occupied by pid(s) %s -- another run? use a fresh "
+              "directory (run_all.sh now defaults to a unique one)"
+              % (who, workdir, ",".join(map(str, sorted(occ))))); sys.exit(2)
+
 def md5(p):
     h = hashlib.md5()
     with open(p, "rb") as f:
@@ -355,6 +490,7 @@ def run_case(target, case, workdir):
     else:
         stdin_arg = subprocess.PIPE; pipe = None; fin = None
 
+    _cwd_pre = cwd_pids(workdir)     # pre-spawn baseline for the cwd survivor clause
     t0 = time.time()
     p = subprocess.Popen(INVOC + [target] + argv, stdin=stdin_arg, stdout=fo, stderr=fe,
                          env=env, cwd=workdir,
@@ -447,6 +583,10 @@ def run_case(target, case, workdir):
             status = None
             break
         time.sleep(0.02)
+    # C3 is graded on the HOOK's wall time. Everything below (ps, lsof, fd drain)
+    # is harness overhead; charging it to the hook pushed a conforming hook that
+    # finishes just under the ceiling over it by the ~0.15s lsof call.
+    t_done = time.time()
     # count survivors in the target's process group BEFORE we clean up
     orphans = 0
     fd_held = []
@@ -488,6 +628,17 @@ def run_case(target, case, workdir):
                and int(f[0]) != p.pid and not f[2].startswith("Z") \
                and _homemark in (" " + f[3] + " "):
                 orphans += 1; seen.add(int(f[0]))
+        # 2026-09-05 (CONFIRMED by mutant M18): the HOME= clause above is INERT
+        # for a descendant that is, or execs, a macOS platform binary -- ps -E
+        # emits no environment for /bin/sleep, /bin/sh, /bin/bash -- so a
+        # setsid'd /bin/sleep scored orph=0 while alive with ppid 1. Attribute by
+        # cwd instead (see cwd_pids): survives execve, unique to this run.
+        _cwd_now = cwd_pids(workdir)
+        if _cwd_now is None or _cwd_pre is None:
+            raise RuntimeError("lsof unusable: cwd survivor scan unknown")
+        for cpid in sorted(_cwd_now - _cwd_pre):
+            if cpid not in seen and cpid != p.pid:
+                orphans += 1; seen.add(cpid)
         # grok F4 follow-through: a write end still held after the hook exited
         # means some descendant (found or not) kept the inherited fd.
         for i, r in enumerate(fd_readers):
@@ -510,7 +661,7 @@ def run_case(target, case, workdir):
     if orphans:
         try: os.killpg(p.pid, signal.SIGKILL)
         except OSError: pass
-    elapsed = time.time() - t0
+    elapsed = t_done - t0
     if pipe is not None:
         try: os.close(pipe)
         except OSError: pass
@@ -596,6 +747,7 @@ def main():
     workdir = os.path.abspath(sys.argv[3])
     only = sys.argv[4] if len(sys.argv) > 4 else None
     os.makedirs(workdir, exist_ok=True)
+    require_exclusive_workdir(workdir, "contract")
     cs = [c for c in cases() if (only is None or only in c[0])]
     # A filter that matches nothing used to run zero cases and print "0/0 pass,
     # 0 FAIL  md5=..." with exit 0 -- a typo'd 4th argument was indistinguishable

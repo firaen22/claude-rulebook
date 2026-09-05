@@ -14,19 +14,34 @@ import os, re, signal, subprocess, sys, time, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import contract   # build_home / snapshot / diff_snapshots: C3+C4 graded here too (sol F5)
 
-def survivors(pgid, home):
-    """Live non-zombie processes in the hook's group or carrying its HOME (see
-    contract.py's orphan scan). None = ps unusable (never 'no survivors')."""
+def survivors(pgid, home, cwd_pre):
+    """Live non-zombie processes in the hook's group, carrying its HOME, or whose
+    cwd is this probe's home dir and was not there before spawn (see
+    contract.cwd_pids -- the HOME= clause is inert for macOS platform binaries,
+    mutant M18). None = ps or lsof unusable (never 'no survivors')."""
     r = subprocess.run(["/bin/ps", "-axwwEo", "pid=,pgid=,state=,command="],
                        capture_output=True, text=True, timeout=10)
     if r.returncode != 0 or not r.stdout.strip():
         return None
-    mark = " HOME=" + home + " "; out = []
+    cwd_now = contract.cwd_pids(home)
+    if cwd_now is None or cwd_pre is None:
+        return None
+    cw = cwd_now - cwd_pre - {pgid}
+    mark = " HOME=" + home + " "; out = []; states = {}
     for ln in r.stdout.splitlines():
         f = ln.split(None, 3)
+        if len(f) >= 3 and f[0].isdigit(): states[int(f[0])] = f[2]
         if len(f) == 4 and f[0].isdigit() and f[1].isdigit() and int(f[0]) != pgid \
-           and not f[2].startswith("Z") and (int(f[1]) == pgid or mark in (" " + f[3] + " ")):
+           and not f[2].startswith("Z") \
+           and (int(f[1]) == pgid or mark in (" " + f[3] + " ") or int(f[0]) in cw):
             out.append(int(f[0]))
+    # UNION, not AND: a cwd-attributed pid must count even when the ps table (taken
+    # before lsof) lacks it or its row does not parse as 4 fields -- otherwise a
+    # survivor born in the ps->lsof gap is dropped (grok 2026-09-05; pidhang.scan
+    # already unions this way).
+    for cpid in sorted(cw):
+        if cpid not in out and not states.get(cpid, "").startswith("Z"):
+            out.append(cpid)
     return out
 
 # grok 2026-09-02 F11 (CONFIRMED by reading): delivery was a blind sleep(1.0) after
@@ -71,9 +86,13 @@ def probe(path, sig, mode, home):
     try: os.unlink(ready)
     except OSError: pass
     before = contract.snapshot(home, exclude=[ready, outf])
+    # cwd=home (unique per probe) so survivors()' cwd clause can attribute a
+    # descendant that execs a /bin binary (M18); the other instruments already
+    # spawn with cwd=workdir. v28 does not read or write its cwd.
+    cwd_pre = contract.cwd_pids(home)
     t0 = time.time()
     p = subprocess.Popen(["/bin/bash", "--noprofile", "--norc", "-p", path, "manual"],
-                         stdin=rfd, stdout=fo, stderr=devnull, env=env,
+                         stdin=rfd, stdout=fo, stderr=devnull, env=env, cwd=home,
                          preexec_fn=lambda: os.setpgid(0, 0))
     os.close(rfd)
     # wait for the busy-wait's own marker instead of sleeping blind (grok F11)
@@ -125,7 +144,7 @@ def probe(path, sig, mode, home):
     el = round(time.time() - t0, 2)
     # sol 2026-09-02 F5 (CONFIRMED by reading): killpg below destroyed any survivor
     # before it could be counted, and no canary was graded. Scan first, grade C4.
-    surv = survivors(p.pid, home)
+    surv = survivors(p.pid, home, cwd_pre)
     if surv is None:      verdict += "+SURV?"                      # unknown, never clean
     elif surv:            verdict += "+SURV%d" % len(surv)
     try:
@@ -156,6 +175,7 @@ def probe(path, sig, mode, home):
 def main():
     work = os.path.abspath(sys.argv[1]); targets = sys.argv[2:]
     os.makedirs(work, exist_ok=True)
+    contract.require_exclusive_workdir(work, "gap")
     rows = []
     for t in targets:
         label = os.path.basename(t)
