@@ -89,3 +89,39 @@ functions), surfacing as successive user "still broken?" re-asks.
   returning class strings — and the full family/tier matrix of the token space.
 - Acceptance for a styling sweep is rendering (drive the real page/theme), not
   grep-zero: grep proves absence of one spelling, not absence of the effect.
+
+## A failed grep is not evidence of absence (added 2026-08-29)
+
+Verifying that a cited rule/order/symbol still lives at its claimed destination,
+a zero-hit grep has TWO causes — the text is gone, or your pattern missed it —
+and the second is the common one. Measured 2026-08-29 during a LESSONS
+compression: 3 of 10 destination greps returned nothing; all 3 rules were live.
+The patterns had been built from the CITATION's paraphrase, not the file's
+wording (`classify by tools held` vs the live `Classify an agent by the TOOLS IT
+HOLDS`). Recording those as rot would have re-added three orders on top of live
+text — the duplicate-then-contradict failure the caches are built to avoid.
+
+- Before recording any destination as missing: re-search on a DISTINCTIVE
+  content word from the rule rather than its cited phrasing, case-insensitively,
+  across the whole tree — not just the cited file.
+- A hit in a `.bak`/backup copy but not the live file is a real signal, but read
+  the diff before calling it a deletion: the live text may have been REPLACED by
+  a stronger rule. (Same sweep: one "missing" quote had been superseded by a
+  per-executor rule that INVERTS it for two executors — the citation was stale,
+  the rule was not, and re-adding the old sentence would have restored a wrong
+  order.)
+- Cite destinations in `40-maintenance.md` §3's form — `<file:line> "<operative
+  sentence, pasted from the grep hit>"` — and treat the SENTENCE as the durable
+  key, the line as a dated stamp of when the grep hit. Never cite a line alone,
+  and never cite a paraphrase: lines drift on every edit above them, and a
+  paraphrase never matched to begin with. Off-by-one is the specific trap — a
+  line number derived by ARITHMETIC from a known drift is not a grep hit; re-open
+  the file and confirm the sentence sits on the line you are about to write.
+- **Done-state — "missing" may be recorded only when all four are true, and the
+  record must show them:** (1) the tree-wide content-word query is written down
+  verbatim, (2) it returns zero hits in live files, (3) backup/`.bak` hits were
+  either absent or opened and diffed against live, and (4) the rule's own
+  destination file was opened and read, not just grepped. Fewer than four → the
+  status is UNRESOLVED, never missing. Absent that record, a later reader cannot
+  tell a real deletion from a bad pattern — which is the whole failure this
+  section exists to stop.

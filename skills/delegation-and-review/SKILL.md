@@ -39,7 +39,8 @@ writing the spec costs more than doing the task, don't delegate.
 | Task shape | Executor |
 |---|---|
 | Read-only search / "where is X", conclusion needed this turn | Agent `Explore` (sonnet; haiku if single-fact) |
-| Spec'd implementation, spec is airtight | codex (`workspace-write`), or Agent `general-purpose` sonnet |
+| Spec'd implementation, spec is airtight, SINGLE file | **free pool** per the routing map (it wins on executor choice) — not codex |
+| Spec'd implementation needing judgment, or spanning files | codex (`workspace-write`), or Agent `general-purpose` sonnet |
 | Cheap lookup, domain-concept naming, pattern discovery, OCR/vision | agy (never on the critical path) |
 | Bulk bounded execution, cheapest tier | opencode free (sequential, isolated dir) |
 | Multi-step in-repo task needing repo conventions + own budget | spawn_task (user-gated chip) |
@@ -140,7 +141,10 @@ from source this session (quote file:line), not recalled — recalled interfaces
 are how plausible-but-wrong specs reach codex, which silently fills the gap
 (mechanism: `references/claim-and-remedy-verification.md`) · I know the exact
 command I'll run to verify the result myself · executor per route table, retry
-state noted if this is attempt ≥2.
+state noted if this is attempt ≥2 · **CLI review dispatch: pick packet SHAPE by
+executor — grok/opencode STAGE files in `--cwd`, codex INLINES (`nl -ba`, keep
+under ~30KB, chunks self-sufficient) — and the brief must describe the delivery you
+actually sent** (`references/invocations-and-traps.md`).
 
 ## 4 · Dual review — acceptance is never self-verification
 
@@ -205,8 +209,10 @@ state noted if this is attempt ≥2.
   someone else asserted (subordinate, prior reviewer, user), frame it to REFUTE:
   "try to reproduce this; report NOT CONFIRMED unless you can" — a verifier told
   to "confirm" rubber-stamps relayed findings. A finding that can fail more than
-  one way gets verifiers with DISTINCT lenses, not identical copies (`references/discovery-sweep.md`).
-  A fresh-context reviewer's own REJECTs carry
+  one way gets verifiers with DISTINCT lenses, not identical copies
+  (`references/discovery-sweep.md`; library + match table + gate:
+  `references/lenses/ROUTER.md` — match the artifact, paste ≤2 lenses into the
+  packet). A fresh-context reviewer's own REJECTs carry
   this same high false-positive rate — reproduce every REJECT by execution before
   you fix it OR overrule it (evidence: `references/claim-and-remedy-verification.md`).
 - **A reviewer's verdict inherits the dispatch packet's own errors — a wrong
@@ -226,6 +232,22 @@ state noted if this is attempt ≥2.
   ❌ two independently dispatched reviewers both flag the identical
   CRITICAL, both correctly derived from a contract the dispatch packet
   overstated — read as corroboration until the packet itself was checked.
+- **A clean verdict binds only what the reviewer actually SAW — reconcile
+  coverage before crediting a clearance.** The packet-errors rule above checks
+  a finding's premise; this is its all-clear twin. An assembly gap (a truncated
+  diff, a pagination cap, a glob that missed a path, an EXCERPT you inlined
+  instead of the file) yields an honest PROCEED that silently clears material
+  nobody reviewed — no fraud anywhere, so the completion-audit never fires.
+  Before expanding an all-clear to the requested scope, reconcile REQUIRED vs
+  AVAILABLE (what the reviewer could see) vs COVERED (what its evidence shows
+  it examined). The clearance binds the covered scope, downward only. Every gap
+  is EXPLAINED or stays open: a required path never made available is
+  UNREVIEWED, not clean — silence about it is not clearance — and the only way
+  to close it without re-review is your own verified ground truth that it is
+  unchanged against the review baseline. No path manifest needed; it is your
+  read of what the brief asked against what the packet carried.
+  ❌ "it PROCEEDed and never mentioned B, so B is clean" — B's diff was
+  dropped by a pagination cap and was never in the packet.
 - Scope reviewer capability to the artifact and NAME any mutable fixture it must
   leave untouched (case list: `references/claim-and-remedy-verification.md`).
 - Miss-is-costly surfaces get a SECOND opinion from a different model family
@@ -360,17 +382,9 @@ state noted if this is attempt ≥2.
   verdict: ending on the bound — marker missing, or no marker defined — labels
   the result INCOMPLETE with the shortfall named, never read as completeness.
 - **Handoff compression — three rules, full text (wins on dispute):
-  `references/long-task-handoff.md`.** Compress by re-derivability, not by
-  success/failure — what only this run's history holds (error output,
-  external responses, one-shot logs) is what the reader can least afford to
-  lose, and compressed never means erased: at minimum a one-line pointer
-  survives. Collapsing repetition may reduce volume, never variety — merge
-  only CONSECUTIVE repeats of the SAME operation failing the SAME way,
-  consecutiveness judged on the source record; when in doubt, keep lines
-  separate. Every elision is labelled: a recoverable one names its retrieval
-  step (run once as printed), a deliberate removal its reason
-  (`redacted — <reason>` / `not retrievable — <why>`); a spot-check of your
-  own cut can reveal category-level loss, never rule it out.
+  `references/long-task-handoff.md`.** Compress by re-derivability not outcome;
+  collapse repetition never variety (consecutive same-op same-failure only); label
+  every elision with its retrieval step or its reason. Compressed never means erased.
 - Never launch a second wave before accepting/rejecting the first — unaccepted
   work compounds errors.
 - Background agent + fallback wakeup: a background Agent whose result gates an
