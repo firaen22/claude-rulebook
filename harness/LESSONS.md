@@ -274,3 +274,28 @@ The at-3 promotion duty above does NOT apply to entries here.
   precedence". `41-file-registry.md` Memory files "is prospective (new/edited lines only".
   `50-letter` Handoff 2026-09-02 "advisory history, not standing rules".
   `cross-model-review/SKILL.md` §2 "never bare `HEAD`"; §5 "separately NAMED artifacts".
+
+## 2026-09-04 — Two driver bugs produced plausible scoreboards; the soundness gate only covered the grader
+- What happened: codex hard-axis drift re-probe (`experiments/codex-hardaxis-2026-09-04/`).
+  (a) `run_fix(){ local task="$1" t="$2" d="$BASE/$ROOT/${task}__t$t"; ...}` — bash
+  expands every `local` argument in the caller's scope before assigning, so `${task}` was
+  unbound under `set -u`; H2/H3 never launched, H1 ran only because `$t` happened to exist
+  as the loop's global with the right value, and every cell that existed scored perfect.
+  (b) three `codex exec ... &` jobs shared the shell's stdin; codex blocked on "Reading
+  additional input from stdin...", hit the 300s timeout with 0 files changed, and the
+  grader scored the unmodified seed as a MODEL failure. Both graders had passed the
+  dual-reference gate (good-ref/bad-ref) minutes earlier. Also (c): the July harness this
+  rebuilt lived in `scratchpad/` (=/tmp) and had been wiped — same class as the 2026-09-02
+  stale-`/tmp` incident above; the finding's "harness pointer" was a tmp path.
+- Root cause: the soundness gate certified the GRADER (does it pass good and fail bad) and
+  nothing certified the DRIVER (did each cell actually run the model), so driver faults
+  surfaced as missing cells or as model failures — both shapes a scoreboard reader accepts.
+- Rule change needed: applied — experiment-protocol Rule 2 (project skill) gains a driver
+  gate: pre-registered rows `cell count == N` / `no latency near timeout` / `output != seed`
+  checked before any score is read; one `local` per line; `</dev/null` on every backgrounded
+  subordinate call. Rule 6 already says copy the harness into the repo — (c) is an instance,
+  not a gap; the harness is now git-tracked (`b5b10d7`).
+- Status: applied-on 2026-09-04.
+- Destination: `claude code technique/.claude/skills/experiment-protocol/SKILL.md` Rule 2
+  "**The DRIVER gets the same gate as the grader.**" / "check them BEFORE reading any
+  score" (grepped 2026-09-04: line 23; wrapped phrase count 1).
