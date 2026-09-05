@@ -54,10 +54,11 @@ def one(hook, sig, offset, workdir):
     stubmark=os.path.join(workdir,"interp_hang")
     env={"HOME":home,"PATH":"/usr/bin:/bin:/usr/sbin:/sbin","SHELL":"/bin/zsh","LANG":"en_US.UTF-8","TERM":"dumb"}
     before=contract.snapshot(home)
-    outf=os.path.join(workdir,"ph.out"); fo=open(outf,"wb")
+    tap=contract.StdoutTap(os.path.join(workdir,"ph.out"))  # M20: drained pipe, not a shrinkable file
     rfd,wfd=os.pipe()
     cwd_pre=contract.cwd_pids(workdir)                       # M18: baseline for scan()'s cwd clause
-    p=subprocess.Popen(contract.INVOC+[target,"manual"],stdin=rfd,stdout=fo,stderr=subprocess.DEVNULL,env=env,cwd=workdir,preexec_fn=lambda:os.setpgid(0,0))
+    p=subprocess.Popen(contract.INVOC+[target,"manual"],stdin=rfd,stdout=tap.w,stderr=subprocess.DEVNULL,env=env,cwd=workdir,preexec_fn=lambda:os.setpgid(0,0))
+    tap.attach()
     os.close(rfd)
     try: os.write(wfd,GOOD[:20])
     except OSError: pass
@@ -84,15 +85,17 @@ def one(hook, sig, offset, workdir):
     except OSError: pass
     try: p.wait(timeout=3)
     except Exception: pass
-    fo.close()
+    eof=tap.finalize(1.0)                                    # group + survivors dead: fd 1 must close
     if surv is None:
         return (None if alive is True else alive), -1     # ps unusable: never "clean" (sol F7)
     # sol 2026-09-02 F3 (CONFIRMED by reading): a landed trial only checked survivors;
     # rc, stdout bytes and the canary tree were discarded. All three are contract.
     dirty=[]
     if alive is True and p.returncode!=0: dirty.append("rc=%r"%p.returncode)
-    ob=os.path.getsize(outf)
+    ob=tap.count()
     if ob: dirty.append("%dB stdout"%ob)
+    if tap.error: dirty.append("stdout tap error %s"%tap.error)   # count is a floor, not 0
+    if not eof: dirty.append("stdout pipe still held after sweep")
     dirty+=contract.diff_snapshots(before, contract.snapshot(home))
     if alive is True and dirty: alive=("DIRTY", dirty)
     return alive, len(surv)

@@ -10,12 +10,18 @@ CONTRACT (must hold on EVERY path):
 Method: EXPECTED for every case is written to disk BEFORE any subprocess runs (R0).
 Grading compares ACTUAL against that frozen file; the grader never re-derives expected.
 """
-import hashlib, json, os, shutil, signal, stat, subprocess, sys, time
+import hashlib, json, os, select, shutil, signal, stat, subprocess, sys, threading, time
 import re
 
 WALL_CEIL = 12.0          # C3 ceiling, seconds
 SIGDELAY  = 0.35          # when to deliver a signal after spawn
 SETTLE    = 1.5           # how long to keep watching stdout AFTER the parent exits
+# Bound on the GRADER's deadline-loop segment (first stdin pump .. bounded reap):
+# ceiling + kill/reap bound (5s) + scheduling margin. Diagnostics (ps/lsof, 10s
+# timeouts each), snapshots, settle and tap finalize are bounded on their own and
+# are NOT in this clock (codex sol 2026-09-06 GRADER-BOUND). A segment that runs
+# longer is a harness stall (M19 pre-fix: 40s), graded as such independent of rc.
+GRADER_STALL = WALL_CEIL + 5.0 + 3.0
 INVOC     = ["/bin/bash", "--noprofile", "--norc", "-p"]   # the installed form
 
 LSOF = "/usr/sbin/lsof"
@@ -410,6 +416,141 @@ def _proc_state(pid):
     except Exception:
         return None
 
+class StdoutTap:
+    """The hook's fd 1 is a PIPE the harness drains on its own thread, and C2 is
+    graded on the bytes DRAINED -- a count the hook cannot shrink.
+
+    Every instrument used to hand the hook a regular capture file and grade
+    os.path.getsize() point-samples of it. The hook holds that file as fd 1, so
+    `ftruncate(1, 0)` before exit made every sample read 0: mutant M20 writes 5
+    bytes to stdout, truncates, and graded CLEAN in contract, grpsig2 and gap
+    (measured 2026-09-06). Sampling twice (at exit and after the settle) closed
+    only the settle-window case, not this one. The drained bytes are also teed
+    to `path` -- opened by the harness, never handed to the hook -- for the
+    stdout sample and post-mortem. A pipe is also what Claude Code itself gives
+    a hook's fd 1, so this is the more faithful stdout, not a less faithful one.
+
+    Use: tap = StdoutTap(path); Popen(stdout=tap.w, ...); tap.attach() right
+    after Popen (closes the parent's write end -- or EOF never arrives -- and
+    starts the drain thread). count() at the sample points; error at grading.
+
+    Threads and fork: preexec_fn runs Python in the child, and a fork taken while
+    another thread may hold an allocator or I/O lock can deadlock that child
+    (agy 2026-09-06, CONFIRMED by reading: the previous case's thread outlives
+    its case whenever a leaked descendant still holds that pipe). So every
+    construction first quiesce()s all live taps -- stop flag + join -- and the
+    thread is started only after the Popen it serves: at fork time no drain
+    thread exists. A quiesced tap belongs to a case that has already graded."""
+    CHUNK = 65536
+    _LIVE = set()
+
+    def __init__(self, path):
+        if not StdoutTap.quiesce():   # single-threaded at the next fork (see above)
+            raise RuntimeError("StdoutTap: a previous drain thread would not stop; refusing to fork")
+        self.path = path
+        self.n = 0                    # bytes drained; only ever grows
+        self.eof = False
+        self.stop = False
+        self.error = None             # graded: a tap that lost bytes is never "0B"
+        self.r, self.w = os.pipe()
+        self._f = open(path, "wb")
+        self._lk = threading.Lock()   # held around read+count so count() is exact
+        self._t = None
+
+    @classmethod
+    def quiesce(cls, timeout=1.0):
+        """Stop and join every live drain thread (bounded). Returns True when none
+        is left. A thread is still alive here only if a descendant of an ALREADY
+        GRADED case holds its pipe -- its count was taken; nothing is lost that
+        the harness would still grade."""
+        for t in list(cls._LIVE):
+            t.stop = True
+        deadline = time.monotonic() + timeout
+        for t in list(cls._LIVE):
+            th = t._t
+            if th is not None:
+                th.join(max(0.0, deadline - time.monotonic()))
+        return not cls._LIVE
+
+    def attach(self):
+        if self.w is not None:
+            try: os.close(self.w)
+            except OSError: pass
+            self.w = None
+        if self._t is None:
+            StdoutTap._LIVE.add(self)
+            self._t = threading.Thread(target=self._drain, name="stdout-tap", daemon=True)
+            self._t.start()
+
+    def _drain(self):
+        try:
+            while not self.stop:
+                rr, _, _ = select.select([self.r], [], [], 0.05)
+                if not rr:
+                    continue
+                with self._lk:
+                    b = os.read(self.r, self.CHUNK)
+                    if not b:
+                        break
+                    self.n += len(b)          # counted BEFORE the tee, so a tee
+                try:                          # failure never hides bytes
+                    self._f.write(b); self._f.flush()
+                except (OSError, ValueError) as e:
+                    self.error = self.error or ("tee:" + e.__class__.__name__)
+        except Exception as e:                # ANY thread death: the count is a floor, graded
+            self.error = "read:" + e.__class__.__name__
+        finally:
+            self.eof = True
+            try: os.close(self.r)
+            except OSError: pass
+            try: self._f.close()
+            except OSError: pass
+            StdoutTap._LIVE.discard(self)
+
+    def count(self, wait=2.0):
+        """Bytes drained. Exact, not a heuristic: while data is still readable in
+        the pipe, wait (bounded) for the thread to take it; then take the lock, so
+        a read in flight has finished counting before we return. Exact at EOF; a
+        floor while a descendant is still writing (then it is >0 -- a violation
+        either way). The old join(0.05) could return before bytes already in the
+        pipe were counted (agy 2026-09-06)."""
+        deadline = time.monotonic() + wait
+        while not self.eof and time.monotonic() < deadline:
+            try:
+                rr, _, _ = select.select([self.r], [], [], 0)
+            except (OSError, ValueError):
+                break                         # r closed under us: thread is at EOF
+            if not rr:
+                break
+            time.sleep(0.005)
+        with self._lk:
+            return self.n
+
+    def finalize(self, timeout=1.0):
+        """Call AFTER every attributed descendant has been killed. Waits (bounded)
+        for clean EOF -- every write end closed -- and returns True on EOF. False
+        means some process the survivor clauses did NOT find still holds the hook's
+        fd 1 (a chdir-away daemon, an other-cwd spawn): graders treat that as a
+        failure in its own right, never as "0 bytes". Also stops the thread, so
+        the next case forks single-threaded regardless. (codex sol 2026-09-06
+        TAP-FINALIZE, CONFIRMED by reading: a settle is a wait, not completeness.)"""
+        deadline = time.monotonic() + timeout
+        while not self.eof and time.monotonic() < deadline:
+            time.sleep(0.01)
+        eof = self.eof
+        self.stop = True
+        if self._t is not None:
+            self._t.join(0.5)
+        return eof
+
+    def sample(self, n=200):
+        try:
+            with open(self.path, "rb") as f:
+                return f.read(n)
+        except OSError:
+            return b""
+
+
 def run_case(target, case, workdir):
     name, kind, argv, stdin_b, envov, variant, note = case
     home = os.path.join(workdir, "h_" + name)
@@ -457,7 +598,7 @@ def run_case(target, case, workdir):
     # cwd's own top-level entries too; this case's capture files are excluded
     # because the harness itself truncates them just below.
     before_cwd = cwd_snapshot(workdir, home, ext_root, outf, errf)
-    fo, fe = open(outf, "wb"), open(errf, "wb")
+    tap, fe = StdoutTap(outf), open(errf, "wb")
 
     hold_open = kind in ("sig_pid", "sig_grp")   # keep target alive until the signal lands
     fd_keep, fd_readers, fd_writers = [], [], []
@@ -492,17 +633,59 @@ def run_case(target, case, workdir):
 
     _cwd_pre = cwd_pids(workdir)     # pre-spawn baseline for the cwd survivor clause
     t0 = time.time()
-    p = subprocess.Popen(INVOC + [target] + argv, stdin=stdin_arg, stdout=fo, stderr=fe,
+    p = subprocess.Popen(INVOC + [target] + argv, stdin=stdin_arg, stdout=tap.w, stderr=fe,
                          env=env, cwd=workdir,
                          close_fds=not fd_writers,   # fd cases close their own in _preexec
                          preexec_fn=_preexec)
+    tap.attach()                  # our write end closed, drain thread started (post-fork)
     for w in fd_writers:          # the child holds its copies; ours would defeat the EOF check
         os.close(w); fd_keep.remove(w)
-    if stdin_arg == subprocess.PIPE:
+    # Feed stdin NON-BLOCKING, from inside the deadline loop. One blocking
+    # p.stdin.write of the whole payload used to sit here, BEFORE the loop, against
+    # a 64KB pipe buffer -- so a hook that stopped draining stdin while alive held
+    # the grader for as long as it lived and C3 was never enforced: A06_oversize on
+    # mutant M19 (sleep 40 before the read) measured 40.13s against the 12.0s
+    # ceiling, and a never-exiting variant hung the grader with no verdict at all
+    # (2026-09-05/06). Now the pump runs one non-blocking burst per tick and the
+    # deadline below owns the entire wait.
+    stdin_mv = memoryview(stdin_b); stdin_off = 0
+    stdin_err = None              # graded: a feed the harness could not complete is not "fed"
+    if p.stdin is not None:
         try:
-            p.stdin.write(stdin_b); p.stdin.close()
-        except (BrokenPipeError, OSError):
-            pass
+            os.set_blocking(p.stdin.fileno(), False)
+        except OSError as e:
+            # codex sol 2026-09-06 STDBLOCK-FALLTHROUGH (CONFIRMED by reading): the
+            # error was recorded but p.stdin stayed set, so the pump below would
+            # os.write A06's 300KB on a BLOCKING fd -- the M19 hang, back. Fail
+            # closed: close it so the pump never writes; stdin_feed_error is graded.
+            stdin_err = "set_blocking:" + e.__class__.__name__
+            try: p.stdin.close()
+            except OSError: pass
+            p.stdin = None
+    def _pump_stdin():
+        nonlocal stdin_off, stdin_err
+        if p.stdin is None:
+            return
+        try:
+            while stdin_off < len(stdin_mv):
+                stdin_off += os.write(p.stdin.fileno(), stdin_mv[stdin_off:stdin_off + 65536])
+        except (BlockingIOError, InterruptedError):
+            return                # pipe full (hook not draining) or EINTR: retry next tick
+        except BrokenPipeError:
+            pass                  # EPIPE: the hook closed its end -- the one normal early stop
+        except OSError as e:      # anything else is a HARNESS fault, not a hook behaviour
+            stdin_err = stdin_err or ("write:%s@%d/%d" % (e.__class__.__name__, stdin_off, len(stdin_mv)))
+        try: p.stdin.close()      # all fed (or unfeedable): EOF for the hook
+        except OSError as e:
+            stdin_err = stdin_err or ("close:" + e.__class__.__name__)
+        p.stdin = None
+    # codex sol 2026-09-06 GRADER-BOUND (CONFIRMED by reading): the stall clock used
+    # to start at run_case entry and stop after the final count, so it also charged
+    # build_home, snapshots and three ps/lsof calls (10s timeouts each) -- a slow
+    # but successful lsof could push a conforming case over the bound. Time ONLY
+    # the segment the oracle is about: first stdin pump through the bounded reap.
+    _case_t0 = time.monotonic()
+    _pump_stdin()
     if kind in ("hang_stdin", "drip_stdin") or hold_open:
         os.close(rfd)
         try:
@@ -563,6 +746,7 @@ def run_case(target, case, workdir):
         if kind == "drip_stdin" and pipe is not None and now - t0 < 8:
             try: os.write(pipe, b" ")
             except OSError: pass
+        _pump_stdin()
         if now > deadline:
             try: os.killpg(p.pid, signal.SIGKILL)
             except OSError: pass
@@ -587,6 +771,7 @@ def run_case(target, case, workdir):
     # is harness overhead; charging it to the hook pushed a conforming hook that
     # finishes just under the ceiling over it by the ~0.15s lsof call.
     t_done = time.time()
+    grader_wall = time.monotonic() - _case_t0   # pump..reap only; graded vs GRADER_STALL
     # count survivors in the target's process group BEFORE we clean up
     orphans = 0
     fd_held = []
@@ -665,11 +850,15 @@ def run_case(target, case, workdir):
     if pipe is not None:
         try: os.close(pipe)
         except OSError: pass
+    if p.stdin is not None:       # payload never fully fed (hook died or stalled)
+        try: p.stdin.close()
+        except OSError: pass
+        p.stdin = None
     for _fd in fd_keep:
         try: os.close(_fd)
         except OSError: pass
     if fin: fin.close()
-    fo.close(); fe.close()
+    fe.close()
 
     if status == "VANISHED":
         rc = "VANISHED"
@@ -715,22 +904,37 @@ def run_case(target, case, workdir):
         if _now != _exp_before:
             destroyed.append("FROZEN-EXPECTATIONS-TOUCHED %s -> %s" % (_exp_before, _now))
 
-    so_at_exit = os.path.getsize(outf)
+    so_at_exit = tap.count()           # drained bytes, not a file size the hook can shrink
     time.sleep(SETTLE)                 # a late writer on the inherited fd 1
-    so = os.path.getsize(outf); se = os.path.getsize(errf)
+    # Every attributed survivor is dead by now, so fd 1 must reach EOF: a pipe still
+    # held means a process no clause found -- graded as its own failure below.
+    so_eof = tap.finalize(1.0)
+    so = tap.count(); se = os.path.getsize(errf)
     late = so - so_at_exit
-    sample = open(outf, "rb").read(200)
+    sample = tap.sample(200)
     return {"name": name, "note": note, "rc": rc, "stdout_bytes": so, "stderr_bytes": se,
             "stdout_sample": repr(sample), "elapsed": round(elapsed, 3),
             "within_ceiling": elapsed < WALL_CEIL - 0.5 and rc not in ("TIMEOUT", "VANISHED"),
             "kind": kind, "alive_at_signal": alive_at_signal, "orphans": orphans,
             "stdout_at_exit": so_at_exit, "stdout_late_bytes": late,
+            "stdout_tap_error": tap.error, "stdout_eof": so_eof,
+            "stdin_feed_error": stdin_err, "stdin_fed": stdin_off,
+            "grader_wall": round(grader_wall, 3),
             "fd_held": fd_held, "destroyed": destroyed}
 
 def grade(exp, act):
     f = []
     if act["rc"] != exp["rc"]:                        f.append(f"C1 rc={act['rc']} want 0")
     if act["stdout_bytes"] != exp["stdout_bytes"]:    f.append(f"C2 stdout={act['stdout_bytes']}B {act['stdout_sample']}")
+    # A drain thread that died or could not tee has an UNKNOWN count: never "0B".
+    if act.get("stdout_tap_error"):                   f.append(f"C2 stdout tap error {act['stdout_tap_error']}")
+    # fd 1 still open after every found survivor was killed = an unfound holder.
+    if act.get("stdout_eof") is False:                f.append("C3 stdout pipe still held after sweep (unattributed descendant)")
+    # The harness could not deliver the case's stdin: the case did not run as specified.
+    if act.get("stdin_feed_error"):                   f.append(f"HARNESS stdin feed {act['stdin_feed_error']}")
+    # The GRADER's own wall time: a stall here (blocking stdin write, M19 before the
+    # non-blocking pump) is a harness defect that no hook-side grade would show.
+    if act.get("grader_wall", 0) > GRADER_STALL:      f.append(f"HARNESS grader stalled {act['grader_wall']}s > {GRADER_STALL}s")
     if act["within_ceiling"] != exp["within_ceiling"]:f.append(f"C3 elapsed={act['elapsed']}s rc={act['rc']}")
     if act["destroyed"] != exp["destroyed"]:          f.append("C4 " + "; ".join(act["destroyed"][:4]))
     if act.get("orphans", 0) != exp.get("orphans", 0):

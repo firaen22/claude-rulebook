@@ -131,18 +131,21 @@ def spawn(hook, workdir, home):
     # trial's capture -- C2 bytes were reported "at exit" for trials whose own
     # writer could not have fired yet. contract.py already uses per-case files.
     _SPAWN_N[0] += 1
-    outf = open(os.path.join(workdir, "grp_%03d.out" % _SPAWN_N[0]), "wb")
+    # fd 1 is a harness-drained PIPE (contract.StdoutTap), graded on bytes drained:
+    # a regular file here was shrinkable by the hook (ftruncate(1,0), mutant M20).
+    tap = contract.StdoutTap(os.path.join(workdir, "grp_%03d.out" % _SPAWN_N[0]))
     errf = open(os.path.join(workdir, "grp_%03d.err" % _SPAWN_N[0]), "wb")
     rfd, wfd = os.pipe()
     _pre = contract.cwd_pids(workdir)        # baseline for members()' cwd clause
     p = subprocess.Popen(["/bin/bash", "--noprofile", "--norc", "-p", hook, "manual"],
-                         stdin=rfd, stdout=outf, stderr=errf, env=env, cwd=workdir,
+                         stdin=rfd, stdout=tap.w, stderr=errf, env=env, cwd=workdir,
                          preexec_fn=lambda: os.setpgid(0, 0))
+    tap.attach()
     CWD_PRE[p.pid] = (workdir, _pre)
     os.close(rfd)
     try: os.write(wfd, PAYLOAD)
     except OSError: pass
-    return p, wfd, outf
+    return p, wfd, tap
 
 def wait_probe_landed(p, stubmark, budget):
     """Poll until the hung probe is alive in-group -> return True.
@@ -179,59 +182,61 @@ def real_survivors(pgid, stubmark):
     m2 = {r[0]: r for r in members(r2, pgid, stubmark, cw2)}
     return [(pid, m2[pid][2], m2[pid][3][:70]) for pid in (s1 & set(m2))]
 
-def _drain_void(p, wfd, outf, stubmark):
+def _drain_void(p, wfd, tap, stubmark):
     try: os.close(wfd)
     except OSError: pass
     try: p.wait(timeout=3)
     except Exception:
         try: os.killpg(p.pid, signal.SIGKILL)
         except OSError: pass
-    outf.close()
     sweep(p.pid, stubmark)
+    tap.finalize(1.0)                         # VOID trial: still stop the thread before the next fork
 
 def one_trial_I01(hook, workdir, home, stubmark):
-    p, wfd, outf = spawn(hook, workdir, home)
+    p, wfd, tap = spawn(hook, workdir, home)
     if not wait_probe_landed(p, stubmark, CATCH_WIN):
-        _drain_void(p, wfd, outf, stubmark)
+        _drain_void(p, wfd, tap, stubmark)
         return None                                   # VOID -> retry
     try:
         os.killpg(p.pid, signal.SIGKILL)
     except OSError as e:
-        _drain_void(p, wfd, outf, stubmark)
+        _drain_void(p, wfd, tap, stubmark)
         return ("ERR", "I01 killpg after landed probe: %r" % e)
     try: os.close(wfd)
     except OSError: pass
     try: p.wait(timeout=5)
     except Exception: pass
-    outf.close()
     # sol 2026-09-02 F6 (CONFIRMED by reading): I01 never looked at its stdout
     # capture or the canary tree. Bytes written before the KILL are C2 bytes.
     # Graded like I02: sample at exit, settle while a late writer is still ALIVE,
     # re-sample, and only then sweep. The single post-sweep read this replaces was
     # taken from a corpse the harness had just killed, so I01 flagged 0/5 landed
     # trials on a hook whose late writer I02 caught in 5/5.
-    ob_at_exit = os.path.getsize(outf.name)
+    ob_at_exit = tap.count()
     surv = real_survivors(p.pid, stubmark)
     time.sleep(getattr(contract, "SETTLE", 0.25))
-    ob = os.path.getsize(outf.name)
     sweep(p.pid, stubmark)
+    eof = tap.finalize(1.0)                           # after the sweep: fd 1 must close
+    ob = tap.count()
     if surv is None: return ("VOID", None)            # ps vanished -> retry
     fails = list(surv)
     _n = _c2_note(ob_at_exit, ob)
     if _n: fails.append(_n)
+    if tap.error: fails.append("stdout tap error %s" % tap.error)   # count is a floor, not 0
+    if not eof: fails.append("stdout pipe still held after sweep (unattributed descendant)")
     fails += ["C4 " + d for d in contract.diff_snapshots(HOME_BEFORE[home], contract.snapshot(home))]
     return ("OK", fails)
 
 def one_trial_I02(hook, workdir, home, stubmark):
-    p, wfd, outf = spawn(hook, workdir, home)
+    p, wfd, tap = spawn(hook, workdir, home)
     if not wait_probe_landed(p, stubmark, CATCH_WIN):
-        _drain_void(p, wfd, outf, stubmark)
+        _drain_void(p, wfd, tap, stubmark)
         return None                                   # VOID -> retry
     fails = []
     try:
         os.killpg(p.pid, signal.SIGSTOP)
     except OSError as e:
-        _drain_void(p, wfd, outf, stubmark)
+        _drain_void(p, wfd, tap, stubmark)
         return ("ERR", "I02 killpg STOP after landed probe: %r" % e)
     time.sleep(0.4)
     rr = ps_rows()
@@ -241,7 +246,7 @@ def one_trial_I02(hook, workdir, home, stubmark):
         # No observation is not a clean observation -> VOID, retried.
         try: os.killpg(p.pid, signal.SIGCONT)
         except OSError: pass
-        _drain_void(p, wfd, outf, stubmark)
+        _drain_void(p, wfd, tap, stubmark)
         return ("VOID", None)
     # This probe GRADES ("running while STOPPED"), so the cwd tri-state must be
     # resolved here too: members() alone turns an unknown cwd scan into an empty
@@ -251,7 +256,7 @@ def one_trial_I02(hook, workdir, home, stubmark):
     if _cw is None:
         try: os.killpg(p.pid, signal.SIGCONT)
         except OSError: pass
-        _drain_void(p, wfd, outf, stubmark)
+        _drain_void(p, wfd, tap, stubmark)
         return ("VOID", None)
     running = [r for r in members(rr, p.pid, stubmark, _cw) if r[2].startswith("R")]
     if running:
@@ -267,9 +272,7 @@ def one_trial_I02(hook, workdir, home, stubmark):
         try: os.killpg(p.pid, signal.SIGKILL)
         except OSError: pass
     if rc is not None and rc != 0: fails.append("rc=%r after CONT" % rc)
-    outf.close()
-    _outp = outf.name
-    ob_at_exit = os.path.getsize(_outp)
+    ob_at_exit = tap.count()
     surv = real_survivors(p.pid, stubmark)
     # C2 is graded AFTER the survivor sample and after a settle, not before both.
     # Measuring stdout first left a live descendant free to write in the window
@@ -278,14 +281,16 @@ def one_trial_I02(hook, workdir, home, stubmark):
     # to reveal itself on the inherited fd -- contract.py already does exactly
     # this (SETTLE / stdout_late_bytes); grpsig2 did not.
     time.sleep(getattr(contract, "SETTLE", 0.25))
-    ob = os.path.getsize(_outp)
     sweep(p.pid, stubmark)
-    # BOTH observations count. Grading only the post-settle size would let a hook
-    # write to stdout and then truncate its own capture file during the settle to
-    # erase the evidence -- the settle must only ever ADD detection, never take
-    # away what was already observed at exit.
+    eof = tap.finalize(1.0)                           # after the sweep: fd 1 must close
+    ob = tap.count()
+    # BOTH observations are reported. The drained count can only grow, so the
+    # TRUNCATED branch of _c2_note is now unreachable by the hook -- it stays as a
+    # tripwire on the tap itself (a shrink would mean the harness lost bytes).
     _n = _c2_note(ob_at_exit, ob)
     if _n: fails.append(_n)
+    if tap.error: fails.append("stdout tap error %s" % tap.error)   # count is a floor, not 0
+    if not eof: fails.append("stdout pipe still held after sweep (unattributed descendant)")
     if surv is None: return ("VOID", None)            # ps vanished -> retry
     if surv: fails.append("%d survivor(s): %s" % (len(surv), surv))
     fails += ["C4 " + d for d in contract.diff_snapshots(HOME_BEFORE[home], contract.snapshot(home))]

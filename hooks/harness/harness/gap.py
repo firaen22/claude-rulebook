@@ -80,7 +80,7 @@ def probe(path, sig, mode, home):
     # C2 is graded here now; the leak is folded into the verdict string so every
     # existing consumer of (verdict, elapsed) keeps working unchanged.
     outf = os.path.join(home, "gap_stdout.bin")
-    fo = open(outf, "wb")
+    tap = contract.StdoutTap(outf)     # harness-drained pipe: bytes counted, not a size the hook can shrink (M21)
     rfd, wfd = os.pipe()
     ready = os.path.join(home, READY)
     try: os.unlink(ready)
@@ -92,8 +92,9 @@ def probe(path, sig, mode, home):
     cwd_pre = contract.cwd_pids(home)
     t0 = time.time()
     p = subprocess.Popen(["/bin/bash", "--noprofile", "--norc", "-p", path, "manual"],
-                         stdin=rfd, stdout=fo, stderr=devnull, env=env, cwd=home,
+                         stdin=rfd, stdout=tap.w, stderr=devnull, env=env, cwd=home,
                          preexec_fn=lambda: os.setpgid(0, 0))
+    tap.attach()
     os.close(rfd)
     # wait for the busy-wait's own marker instead of sleeping blind (grok F11)
     verdict, state = None, None
@@ -160,14 +161,12 @@ def probe(path, sig, mode, home):
     try: os.close(wfd)
     except OSError: pass
     devnull.close()
-    try:
-        fo.flush(); fo.close()
-    except OSError:
-        pass
-    try:
-        nb = os.path.getsize(outf)
-    except OSError:
-        nb = -1
+    eof = tap.finalize(1.0)                # group and survivors are dead: fd 1 must close
+    nb = tap.count()
+    if tap.error:
+        verdict = "%s+C2TAP-%s" % (verdict, tap.error)   # drained count is a floor -> never exit0
+    if not eof:
+        verdict = "%s+STDOUT-HELD" % verdict             # an unfound holder of fd 1 -> never exit0
     if nb != 0:
         verdict = "%s+C2LEAK%dB" % (verdict, nb)   # never equals "exit0" -> FAIL
     return verdict, el

@@ -33,9 +33,11 @@ clobbered file, or abandoned spinning process is expensive.
 - `candidate/` — hook versions v22 (previously live) … v28 (INSTALLED live
   2026-09-01, md5 4472d36b, verified identical to
   `~/.claude/hooks/observe-compaction-events.sh` at repo creation).
-- `mutants/` — M1–M17 seeded-defect hooks used to mutation-validate the
+- `mutants/` — M1–M22 seeded-defect hooks used to mutation-validate the
   harness (all 10 original harness defects showed as false GREENS before fix;
-  M16/M17 were added by the 2026-09-01/02 cross-model review, see `reviews/`).
+  M16/M17 were added by the 2026-09-01/02 cross-model review, see `reviews/`;
+  M18 detached `/bin/sleep` 2026-09-05; M19 stdin stall, M20/M21 stdout-then-
+  ftruncate, M22 chdir-away fd-1 holder 2026-09-06 — see "Other findings").
 - `scripts/` — runners (`run_full.sh`, `run_grpsig2.sh`, …), builders/patches,
   standalone repros (`repro_h1*.py`, `setsid_f2_repro.py`), v22→v27 diff.
 - `dispatch/` — subordinate dispatch packets (sol/grok/agy/nim/opencode/luna).
@@ -158,35 +160,78 @@ that still evade every clause (grok's list, plainly): a descendant that
 `chdir()`s away — the classic `chdir("/")` daemonize — or is spawned with an
 explicit cwd elsewhere; a setuid/other-uid child (`-u uid`, and `ps -E` is
 same-user too); a cwd that is unlinked so lsof's path no longer equals
-`realpath(workdir)`. The environment scrub alone no longer suffices.
+`realpath(workdir)`. The environment scrub alone no longer suffices. Since
+2026-09-06 one more net catches the first class *when it keeps fd 1*: the
+stdout pipe must reach EOF after the sweep (M22, below). A holder that also
+closes fd 1 remains unreachable by any clause here.
 
-### Other open findings (2026-09-05, each verified by execution, none fixed)
-- **`contract.py` A06_oversize cannot enforce WALL_CEIL.** The 300,008-byte
-  payload is pushed with one blocking `p.stdin.write` *before* the deadline loop,
-  against a 64KB pipe buffer. A candidate that stops draining stdin while alive
-  blocks the grader until it exits on its own: measured 40.04s elapsed for a
-  `sleep 40` mutant (ceiling is 12.0s, and `rc=0` proves the deadline branch never
-  ran), and a never-exiting mutant left the grader still sleeping past a 45s outer
-  timeout with no verdict. `run_all.sh` has no timeout of its own. Fix: feed stdin
-  inside the deadline loop as `drip_stdin` already does, or off the main thread.
+### Other findings (2026-09-05, each verified by execution; all three CLOSED 2026-09-06)
+- ~~**`contract.py` A06_oversize cannot enforce WALL_CEIL.**~~ CLOSED 2026-09-06.
+  The 300,008-byte payload was pushed with one blocking `p.stdin.write` *before*
+  the deadline loop, against a 64KB pipe buffer, so a candidate that stopped
+  draining stdin while alive held the grader for as long as it lived: mutant
+  **M19** (`stdin_stall`, `sleep 40` before the read) measured `40.13s` against
+  the 12.0s ceiling (red only because the sleep ended; a never-exiting stall left
+  no verdict at all). Now `run_case` sets the stdin pipe non-blocking and
+  `_pump_stdin()` writes one burst before the loop and one per 20ms tick inside
+  it; the deadline owns the whole wait. Verified: M19 A06 → `FAIL rc=TIMEOUT
+  12.03s`, whole invocation 14.0s; v28 57/57 unchanged.
 - ~~**`contract.py` B07/B08 disable the descendant detector.**~~ CLOSED by the
   cwd clause above (2026-09-05): `B07_no_home` pops `HOME` and `B08_home_missing`
   sets it to `/nonexistent/nope`, so the `HOME=` clause had nothing to match for
   2 of 57 cases; cwd attribution does not depend on `HOME`. Verified: M18 now
   `FAIL orph=1` on both cases, v28 still `ok`.
-- **`grpsig2` C2 is graded from point-samples of a shrinkable file.** stdout is a
-  regular file the hook holds as fd 1, so `ftruncate(1,0)` before exit makes every
-  sample read 0 and the grade comes back clean. Grading both samples (done) closes
-  the settle-window case, not this one. Fix: give the hook a pipe for fd 1 and
-  count drained bytes, or grade a high-water mark and treat any shrink as a
-  violation in its own right.
+- ~~**C2 is graded from point-samples of a shrinkable file.**~~ CLOSED 2026-09-06,
+  and it was not grpsig2-only: every instrument handed the hook a regular capture
+  file as fd 1 and graded `os.path.getsize()` of it, so `ftruncate(1,0)` before
+  exit made every sample read 0. Mutant **M20** (`stdout_then_ftruncate`, 5 bytes
+  then truncate before the hook's own `exec >/dev/null`) graded CLEAN in contract
+  (`A01 out=0`), grpsig2 (`5/5 landed clean` ×2) and pidhang; mutant **M21**
+  (`gap_window_stdout_then_ftruncate`, the same leak inside the early exit-0 trap
+  that gap's signal lands in) graded `exit0` ×6 in gap. Now `contract.StdoutTap`
+  gives the hook a *pipe* for fd 1, drains it on a harness thread started after
+  `Popen` (post-fork, so `preexec_fn` never runs in a child of a threaded parent),
+  and grades the bytes **drained** — a count the hook cannot shrink — teed to the
+  old capture path for the sample. Verified: M20 → contract `C2 stdout=5B
+  b'LEAK5'`, grpsig2 `['5B stdout']` on 10/10 landed trials, pidhang `dirty=10`;
+  M21 → gap `exit0+C2LEAK5B` ×6 (HEAD version: PASS); M14 control still red;
+  v28 green on all four instruments (`run_all.sh --pidhang` rc 0). A pipe is also
+  what Claude Code gives a hook's fd 1, so this is the more faithful stdout.
+  Round-1 review (codex sol + agy, both FIX; all reproduced by reading, fixed):
+  the first `count()` was a 50ms `join` heuristic → now select-driven and exact
+  under a lock; a drain-thread or tee error was never graded → `tap.error` fails
+  C2 at all four sites (count is taken before the tee, so a tee failure hides no
+  bytes); the "post-fork thread" claim was false whenever a previous case's
+  thread outlived it → every `StdoutTap()` first `quiesce()`s all live taps
+  (stop flag + join; refuses to fork if one will not stop), so `preexec_fn`
+  always forks single-threaded; `finalize()` after the sweep now REQUIRES EOF —
+  fd 1 still open once every found survivor is dead means a holder no clause
+  found. That last one turns a documented residual into a detection: mutant
+  **M22** (`chdir_away_holds_stdout`: setsid + `chdir('/')` + exec `/bin/sleep`
+  keeping fd 1 — invisible to pgid, `HOME=` and cwd alike) graded `ok orph=0` on
+  HEAD and now `FAIL C3 stdout pipe still held after sweep`. Also from codex:
+  the stdin pump treated every `OSError` as "hook closed its end" → only `EPIPE`
+  is normal now, `EINTR`/`EAGAIN` retry, anything else grades `HARNESS stdin
+  feed …`; and M19 was not a true regression guard (the old blocking feed also
+  went red, just 28s late) → `run_case` now grades its OWN wall time against
+  `GRADER_STALL`, so a re-introduced blocking feed reads `HARNESS grader
+  stalled 40.1s` regardless of the hook's rc. Round 2 (codex sol FIX, grok
+  PROCEED): that clock had wrapped the whole case including three `ps`/`lsof`
+  calls with 10s timeouts — a slow-but-successful `lsof` could false-red a
+  conforming case — so it now times only the pump→reap segment (`GRADER_STALL`
+  = ceiling + 5s reap + 3s = 20s); and a failed `set_blocking` left `p.stdin`
+  set, so the pump would have written A06's 300KB on a blocking fd (the M19
+  hang back) → it now closes stdin and grades `stdin_feed_error`. Rejected as
+  nit: a `Popen` that raises leaks the unattached tap's pipe — uncaught at all
+  four sites, the instrument aborts and the kernel reclaims the fds.
 
 The harness keeps its own bookkeeping (`TABLE-*`, `RESULT-*`, the `o_*.out`/`.err`
 capture files) *inside* the directory it hands the hook, so those paths must be
 excluded from the C4 snapshot — the harness rewrites them itself during the run.
 Every exclusion is a blind spot: a hook that specifically targets one of those
-names (deleting `TABLE-<label>.txt`, or truncating its own `o_*.out` after
-writing to stdout) is not graded on it. The realistic classes are covered by
+names (deleting `TABLE-<label>.txt`, or unlinking `o_*.out` by path — it no longer
+holds that file as fd 1, so truncating it no longer erases C2 evidence) is not
+graded on it. The realistic classes are covered by
 mutants (M1/M7/M12 stdout, M15/M16 cwd destruction, M17 detached grandchild);
 closing the residue properly means moving harness output out of the hook's cwd,
 which is a layout change across contract/gap/grpsig2/pidhang, not a patch.
