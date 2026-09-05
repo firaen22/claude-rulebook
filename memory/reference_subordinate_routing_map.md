@@ -12,12 +12,14 @@ Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 [[workflow-codex-subordinate]] [[workflow-agy-subordinate]] [[workflow-grok-subordinate]]
 [[workflow-opencode-subordinate]] [[reference-nim-via-opencode]]
 
-> 📌 **VERSION STAMP — verified 2026-08-31 by running each binary:**
-> `grok 1.0.13 (5e9a58528b76)` · `codex-cli 0.150.1` · `opencode 1.18.25` · `agy 1.1.22`.
+> 📌 **VERSION STAMP — re-verified 2026-09-05 by running each binary:**
+> `grok 1.0.13 (5e9a58528b76)` · `codex-cli 0.153.4` · `opencode 1.18.29` · `agy 1.1.26`.
 > Every rc / ceiling / bug-status claim in this file and the linked playbooks is
-> **VERSION-BOUND**. Three were found stale on this date (codex 0.149.0, opencode
-> 1.18.19, grok "v1.0.5"), and opencode moved 1.18.23→1.18.25 mid-session — so a
-> stamp is a reading, not a guarantee. **Re-run `--version` before trusting a number.**
+> **VERSION-BOUND**. codex moved 0.151.0→0.153.4, opencode 1.18.25→1.18.29, and agy
+> 1.1.22→1.1.26 since the last stamp (all self-updates from routine update sweeps, not
+> targeted at anything in this file) — grok held steady. codex's ~30KB inline-review
+> ceiling (§2a) remains UNVERIFIED on 0.153.4 — a stamp is a reading, not a guarantee.
+> **Re-run `--version` before trusting a number.**
 
 ## 0. Two rules that override every row below
 

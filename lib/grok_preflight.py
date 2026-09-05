@@ -144,7 +144,7 @@ def self_test():
             good = (missing["state"] == "missing" and not missing["ok"])
             fails += (not good)
             print(f"  {'ok ' if good else 'FAIL'} {'deleted file':14s} -> {missing['state']}")
-        os.environ["XAI_API_KEY"] = "dummy-not-a-real-key"
+        os.environ["XAI_API_KEY"] = "dummy"
         r = check(path=Path(td) / "nope.json", now=now)
         good = r["ok"] and r["state"] == "api-key"
         fails += (not good)

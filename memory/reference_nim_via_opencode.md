@@ -1,11 +1,39 @@
 ---
 name: reference-nim-via-opencode
-description: "How NVIDIA NIM is wired as a subordinate (model backend behind opencode, not a standalone agent CLI) + benchmarked model picks, IDs, and the catalog-lies/probe gotcha. Full-catalog sweep 08-25: 95 ids, 33 LIVE, 55 dead-404 (new refusal shape), 4 unresolved XPORT-persist"
+description: "How NVIDIA NIM is wired as a subordinate (model backend behind opencode, not a standalone agent CLI) + benchmarked model picks, IDs, and the catalog-lies/probe gotcha. Catalog 82 ids as of 08-29 (was 95 on 08-25); nimroute.py has 3 live-routed ids now hard-410 (llama-3.1-70b-instruct, nemotron-3-nano-30b-a3b, inkling) — NOT YET PATCHED"
 metadata: 
   node_type: memory
   type: reference
   originSessionId: 9d9ceaff-475d-47a4-871b-5bc9ce1b2498
 ---
+
+## REFRESH 2026-08-29 — catalog 95→82, and nimroute.py IS ACTIVELY ROUTING TO 3 DEAD IDS
+
+Catalog dropped 95 → 82 (13 fewer listed). Cross-checked every id nimroute.py actually
+references (not just re-read the prose) against a fresh `/v1/models` pull, then
+direct-curl PONG'd the 3 mismatches to rule out catalog-lies in either direction
+(a delisted id can still be callable; a listed id can still 404 — this file's own
+standing gotcha):
+
+| Model | nimroute.py role | Result | Note |
+|---|---|---|---|
+| `meta/llama-3.1-70b-instruct` | active PARITY id | ⛔ **410 EOL** | was confirmed LIVE (5.1s) in the 08-25 sweep — genuinely newly dead, not a stale re-read |
+| `nvidia/nemotron-3-nano-30b-a3b` | active PARITY id | ⛔ **410 EOL** | also confirmed LIVE (1.0-1.2s) as recently as 08-25 — genuinely newly dead |
+| `thinkingmachines/inkling` | active PARITY id | ⛔ **410 EOL** | **NOT new** — this file already recorded it 410 on 2026-08-25 (see CURRENT STATUS table below). nimroute.py never got the removal reverse-ported: a known-dead id sat in live routing for 4+ days. The gap was in propagation, not detection. |
+| `nvidia/nemotron-nano-3-30b-a3b` (swapped-segment cousin, listed in the 08-29 catalog) | not routed | 404 | catalog-lies persists in the same direction as the 07-19/07-23 note — listed but no backing function. There is currently **no live callable id for either segment order of the 30B nano nemotron**; do not substitute this one in. |
+
+**All other ids nimroute.py actually references** (`minimaxai/minimax-m3`,
+`mistralai/mistral-nemotron`, `nvidia/nemotron-3-super-120b-a12b`,
+`nvidia/nemotron-3-ultra-550b-a55b`, `openai/gpt-oss-120b`, `poolside/laguna-xs-2.1`)
+**are still listed in the 82-id catalog** — not independently re-probed for
+callability this pass (catalog presence is necessary, not sufficient, per the
+standing gotcha — PONG before trusting if routing to one of these fails).
+
+**Action needed, not yet taken (flagged, not silently fixed — nimroute.py is a live
+routing script, editing it is out of the "refresh the list" scope this pass was
+asked for):** `nimroute.py` lines ~101, 109-110 need the 3 dead ids removed or
+substituted, and its PARITY/proven-core comment block needs a replacement candidate
+for the 30B-nano-nemotron slot once one exists (none does as of this probe).
 
 ## CURRENT STATUS (as of 2026-08-25) — read this before any dated section below
 

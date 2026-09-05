@@ -29,6 +29,10 @@ metadata:
 > **Use NIM instead** — it works through the VPN unchanged
 > ([[reference-nim-via-opencode]], `nimroute.py`).
 >
+> **STILL BLOCKED — re-checked 2026-09-01.** Same pre-auth 403, raw `curl`
+> included, one month after the original diagnosis and unchanged by any client
+> work since. Nothing here is retracted; the suspension is simply not stale.
+>
 > **To re-enable:** disconnect NordVPN, then verify with the one-liner in §5. If it
 > returns `ok=True`, delete this banner — everything below was measured and stays
 > valid; the block is purely network-level, so no finding here is retracted.

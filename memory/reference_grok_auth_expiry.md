@@ -78,6 +78,17 @@ real limit: a Mac powered off for a weekend cannot run the job, so Monday login 
 possible. Only a console.x.ai **API key** (separate login/billing, and it requires
 `grok logout`) actually never expires — the user has NOT asked for that.
 
+## 5. Third observed failure (2026-09-06) — preflight GREEN ≠ dispatch OK
+`grok_preflight.py --quiet` returned rc 0 at 00:20 (auth.json present, not expired),
+and the review dispatch 2 minutes later got `Not signed in` under BOTH a seeded HOME
+and the real HOME; afterwards `auth.json` was gone (preflight then `state: missing`).
+Mechanism: the preflight reads expiry only; the REFRESH was rejected at dispatch time
+and grok deleted the file. So a green preflight bounds only the access-token TTL, not
+refresh acceptance. Recovery was the user running `grok login --device-code`; the
+seeded-HOME recipe then worked unchanged (PONG). Don't misread the first failure as
+your own isolation — check `ls ~/.grok/auth.json` right after, and never restore the
+`auth.json.bak-*` copy yourself (credential handling is the user's).
+
 ## What would change this
 - A `grok` build that changes the 6h TTL or stops deleting `auth.json` on rejection.
 - Vendor docs catching up (or this machine turning out to be the outlier — N=1 machine,
