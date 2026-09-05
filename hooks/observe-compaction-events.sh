@@ -1,5 +1,7 @@
 #!/bin/bash -p
-# PHASE 0 — MEASUREMENT ONLY. v22, one file per event. NOT INSTALLED.
+# PHASE 0 — MEASUREMENT ONLY. v22, one file per event. INSTALLED 2026-09-01: registered
+# 7 times in settings.json — PreCompact (manual, auto) + SessionStart (startup, resume,
+# clear, compact, fork) — each as `/bin/bash --noprofile --norc -p <path> <matcher>`.
 #
 # WHAT IT DOES: writes ONE file per hook event into $LOG_DIR/observed/, named
 #   <ns>-<pid>.complete.json   EOF was OBSERVED and nothing was discarded
