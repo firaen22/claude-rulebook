@@ -167,7 +167,7 @@ Net verified findings (artifacts: `claude-code-technique/experiments/tool-compar
 **Invocation pattern for code-writing delegation:**
 ```bash
 # Prompt in a file (avoid HEREDOC + zsh-eval escaping issues)
-agy --add-dir /Users/yauch/Documents/moira/moira-web \
+agy --add-dir /path/to/your/repo \
     --model gemini-3.7-flash-medium \
     --dangerously-skip-permissions \
     -p "$(cat /tmp/agy-prompt.txt)" \
