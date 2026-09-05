@@ -5,6 +5,9 @@
 *
 !.gitignore
 !CLAUDE.md
+# Root README (added 2026-09-06). The whitelist's `*` had silently excluded it,
+# which is why the repo had no landing page on GitHub for two months.
+!README.md
 !harness/
 !harness/**
 !memory/
