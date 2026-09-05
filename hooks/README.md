@@ -12,6 +12,11 @@ with the paths made absolute.
 | `gate-credential-destruction.py` | PreToolUse (Bash) | Blocks `rm`/`mv`/`shred`/etc. aimed at credential-pattern files (`.env`, `*.pem`, `id_rsa`, `credentials*`, …) unless the user's own message authorised it. Built after a weak-tier eval where an embedded directive in a vendor file got a credentials backup deleted. | `bash hooks/test-gate-credential-destruction.sh` |
 | `parse-commit-command.py` | (helper) | shlex-based tokenizer used by `gate-before-commit.sh`; strips heredoc bodies so a commit message containing "git commit" is not a commit. | covered by the gate's test |
 | `observe-compaction-events.sh` | PreCompact, SessionStart (startup/resume/clear/compact/fork) | Records one JSON file per hook event under `$LOG_DIR/observed/` (payload, EOF-observed, truncation) so compaction behaviour can be measured instead of guessed. Measurement only — it never blocks. | contract harness lives in the owner's lab repo, not here |
+
+The reliability harness for `observe-compaction-events.sh` — v22–v28 candidates, the
+contract/gap/grpsig2/pidhang graders, 18 mutants, and the cross-model review packets —
+lives in [`harness/`](harness/README.md) (merged from the former `compaction-hook-harness`
+repo via git subtree, history preserved).
 | `../compact-context-monitor.sh` | Stop | Estimates context use from transcript bytes appended since the last compact boundary; at ~50% exits 2 with `asyncRewake` so the model gets a system reminder to hand off / compact. Debounced: warns once per crossing. | none (read the 64 lines) |
 
 Machine-specific files are deliberately NOT in this repo: the real `settings.json`

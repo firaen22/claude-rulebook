@@ -29,5 +29,10 @@
 !hooks/*.sh
 !hooks/*.py
 !hooks/README.md
+# hooks/harness/: the merged compaction-hook-harness repo (v22-v28 candidates,
+# contract/mutant harness, review packets). Its own nested .gitignore still
+# excludes run scratch (mrepwd_*/, *_cwd/, out/).
+!hooks/harness/
+!hooks/harness/**
 !compact-context-monitor.sh
 !settings.example.json

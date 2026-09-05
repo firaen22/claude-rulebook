@@ -1,8 +1,9 @@
 # compaction-hook-harness
 
 Reliability harness and version history for the macOS Claude Code
-PreCompact/SessionStart observability hook installed at
-`~/.claude/hooks/observe-compaction-events.sh`
+PreCompact/SessionStart observability hook shipped as
+[`../observe-compaction-events.sh`](../observe-compaction-events.sh) (== `candidate/v28.sh`
+plus a header comment) and installed at `~/.claude/hooks/observe-compaction-events.sh`
 (invoked as `/bin/bash --noprofile --norc -p <path> <matcher>` on bash 3.2.57).
 
 Curated from the round-23 working tree (session scratchpad, 2026-09-01).
