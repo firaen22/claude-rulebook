@@ -79,6 +79,36 @@ diagnosis.
 
 See §3. Create it on first lesson.
 
+**Compression ledger (sizes are at trigger, before the move).** 2026-07-12: 179
+lines / 8 entries, 6 moved — named no destinations. 2026-08-25: 243 / 19, all 19
+moved — named destinations for 9 of 19. 2026-08-27: 196 / 7, 5 objects moved —
+first pass to grep every destination and quote its sentence. **2026-08-29: 181 /
+4 entries + 3 counters, 4 moved** — all 10 destinations re-grepped live (all
+resolve; 3 line numbers drifted, 1 paraphrase never matched the file's wording,
+1 quoted sentence had been REPLACED by a rule that inverts it for two executors);
+one unsupported Status clause dropped; the surfaced order "a failed grep is not
+evidence of absence" homed in `skills/delegation-and-review/references/discovery-sweep.md`.
+Same pass moved the four narrative compression paragraphs OUT of LESSONS.md into
+`LESSONS-archive.md` §"Compression-pass narrative history" — the log had reached
+51 of the file's 100 lines, turning a rules file into a maintenance history — and
+replaced them with a one-line-per-pass table. LESSONS.md 181 → 78 lines,
+prose 10.2 w/line, max table row 48 fields (both §4 twins pass).
+
+**Standing note:** a bare "see LESSONS.md" pointer elsewhere in the corpus rots
+on every compression. This file carried one in the gate-before-commit entry ("FIX-FIRST on round 2 — see
+LESSONS.md"), pointing at 2026-07-07 content archived in an earlier pass;
+RETARGETED 2026-08-29 to the archive heading. The note first cited it as `:571`,
+which is security-architect prose — the real line was 591. A note about pointer
+rot that shipped with a rotted pointer, caught by a cross-model reviewer the same
+day. Cite an archive HEADING or an operative sentence; a line number in this file
+is wrong within one edit.
+
+**§3 gives no "pre-existing" exemption.** Its sweep
+(`rg -n 'LESSONS\.md' ~/.claude/skills ~/.claude/harness ~/.claude/memory`) says
+re-point a back-reference in the same edit. A hit dismissed as "not caused by my
+move" is still an unrepaired pointer — that dismissal is what left this one live
+through the 08-29 compression.
+
 ## Memory files (`.../memory/*.md`)
 
 **Edit permission (authoritative copy in §1):** YES
@@ -590,7 +620,8 @@ without gates. Adopted 2026-07-07 from opus-pack (upstream `F-e-u-e-r/opus-pack`
 `firaen22/opus-pack` main — merged there 2026-07-07, `a8ef21f`). Re-verify after ANY
 edit: `bash ~/.claude/hooks/test-gate-before-commit.sh` (34 paths, expected exits
 printed inline). Round 3 (2026-07-07, after a fresh-context adversarial review returned
-FIX-FIRST on round 2 — see LESSONS.md): commit detection and target-repo resolution now
+FIX-FIRST on round 2 — see `LESSONS-archive.md`, heading "2026-07-07 — gate-before-commit
+hook gates the WRONG repo + text-matches commands"): commit detection and target-repo resolution now
 run on Python `shlex` tokens (quote-aware, no code execution) instead of sed/grep
 substring heuristics, requires `python3` (degrades the same way as missing `jq`).
 Requires BOTH files present — the `.py` is not optional. Upstream PRs:
@@ -623,3 +654,72 @@ prefix, one command only, logged. Known false positive: it text-scans heredoc bo
 documentation QUOTING a destructive-command example trips it — write such docs via
 Write/Edit, not Bash heredocs. Blind spots (inherent): xargs rm, find -delete, `>`
 truncation, Write/Edit overwrites.
+
+## `~/.claude/hooks/observe-compaction-events.sh` (+ its PreCompact and SessionStart entries in `settings.json`)
+
+Installed 2026-08-29 with user approval as PHASE 0 of a compaction-recovery question.
+Permissions row in `40-maintenance.md` §1 (trimmed to the standing constraints
+2026-08-29 when a correction pushed it to 171 fields, over §4's ~150 cap; the history
+below is what moved). Fixture-tested 5/5 before install.
+
+WHY IT EXISTS: a v3 recovery-hook design was REJECTED by four reviewers for assuming
+three unmeasured runtime facts. This hook only observes them:
+  Q-A does `session_id` survive a compact?
+  Q-B what exact `cwd` string arrives, and is it spelled identically in both hooks?
+  Q-C which SessionStart matcher fires when?
+
+MATCHER INVENTORY (live): PreCompact — manual, auto. SessionStart — startup, resume,
+clear, compact, and `fork` added 2026-08-29 on user approval. `fork` was registered
+because the hook's own Q-C names it; whether Claude Code ever emits `source=fork` is
+UNMEASURED, and a matcher that never fires is itself the answer.
+
+CORRECTED 2026-08-29 (agy and grok, independently, from two different lenses): the
+hook's header, this registry's parent row, and `finding_hook_design_four_reviewer_2026-08-29.md`
+all claimed "the hook JSON does not report which matcher fired." FALSE. SessionStart
+payloads carry `source`; PreCompact payloads carry `trigger`; across all 11 records
+that field equals the argv the script adds. Q-C was answerable from the payload from
+day one. `$1` is retained as a CROSS-CHECK — it is the only way a mismatch between
+what settings.json registers and what the runtime reports becomes visible. The false
+sentence had propagated to three live files before anyone read the data against it.
+
+STATUS: not done. Observed so far — manual PreCompact, and SessionStart startup /
+compact / resume. Still unobserved: `clear`, `fork`, and any `auto` PreCompact.
+Retire the hook once those are logged, not before (both round-8 reviewers: unobserved
+event types are a PERISHABLE opportunity; a file edit is available any time).
+
+WRITER REWRITTEN 2026-08-29 (third review, codex `gpt-5.6-sol` at max effort). The
+python writer now OPENS THE LOG ITSELF instead of using a shell `>>` redirect, because
+the redirect carried three defects the shell could not guard:
+  - **a FIFO at the log path HUNG the hook** — `[ -f ]` is false for a FIFO so the cap
+    check was skipped, and the redirect then blocked forever waiting for a reader.
+    REPRODUCED (rc=124, killed at 5 s). This ran on every session start. Now
+    `O_NONBLOCK` returns ENXIO and the event is dropped with a diagnostic.
+  - a symlink at the log path redirected the append into another file. Now
+    `O_NOFOLLOW` + `fstat`/`S_ISREG` refuse it (verified: victim file stayed 0 bytes).
+  - the cap was checked in shell before the append, so it was advisory: 40 concurrent
+    240 KB records wrote **9.6 MB against a 5 MB cap**, and a `wc` failure silently
+    became `SZ=0`, licensing unbounded growth. The cap is now enforced under
+    `flock` against the open descriptor: the same 40×240 KB test lands at 5,044,599
+    bytes, under the cap. A torn tail is healed with a leading newline rather than
+    concatenated onto (verified), and a short write is reported rather than assumed
+    to be a clean drop.
+Line integrity was never the problem: 40 concurrent writers produced 40/40 parseable
+lines both before and after, so the JSONL-corruption hypothesis did NOT reproduce. FIXED 2026-08-29 (codex + grok, user-approved): a dead writer used to be SILENT —
+stderr went to /dev/null and the script exited 0, so "log stopped growing" could not
+be told from "no events happened." Now every drop path names itself on stderr:
+python3 missing, append failure, `mkdir` failure, empty stdin, and the pre-existing
+cap message. stdout stays empty and every path still exits 0 — the fail-open contract
+is unchanged. The two checks sit inside `if !` conditions ON PURPOSE: `trap 'exit 0'
+ERR` fires on a bare failing command and would exit before the diagnostic printed.
+Verified on all six paths in an isolated `HOME` (normal, empty stdin, no `mkdir`, at
+cap, no python3, unwritable log): rc=0 and stdout=0 bytes on every one.
+
+LOG CONTAMINATED BY ITS OWN TEST 2026-08-29: record 17 of `observed.jsonl` is
+SYNTHETIC — a closed-stderr probe run against the REAL `HOME` instead of an
+isolated one. It is distinguishable (2 keys, no `session_id`, no `cwd`; genuine
+records carry 8), and it was NOT deleted: removing a record from an append-only
+measurement log is a destructive act on the evidence, and a filterable record is
+cheaper than a hole. The rule this cost: **a probe of a hook that writes to
+`$HOME` must set `HOME` to a temp dir even when the probe is testing something
+unrelated to the log** — nine of ten paths were isolated, the tenth was not, and
+the tenth is the one that wrote.
