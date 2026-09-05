@@ -37,6 +37,25 @@ HOME="$TMPHOME" timeout 1700 ~/.grok/bin/grok -p "Read ./files/00-REVIEW-BRIEF.t
   -m grok-4.6 --cwd "$GDIR" --always-approve --disable-web-search --no-subagents \
   --output-format plain --tools read_file,grep,list_dir
 ```
+🔴 **`$TMPHOME` must be SEEDED, not empty (2026-09-01).** The recipe's isolated
+`HOME` is what grok reads its credentials from: a bare `mktemp -d` produces
+`Error: Not signed in. To authenticate without a browser, run: grok login
+--device-code` — which reads like an auth expiry and is actually your own
+isolation hiding `~/.grok/auth.json`. Seed it first:
+```
+TMPHOME=$(mktemp -d); mkdir -p "$TMPHOME/.grok"
+cp ~/.grok/auth.json ~/.grok/agent_id "$TMPHOME/.grok/"
+```
+Same class as the opencode `XDG_CONFIG_HOME` trap — see
+[[workflow-opencode-subordinate]]. **Isolate state, never credentials.**
+
+⚠️ **A read-only `--tools` allowlist CONTRADICTS a brief that demands executed
+repros** (2026-09-01): a packet saying "actually RUN it, a hypothesis you did not
+execute is worth nothing" dispatched with `--tools read_file,grep,list_dir` left
+grok visibly hunting for a way to run the target. Either accept `[unverified]`
+hypotheses and reproduce the promising ones yourself, or don't ask for repros —
+do NOT relax the allowlist to resolve it (containment is the only real control).
+
 🔴 **Do NOT drop `--tools`, and do NOT ask for `FINDINGS.md`.** The older form of this
 recipe did both — it is **UNCONTAINED**: the "Do NOT edit any file" prose is not a
 control and the isolated `--cwd` is not a boundary (both disproved 2026-08-27, wrote

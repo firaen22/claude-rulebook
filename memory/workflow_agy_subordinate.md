@@ -9,6 +9,116 @@ metadata:
 
 # Calling `agy` (Gemini 3.5 / 3.6 Flash) as a subordinate
 
+> # ⛔ READ FIRST — 2026-09-04: "agy returned nothing" is a PERMISSION DENY, not transport
+> agy chose to invoke a shell tool, headless mode could not prompt, it auto-denied, and
+> the process exited **rc=0 with empty stdout and a 300-BYTE STDERR MESSAGE** naming the
+> cause. Every harness before 09-04 captured stderr and read only stdout, so the message
+> was thrown away and the failure was mis-labelled a flaky "empty-return transport mode"
+> with a "size cliff". **Both of those framings are RETRACTED.**
+>
+> **FIX (verified by execution, p=0.0286 — worst packet 0/4 live -> 4/4 live):** prepend
+> ```
+> Do not run any commands, scripts, or tools. Do not attempt to execute or test the
+> code. Answer purely by reading the code shown below.
+> ```
+> Use this on EVERY agy dispatch that ships a code packet — it is the DEFAULT fix
+> because it removes the tool call instead of approving it.
+>
+> **`--dangerously-skip-permissions` is USER-APPROVED as of 2026-09-04** (explicit
+> "enable" after the risk below was stated). Measured the same day on the worst packet
+> (P6 cli.js, 3.8-flash-high, 4 calls from an empty scratch cwd): **LIVE 4/4, rc=0,
+> 2238-2760B stdout, 0B stderr, and `ls -a` showed agy created NOTHING in cwd.** So it
+> is a working second remedy, not just a theoretical one.
+> **Residual risk, unchanged by the approval:** it auto-approves EVERY tool, so on a
+> packet that is itself a runnable program — `P4_meeting_end.sh`, `P5_zoom_bg_monitor.sh`,
+> `cli.js` — agy deciding to "test" the code means those scripts actually RUN here (they
+> kill processes and drive Zoom). Choice rule: **preamble for review/read-only dispatches;
+> the flag only for agentic dispatches that are supposed to run tools**, and prefer an
+> empty scratch cwd so a stray execution finds no real scripts beside it. A narrow
+> `permissions.allow` rule remains the third option.
+>
+> **CONFIRMED AT SWEEP SCALE 2026-09-04:** full 6-packet review sweep, 54 calls, all
+> three -high arms, preamble on -> **0 empty returns**, including the two bash packets
+> that were 6/6 and 5/6 dead without it. The 3 remaining deaths are `__TIMEOUT__` at the
+> 240s wall (all `gemini-3.8-flash-high`) — a DIFFERENT, still-undiagnosed mode; do not
+> merge it into the empty-return story.
+> **Review pin RESOLVED, stays `gemini-3.6-flash-high`** (27/30 vs 3.7 25/30 vs 3.8
+> 21/30; 3.6-vs-3.8 margin 6 but p=0.1042 -> NO SEPARATION).
+> **`gemini-3.8-flash-high` is no longer "unmeasured for review" — it is just the WORST
+> arm**: lowest recall AND the noisiest (97 extra-claim lines vs 67). Stop re-testing it
+> for review work. See `finding_agy_review_preamble_sweep_2026-09-04.md`.
+>
+> **Diagnosis rule: `capture_output=True` then READ `r.stderr` — never test only
+> `r.stdout.strip()`.** A "silent" agy failure is almost never silent.
+> Rates are still real and still ordered (CLI/bash packets and higher effort levels
+> invoke tools more, so they fail more) — but the CAUSE is tool permission, so the fix is
+> the preamble, not chunking, not a lower effort level, not a different arm.
+> See `finding_agy_empty_return_is_permission_deny_2026-09-04.md`.
+
+> **2026-09-03, agy v1.1.24 — 3.8-flash is listed and callable but does NOT move
+> either pin.** Frozen chunk(arr,0) battery, 40 calls, execution grader:
+> **3.8-flash-medium 6/20 vs 3.7-flash-medium 9/20, Fisher p=0.51 -> NO SEPARATION,
+> default pin STAYS 3.7-flash-medium.** The 3-arm review-packet sweep meant to test
+> 3.8-high was VOIDED (12 post-retry empties / 34 cells), so the review pin stays
+> `gemini-3.6-flash-high` UNMEASURED on v1.1.24 and 3.8-high is untested for review.
+> **RETRY NO LONGER RESCUES A LARGE PACKET ON v1.1.24.** 3 retries — which worked
+> on v1.1.14 — do not. Chunk the packet or lengthen the backoff before dispatching
+> an ~8KB prompt. See `finding_agy_38_defaultpin_2026-09-03.md`.
+
+> **UPDATE later the same night — the re-run finished; BOTH remaining pins also STAY,
+> and `gemini-3.8-flash-high` is a TRANSPORT HAZARD.** See
+> `finding_agy_38_edge_and_review_2026-09-03.md`.
+> - **Edge-sensitive candidate STAYS `gemini-3.7-flash-low`**: 3.8-low 14/20 vs
+>   3.7-low 12/20, p=0.74 → no separation. The 08-14 low-tier advantage replicated
+>   but the margin COLLAPSED (08-14 low-vs-medium gap 10; now gap 3, p=0.53) — treat
+>   "route edge work to -low" as weak, not established. The chunk battery is near its
+>   CEILING on low arms (3 of 5 paraphrases saturated/tied 11/12 vs 11/12); all
+>   discrimination sits in 2 paraphrases at N=8/arm.
+> - **Review pin STAYS `gemini-3.6-flash-high`, now MEASURED on v1.1.24**: reduced
+>   4-packet sweep, 60 calls. 3.6-high 29/30 and 3.7-high 27/30 are both >=27 →
+>   SATURATED, cannot rank. The v1.1.14 3.7-vs-3.6 tie REPLICATES (p 1.000 → 0.612),
+>   so the CLI bump did not move this endpoint.
+> - **DO NOT dispatch review packets to `gemini-3.8-flash-high` on v1.1.24.** 10 of
+>   its 20 cells died after retry; 3.7-high and 3.6-high died 0/20 on BYTE-IDENTICAL
+>   prompts. 30 retries recovered 0 cells. Its recall is UNMEASURED, not bad — on the
+>   15 slots it survived to answer it scored 15/15.
+> - **The empty-return SIZE story is now SPLIT, and partly retracted.** Size cliff is
+>   real but arm-INDEPENDENT (09-02: deaths on the 7840B/6942B packets across all
+>   three arms). The 3.8-high failures are arm-specific and NOT size-ordered — they
+>   land on 4378B and 3933B packets while the 5004B packet never died in 5 reps.
+>   Diagnose an empty return by ARM first, then by size.
+
+> **EMPTY RETURN? DROP THE EFFORT LEVEL BEFORE BLAMING THE PACKET.** 3.8-solo run,
+> 48 calls, same packets across three effort levels: case-packet deaths fall
+> **-high 7/8 -> -medium 3/8 -> -low 0/8**, and `gemini-3.8-flash-low` returned on
+> 16/16 cells INCLUDING both packets that kill -high. Deaths are an effort x packet
+> INTERACTION (both factors move the rate), not one or the other — and NOT size: the
+> largest prompt (5664B) survived while 4584B and 4888B died. First remedy for an
+> empty return is **the no-tool preamble in the READ FIRST block above** (the actual
+> cause), then a lower effort level, then chunking, then a different arm.
+> **BUT THE RATE ITSELF DRIFTS — DO NOT PLAN AGAINST AN ABSOLUTE DEATH RATE.** The same
+> cell (P6, 3.8-high, byte-identical prompt, same binary, same machine, same night) went
+> 5/5 dead -> 4/4 dead -> 2/6 dead about an hour later; **Fisher p = 0.0110**, so the
+> rate genuinely moved. Only the ORDERING (higher effort dies more often) is stable.
+> Practical consequences: (a) **a packet that died an hour ago may work now — retry
+> before re-engineering it**; (b) never conclude "this packet kills this arm" from one
+> run; (c) any experiment measuring agy transport needs its control re-verified IN THE
+> SAME session, because a dead control can silently stop dying (this is exactly how the
+> `${` probe VOIDed).
+> **`${` is UNTESTED and now LOW PRIORITY** — the permission mechanism explains the
+> variance `${` was invented to explain. Design 2 (48 single-attempt calls) left it
+> PARTIAL: pooled p=0.3801, but both matched pairs moved +17pp the same way.
+> **Not cleared, not established** — the minimal-pair probe VOIDed when its dead control
+> came back to life. Do not cite `${` as a known trigger.
+> **Never compare recall across arms with different death counts** — a dead cell
+> enters neither numerator nor denominator, so a dying arm's "perfect" score is
+> computed over only the cells it survived (3.8-high scored 12/12 having survived zero
+> P6 cells; 3.8-low scored 19/24 having survived all of them). Different cell mixes,
+> not different accuracies. See `finding_agy_38_solo_transport_2026-09-03.md`.
+
+> All agy numbers carry a CLI-VERSION shelf life: v1.1.14 measurements are not valid
+> for v1.1.24.
+
 > **Model default (updated 2026-08-14):** pin **`--model gemini-3.7-flash-medium`**
 > for general subordinate use — N=175 five-arm probe (`finding_agy_37_subordinate_2026-08-14.md`),
 > agy v1.1.12. 3.7 ties 3.6 on adversary recall (24/24 both), fabrication (0), and
@@ -16,7 +126,7 @@ metadata:
 > 3 in 70. It is NOT safer on unstated edges (3.7-medium guards 0/5, same as 3.6-medium).
 > Review/adversary dispatches STAY on
 > `gemini-3.6-flash-high` — **the real-repo packet sweep this line used to demand has
-> now been RUN (2026-08-18, agy v1.1.14, `finding_agy_review_packet_sweep_2026-08-18.md`):
+> now been RUN (2026-09-02, agy v1.1.14, `finding_agy_review_packet_sweep_2026-09-02.md`):
 > 3.7-high 23/30 vs 3.6-high 22/30 ledger defects over 6 whole-file packets mined from
 > fix-commits, Fisher p=1.000 → NO SEPARATION.** The pin stays, but it now rests on a
 > measured tie rather than untested inheritance. Do not re-open without a new model
@@ -90,8 +200,9 @@ A silent hang looks identical regardless of cause: no output, no error, near-zer
 **Cause A — input parser wedge (CSV/TSV or numbered sections).** Three confirmed hangs on 2026-05-20: full 24-row CSV (1h+), 10-row CSV with Chinese chars, 10-row CSV ASCII-only. Numbered-section headers also trigger it (confirmed: "Question one… Question two…" prose hung 13 min). The binary is stuck parsing input, not waiting for anything external.
 - Fix: reformat as prose. Inline lists ("X, Y, Z") are fine; pipes, tabs, and commas are not. No numbered-section headers of any kind.
 
-**Cause B — permission wait (missing `--dangerously-skip-permissions`).** By default agy pauses before running any shell command or file write and waits for explicit user approval. In headless `-p` mode this approval can never arrive — agy hangs silently. Same symptom as Cause A, different root: engine is waiting for a keypress, not stuck parsing.
-- Fix: always pass `--dangerously-skip-permissions` for non-interactive use.
+**Cause B — permission auto-deny (agy wanted a tool, headless could not prompt).** By default agy pauses before running any shell command or file write and waits for explicit user approval. In headless `-p` mode that approval can never arrive. **CORRECTED 2026-09-04: on v1.1.24 this does NOT hang — it exits rc=0 with EMPTY STDOUT and a ~300B stderr message naming the auto-denied permission.** Read `r.stderr`; a "silent" agy failure is almost never silent.
+- Fix (read-only dispatches, DEFAULT): the no-tool preamble in the READ FIRST block — verified 0/4 -> 4/4 live, p=0.0286.
+- Fix (agentic dispatches meant to run tools): `--dangerously-skip-permissions`, user-approved 2026-09-04, verified 4/4 live — see the READ FIRST block for the residual-risk / choice rule.
 
 **Cause C — open-ended hard-recall with NO escape hatch (diagnosed 2026-06-04).** agy hangs when asked an open-ended question it cannot confidently answer AND given no way to bail — it loops trying to manufacture an answer it doesn't have until timeout. Full diagnosis + probe battery in "Wedge trigger #2" below.
 - Fix: append a termination escape to recall/open-ended prompts — `若不確定就只答「不確定」，切勿留白` / "if unsure, answer only 'unknown', never leave blank". Converts the hang into an instant honest answer.
@@ -167,7 +278,7 @@ Net verified findings (artifacts: `claude-code-technique/experiments/tool-compar
 **Invocation pattern for code-writing delegation:**
 ```bash
 # Prompt in a file (avoid HEREDOC + zsh-eval escaping issues)
-agy --add-dir /path/to/your/repo \
+agy --add-dir /Users/yauch/Documents/moira/moira-web \
     --model gemini-3.7-flash-medium \
     --dangerously-skip-permissions \
     -p "$(cat /tmp/agy-prompt.txt)" \
