@@ -162,7 +162,20 @@ def main():
         inst = os.path.join(work, "inst_" + label)
         anchors, note = instrument(os.path.abspath(t), inst)
         if anchors is None:
+            # Print, don't just record: this path used to return silently with rc 0,
+            # so run_all.sh's log grep found nothing and reported "gap PASS".
+            print(f"FAIL {label:<14} {note} (instrument never ran)")
             rows.append({"target": label, "verdicts": {}, "note": note, "pass": False}); continue
+        if note == "NO-IGNORE-LINE":
+            # The sibling anchor-failure mode. Without a `trap '' TSTP` line there
+            # is no window to widen, so instrument() silently fell back to ti+1 and
+            # probed an arbitrary point -- then graded the result as a real run.
+            # Measured: a v28 with its two ignore lines deleted scored gap PASS/rc 0
+            # while contract.py caught the same file blocking 12s on F_grp_TSTP/TTIN/TTOU.
+            # An unprobed window is not a passed one.
+            print(f"FAIL {label:<14} NO-IGNORE-LINE (stop-signal window anchor absent; window NOT probed)")
+            rows.append({"target": label, "verdicts": {}, "note": note,
+                         "anchor_lines": anchors, "pass": False}); continue
         v = {}
         for sig in ("TSTP", "TTIN", "TTOU"):
             for mode in ("pid", "grp"):
@@ -175,5 +188,9 @@ def main():
         print(f"{'PASS' if ok else 'FAIL'} {label:<14} " +
               "  ".join(f"{k}={a}" for k, (a, b) in v.items()))
     json.dump(rows, open(os.path.join(work, "GAP-RESULT.json"), "w"), indent=1)
+    # The verdict lives in the exit status, not only in the JSON. Without this,
+    # every caller that grades on rc (scripts/run_all.sh does) scored a FAILING
+    # gap run as PASS -- this instrument could never fail the suite.
+    sys.exit(0 if rows and all(r["pass"] for r in rows) else 1)
 
 main()

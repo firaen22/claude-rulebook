@@ -242,12 +242,21 @@ def make_interp_variant(target, workdir, mode):
     if not m:   # grok 2026-09-02 F9: an explicit raise, not an assert (-O strips asserts)
         raise RuntimeError("interpreter candidate list anchor not found in %s" % target)
     indent = m.group(1)
+    # The stub path goes into generated bash as ONE shell word. Unquoted, a workdir
+    # containing a space word-split the candidate list into nonexistent fragments,
+    # the loop fell through to the real /usr/bin/python3, and H01-H05 then measured
+    # a healthy interpreter instead of the hang/fail fixture -- scoring ok, so the
+    # run still printed "57/57 pass, 0 FAIL" with five cases silently not exercised.
+    if "'" in stub:
+        raise RuntimeError("stub path contains a single quote, cannot be safely "
+                           "quoted into the generated candidate list: %s" % stub)
+    q = "'%s'" % stub
     if mode == "allfail":
         # every candidate is the SAME failing stub -> the loop exhausts without a
         # working interpreter, exercising the empty-_chosen path. No real fallback.
-        new_block = "%sfor _p in %s \\\n%s          %s; do" % (indent, stub, indent, stub)
+        new_block = "%sfor _p in %s \\\n%s          %s; do" % (indent, q, indent, q)
     else:
-        new_block = "%sfor _p in %s \\\n%s          /usr/bin/python3; do" % (indent, stub, indent)
+        new_block = "%sfor _p in %s \\\n%s          /usr/bin/python3; do" % (indent, q, indent)
     src2 = src[:m.start()] + new_block + src[m.end():]
     out = os.path.join(workdir, "hook_interp_%s.sh" % mode)
     with open(out, "w") as f: f.write(src2)
@@ -421,8 +430,20 @@ def run_case(target, case, workdir):
         if now > deadline:
             try: os.killpg(p.pid, signal.SIGKILL)
             except OSError: pass
-            try: os.waitpid(p.pid, 0)
-            except ChildProcessError: pass
+            # A hook that moved ITSELF out of the group makes the killpg above a
+            # no-op on the parent, and the blocking waitpid that used to sit here
+            # then hung the grader forever instead of reporting a timeout. Kill
+            # the pid directly as well, and reap with a bounded WNOHANG poll.
+            try: os.kill(p.pid, signal.SIGKILL)
+            except OSError: pass
+            # monotonic, not time(): a wall-clock step backwards would stretch
+            # this "5 second" bound arbitrarily, which is the hang it replaced.
+            _reap_deadline = time.monotonic() + 5
+            while time.monotonic() < _reap_deadline:
+                try:
+                    if os.waitpid(p.pid, os.WNOHANG)[0] == p.pid: break
+                except ChildProcessError: break
+                time.sleep(0.02)
             status = None
             break
         time.sleep(0.02)
@@ -576,6 +597,13 @@ def main():
     only = sys.argv[4] if len(sys.argv) > 4 else None
     os.makedirs(workdir, exist_ok=True)
     cs = [c for c in cases() if (only is None or only in c[0])]
+    # A filter that matches nothing used to run zero cases and print "0/0 pass,
+    # 0 FAIL  md5=..." with exit 0 -- a typo'd 4th argument was indistinguishable
+    # from a clean sweep, md5 line and all. An empty case set is a usage error.
+    if not cs:
+        print("FAIL: case filter %r matched none of the %d cases; nothing was run"
+              % (only, len(cases())))
+        sys.exit(2)
     # R0: freeze EXPECTED to disk BEFORE the first subprocess runs
     expf = os.path.join(workdir, f"EXPECTED-{label}.json")
     with open(expf, "w") as f:

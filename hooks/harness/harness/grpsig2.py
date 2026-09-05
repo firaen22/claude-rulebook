@@ -84,10 +84,25 @@ def sweep(pgid, stubmark):
         try: os.kill(r[0], 9)
         except OSError: pass
 
+_SPAWN_N = [0]
+
+def _c2_note(ob_at_exit, ob):
+    """Grade C2 from BOTH samples. Shared so I01 and I02 cannot drift apart."""
+    if not (ob or ob_at_exit): return None
+    if ob == ob_at_exit: return "%dB stdout" % ob
+    if ob > ob_at_exit:   return "%dB stdout (%dB written after exit)" % (ob, ob - ob_at_exit)
+    return "%dB stdout at exit, then TRUNCATED to %dB during settle" % (ob_at_exit, ob)
+
 def spawn(hook, workdir, home):
     env = {"HOME": home, "PATH": "/usr/bin:/bin", "LANG": "C"}
-    outf = open(os.path.join(workdir, "grp.out"), "wb")
-    errf = open(os.path.join(workdir, "grp.err"), "wb")
+    # One capture file PER TRIAL. Every trial of both cases used to share
+    # workdir/grp.out; O_TRUNC keeps the inode, so a leftover descendant from an
+    # earlier trial still held a writable fd and its bytes landed in a later
+    # trial's capture -- C2 bytes were reported "at exit" for trials whose own
+    # writer could not have fired yet. contract.py already uses per-case files.
+    _SPAWN_N[0] += 1
+    outf = open(os.path.join(workdir, "grp_%03d.out" % _SPAWN_N[0]), "wb")
+    errf = open(os.path.join(workdir, "grp_%03d.err" % _SPAWN_N[0]), "wb")
     rfd, wfd = os.pipe()
     p = subprocess.Popen(["/bin/bash", "--noprofile", "--norc", "-p", hook, "manual"],
                          stdin=rfd, stdout=outf, stderr=errf, env=env, cwd=workdir,
@@ -148,14 +163,21 @@ def one_trial_I01(hook, workdir, home, stubmark):
     try: p.wait(timeout=5)
     except Exception: pass
     outf.close()
+    # sol 2026-09-02 F6 (CONFIRMED by reading): I01 never looked at its stdout
+    # capture or the canary tree. Bytes written before the KILL are C2 bytes.
+    # Graded like I02: sample at exit, settle while a late writer is still ALIVE,
+    # re-sample, and only then sweep. The single post-sweep read this replaces was
+    # taken from a corpse the harness had just killed, so I01 flagged 0/5 landed
+    # trials on a hook whose late writer I02 caught in 5/5.
+    ob_at_exit = os.path.getsize(outf.name)
     surv = real_survivors(p.pid, stubmark)
+    time.sleep(getattr(contract, "SETTLE", 0.25))
+    ob = os.path.getsize(outf.name)
     sweep(p.pid, stubmark)
     if surv is None: return ("VOID", None)            # ps vanished -> retry
     fails = list(surv)
-    # sol 2026-09-02 F6 (CONFIRMED by reading): I01 never looked at its stdout
-    # capture or the canary tree. Bytes written before the KILL are C2 bytes.
-    ob = os.path.getsize(os.path.join(workdir, "grp.out"))
-    if ob: fails.append("%dB stdout" % ob)
+    _n = _c2_note(ob_at_exit, ob)
+    if _n: fails.append(_n)
     fails += ["C4 " + d for d in contract.diff_snapshots(HOME_BEFORE[home], contract.snapshot(home))]
     return ("OK", fails)
 
@@ -195,10 +217,24 @@ def one_trial_I02(hook, workdir, home, stubmark):
         except OSError: pass
     if rc is not None and rc != 0: fails.append("rc=%r after CONT" % rc)
     outf.close()
-    ob = os.path.getsize(os.path.join(workdir, "grp.out"))
-    if ob: fails.append("%dB stdout" % ob)
+    _outp = outf.name
+    ob_at_exit = os.path.getsize(_outp)
     surv = real_survivors(p.pid, stubmark)
+    # C2 is graded AFTER the survivor sample and after a settle, not before both.
+    # Measuring stdout first left a live descendant free to write in the window
+    # between the two, and those bytes were never re-read. The settle precedes
+    # the sweep on purpose: a late writer needs a window while it is still alive
+    # to reveal itself on the inherited fd -- contract.py already does exactly
+    # this (SETTLE / stdout_late_bytes); grpsig2 did not.
+    time.sleep(getattr(contract, "SETTLE", 0.25))
+    ob = os.path.getsize(_outp)
     sweep(p.pid, stubmark)
+    # BOTH observations count. Grading only the post-settle size would let a hook
+    # write to stdout and then truncate its own capture file during the settle to
+    # erase the evidence -- the settle must only ever ADD detection, never take
+    # away what was already observed at exit.
+    _n = _c2_note(ob_at_exit, ob)
+    if _n: fails.append(_n)
     if surv is None: return ("VOID", None)            # ps vanished -> retry
     if surv: fails.append("%d survivor(s): %s" % (len(surv), surv))
     fails += ["C4 " + d for d in contract.diff_snapshots(HOME_BEFORE[home], contract.snapshot(home))]

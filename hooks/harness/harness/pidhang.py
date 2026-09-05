@@ -107,12 +107,35 @@ def trials(hook, tag, n=10):
 
 if __name__=="__main__":
     cand="candidate"
+    # The target under test comes from argv, as contract/gap/grpsig2 already do.
+    # It used to be a hardcoded v22/v26/v27/v28 list, so `run_all.sh other.sh
+    # --pidhang` graded v27+v28 and never touched the candidate it was asked
+    # about -- a clean DISCRIMINATED for a hook the run never executed.
+    CONTROL = os.path.join(cand, "v26.sh")   # known leaker: the positive control
+    target  = sys.argv[1] if len(sys.argv) > 1 else os.path.join(cand, "v28.sh")
+    tlabel  = os.path.basename(target)
+    if tlabel.endswith(".sh"): tlabel = tlabel[:-3]
     print("H1 multi-trial (H01 hang + pid-directed SIGTERM landed mid-probe):")
-    o22,l22,b22=trials(os.path.join(cand,"v22-installed.sh"),"v22")
-    o26,l26,b26=trials(os.path.join(cand,"v26.sh"),"v26")
-    o27,l27,b27=trials(os.path.join(cand,"v27.sh"),"v27")
-    o28,l28,b28=trials(os.path.join(cand,"v28.sh"),"v28")
-    ok = (o26>0 and o27==0 and o28==0 and b27==0 and b28==0 and min(l27,l28)>=grpsig2.MIN_LANDED)
-    print("%s"%("DISCRIMINATED: v26 leaks (%d), v27+v28 clean and unblocked across >=%d landed trials"%(o26,min(l27,l28)) if ok
-                 else "INCONCLUSIVE: v26 orph=%d v27 orph=%d/blk=%d v28 orph=%d/blk=%d landed=%d/%d"%(o26,o27,b27,o28,b28,l27,l28)))
+    print("target=%s  control=%s" % (target, CONTROL))
+    if os.path.realpath(target) == os.path.realpath(CONTROL):
+        # Control and target are the same file; "must leak" and "must be clean"
+        # cannot both hold, so this is a harness misuse, not a hook verdict.
+        print("INCONCLUSIVE: target is the positive control (%s); pick another candidate" % CONTROL)
+        sys.exit(1)
+    # The control must still LEAK. If it stops leaking, the probe itself is broken
+    # and a clean target proves nothing -- that is the whole point of running it.
+    o26,l26,b26 = trials(CONTROL, "v26")
+    ot, lt, bt  = trials(target, tlabel)
+    # The control must leak on MOST landed trials, not merely once. `o26>0` alone
+    # let a badly degraded probe certify itself off a single observation, which
+    # says nothing about its sensitivity on THIS machine. v26 measured 10 leaks
+    # over 10 landed trials on two consecutive baseline runs (2026-09-05), so a
+    # floor at MIN_LANDED leaves roughly 2x margin over observed behaviour.
+    ctl_ok = (l26 >= grpsig2.MIN_LANDED and o26 >= grpsig2.MIN_LANDED)
+    ok = (ctl_ok and ot == 0 and bt == 0 and lt >= grpsig2.MIN_LANDED)
+    print("%s" % ("DISCRIMINATED: control v26 leaks (orph=%d over %d landed trials), "
+                  "%s clean and unblocked across %d landed trials"%(o26,l26,tlabel,lt) if ok
+                  else "INCONCLUSIVE: control v26 orph=%d landed=%d blk=%d (need orph>=%d and landed>=%d); "
+                       "%s orph=%d blk=%d landed=%d (need orph=0, blk=0, landed>=%d)"
+                       %(o26,l26,b26,grpsig2.MIN_LANDED,grpsig2.MIN_LANDED,tlabel,ot,bt,lt,grpsig2.MIN_LANDED)))
     sys.exit(0 if ok else 1)
