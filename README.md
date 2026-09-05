@@ -94,6 +94,11 @@ Read before borrowing. Specifically:
 The parts most likely to transfer are the general skills and the harness rubrics —
 they are about how to verify work and delegate it, which is not machine-specific.
 
+## License
+
+MIT — see [`LICENSE`](LICENSE). Borrow freely; the caveats above are about
+whether a given piece will *work* for you, not about permission.
+
 ## Provenance
 
 Grown incrementally from real sessions since 2026-07, mostly after something went

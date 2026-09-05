@@ -5,9 +5,12 @@
 *
 !.gitignore
 !CLAUDE.md
-# Root README (added 2026-09-06). The whitelist's `*` had silently excluded it,
-# which is why the repo had no landing page on GitHub for two months.
+# Root README + LICENSE (added 2026-09-06). The whitelist's `*` had silently
+# excluded README.md, which is why the repo had no landing page on GitHub for
+# two months. Any NEW root-level file needs its own negation here or it is
+# invisible to `git add` with no error.
 !README.md
+!LICENSE
 !harness/
 !harness/**
 !memory/
