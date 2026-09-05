@@ -26,6 +26,13 @@
 *.bak
 !lib/
 !lib/grok_preflight.py
+# Added 2026-09-06. Both are cited by tracked memory files, which pointed at
+# paths the repo did not ship. Neither holds a secret: keypool reads env vars
+# only (secrets stay in ~/.zshenv), and debt-scan never prints a matched value
+# — its --self-test asserts no 6+ char run of a planted secret reaches output.
+# groqcall.py stays out (Groq is a suspended route) as does nimroute.py.
+!lib/keypool.py
+!lib/debt-scan.mjs
 
 # Hooks: sources + tests only. hooks.log is a runtime log, *.bak* are snapshots,
 # settings.json is machine-specific (absolute paths, permissions, MCP) — ship the
