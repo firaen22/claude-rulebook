@@ -55,8 +55,13 @@ clobbered file, or abandoned spinning process is expensive.
 - `review/` — per-reviewer packets, verdicts, and raw logs; `review/v27/TASK.md`
   is the fullest statement of contract, history, and known limits.
 
-## Headline results (2026-09-01)
-- v28: contract 57/57, pidhang 0 orphans, grpsig2 5/5 both cases, gap 6/6.
+## Why v28 is the installed version (decided 2026-09-01)
+The install decision, not a current measurement — the harness has gained
+detection twice since (M18 cwd attribution 09-05, M19–M22 stdin/stdout 09-06),
+so read the header's re-run line for where v28 stands today.
+- v28 was green on the harness AS IT STOOD: contract 57/57, pidhang 0 orphans,
+  grpsig2 5/5 both cases, gap 6/6. Still green on the strengthened harness
+  (header, re-run 2026-09-06) — v28 has never needed a code change.
 - Live v22 reproducibly FAILS grpsig2 I02 (orphaned spinning probe grandchild).
 - v26 returned DO-NOT-APPLY (grandchild orphan Critical); v27/v28 fix it.
 - Dual independent APPLY (sol + grok) before install.
