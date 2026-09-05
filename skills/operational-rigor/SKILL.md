@@ -105,8 +105,12 @@ overwriting bind destroys a foreign binding before any re-read can see it, and
 the post-bind digest then matches YOUR content. `references/publish-gates.md`.
 
 First move on a live repo: baseline before you mutate — starting-state capture,
-dirty-tree intent, already-merged-branch and squash-merge detection:
-`references/repo-baseline.md`.
+dirty-tree intent, already-merged-branch and squash-merge detection, and two
+reads that must match the ACTION (a non-empty two-dot diff is inconclusive and
+never a merge preview — `git merge-tree` is; a torn-down worktree can silently
+rebind git to the enclosing repo, so COMPARE `git rev-parse --show-toplevel`
+against the path you expect before the first commit/push/PR after any merge or
+cleanup): `references/repo-baseline.md`.
 
 Installing or trusting third-party executable OR instruction content (hooks,
 scripts, plugins, SKILL.md/CLAUDE.md fragments, playbooks): run the full install

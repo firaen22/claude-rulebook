@@ -268,6 +268,43 @@ is false:
   exported GROQ_API_KEYS (plural, the pool form), which the loader checks
   first; the fallback the test named never ran, green for as long as the
   test existed.
+- **The gate RUNNER's own aggregation can fail open** — none of these are the
+  code under test failing: a shell runner counting failures through
+  `return`/`exit` truncates mod 256, so exactly 256 failing files reads as
+  success; a `printf | grep -q` check under `pipefail` can SIGPIPE-fail the
+  pipeline, flipping the verdict independent of the underlying result; a test
+  that crashes before printing its own failure marker leaves the marker-grep
+  matching nothing, so the runner reports a bare, diagnostic-free failure. The
+  plumbing loses information under conditions its author never exercised.
+  Reproduce the runner's OWN failure mode before trusting its count: feed it a
+  synthetic 256th failure, an oversized output, and a file that throws before
+  printing anything. (Whoever wrote a guard has never seen it fail — the
+  known-broken run above applies to the runner too, no exemption.)
+- **An absence claim needs a positive-control probe, not just a clean scan.**
+  "Zero matches" can mean the thing isn't there, or that the query cannot see
+  it — a timestamp comparison mixing epoch-millis against a `Timestamp` column
+  that silently coerces to always-false, a grep confined to a file set that
+  excludes where the pattern actually lives (an imported helper, a re-exported
+  symbol). Before trusting a zero-result scan, prove the probe COULD have
+  matched: run it against a seeded hit, or reintroduce a known instance and
+  confirm the scan finds it. A scan that has never once returned non-zero is
+  unproven, not clean — the known-bad-arm proof applied to a claim about the
+  world.
+  ❌ "grep for the deprecated call across the target files found nothing —
+  safe to remove" — the call was one import away inside a helper the grep
+  never traversed; the scan reported its own blind spot as an all-clear.
+- **A type-valid response is not a real value.** Where a schema or prompt
+  contract requires a field present, a model under-specified on what "absent"
+  looks like emits a sentinel that satisfies the type — the literal string
+  `"null"`, an empty-but-valid object, a zero that reads as a real zero — and
+  every `if (value)` or shape check passes, laundering absence into a
+  plausible fact. Where the contract permits genuine absence, say so
+  explicitly (a real `null`/optional field, or a documented sentinel with its
+  own check) rather than leaving the model to invent one; where a value is
+  asserted present, check it against the DOMAIN, not just the type.
+  ❌ a person-lookup schema marking a field required non-null; finding no
+  data, the model emitted the four-character string `"null"` — every
+  downstream truthy guard read it as real and shipped it.
 - **A success status is not identity — a lookup can return the WRONG entity
   and still say it worked** (`unprobed`). A search-then-fetch data API keyed
   by a shared or ambiguous identifier (a series code with a sibling series,
@@ -448,22 +485,88 @@ BEFORE any runs — no harness, no experiment. Write expected outputs before loo
 at actuals; grade with code, not a model's impression. This template's golden
 runner doubles as an experiment grader: cases = trials, `intent` = pre-registered
 expected result. Pre-register the full **outcome → action table** too, so a result
-can't be rationalized into a favored action afterward. Calibrate difficulty per arm
+can't be rationalized into a favored action afterward.
+**When a run trips its own validity clause mid-flight, void it — never patch
+the live run and keep counting.** The failure mode is not skipping the clause,
+it is honoring it by fixing the harness (a retry, a widened timeout, a
+corrected fixture) while the same in-flight run continues, so corrected cells
+sit beside cells scored under the broken method and both get treated as one
+set. Sequence that stays honest: (1) void the run the instant its clause
+fires, discard its scores as evidence; (2) write the amendment — what broke,
+what changed — into the same durable record as the pre-registration, not
+folded silently into the method; (3) disclose that partial results were seen
+before the amendment, with the one-line argument for why that visibility could
+not have manufactured the outcome (the voided run favored the arm that did NOT
+win; the decision table is symmetric) — if that argument cannot be made
+honestly, the amendment is contaminated and needs a reviewer who never saw the
+voided scores; (4) re-run the full battery amended, and cite only the re-run.
+❌ "Run 1 lost 6 cells to a transport flake, added a retry, cells 7-36 came
+back clean, calling it 30/30 net of the flake" — pre- and post-amendment cells
+mixed in one scored set, under different methods, undisclosed. Calibrate difficulty per arm
 before comparing: every arm passing — or every arm failing — measures nothing; halt
-and report "untestable at this tier/difficulty" instead of publishing a null. Grade
+and report "untestable at this tier/difficulty" instead of publishing a null.
+**A population claim needs the population benched.** A subset scored under one
+harness supports "N of the M tested" — never "no member does X" or "every
+member does X". The trap is sharpest for a probe that SEPARATES subjects: any
+subset happening to lack a separating member makes the property look
+universal, and the resulting "law" reads as MORE solid than a per-subject
+score because it sounds structural rather than sampled. Before a claim names
+the population ("the pool", "every tier", "all of them"), check the
+denominator: either every current member ran under the same harness build, or
+the claim carries its subset explicitly ("3 of the 7"). The denominator decays
+independently of the scores — membership churns, so a population claim expires
+with the roster, not just with serving drift.
+❌ "no member of the pool defends unstated degenerate inputs — the rule is now
+unconditional" — 3 of 7 had been benched; a whole-pool run days later found
+one guarding that edge 2/2 and another 1/2. Grade
 blind to which arm produced each output.
 Grader integrity (2026-07-22, from two lab benches): a uniform 0-score cell can be
 the GRADER dying (OOM/timeout on the candidate's pathological output), not the model
 scoring zero — autopsy the grader process before concluding; record grader exit
 status per cell. Concurrent runners never append to one results file — exit 0 lost
 6/12 cells to an append race; write per-cell artifacts, grade in a separate pass,
-and check N(outputs)==N(cells) before grading. For unstated edges, pre-decide that
+and check N(outputs)==N(cells) before grading. Key result artifacts BY RUN (date, tag,
+or run id) and treat an existing file at a run's keyed output path as a
+collision error, never a target to overwrite — the overwrite is usually the
+harness's own design, not an accident: a results file at a fixed path makes
+every re-run destroy the baseline it will be compared against. The ban is on
+silent REPLACEMENT, not on a stable path; an append-only ledger whose rows
+carry their run keys satisfies it. **Re-running a recipe creates NEW evidence; it
+does not verify the prior evidence record being audited** (reverse-ported
+2026-08-29 from opus-pack #226). That preservation rule is the producer side;
+this is the consumer side: when a claim cites an earlier run, log, artifact or
+verdict, inspect that cited evidence IDENTITY first — its durable form (artifact,
+run id, CI URL, commit), its recorded inputs/config, what it actually contains,
+and whether the claim is faithful to it. The identity is the evidence, not the
+pathname: a content-verified archival copy (hash- or run-id-matched) IS the cited
+record. A fresh execution answers a different question — what happens NOW, under
+this invocation's model, config and environment — and gets its own row, never the
+old row's seat: a fresh PASS cannot show the original ledger was complete, that
+the original run finished, that its config matched, or that the report
+transcribed it correctly. If the cited record cannot be recovered in any
+content-verified form the historical claim stays UNVERIFIED; a fresh run may
+establish current behavior or corroborate a record you actually inspected —
+report both identities ("the record says X; a fresh run now says Y"), agreement
+is corroboration and divergence is a new finding. This does not touch the checks
+that legitimately run things — health checks, reproducibility claims,
+regenerate-and-diff gates, verify-by-reconstruction — whose claims are about NOW
+or about STATE. What none of them may do is silently substitute a fresh run for
+the cited record. (One harness's hardcoded results filename
+replaced the prior week's scorecard on re-run; those rows survived only
+because a separate log duplicated them.) For unstated edges, pre-decide that
 throw AND sentinel-return both count as guarded (both are valid defensive
 contracts); only hang/OOM/wrong-answer fail. Free-text-vs-key auto-regex
 under-matches paraphrases: pre-register hand adjudication as authoritative over the
 affected dimension, and disclose grader bugs in the finding, never silently fix.
 
 ## Sources
+
+Six units reverse-ported 2026-08-28 from opus-pack contributor PRs #205
+(void-amend-disclose-rerun), #206 (gate-runner fails open; absence
+positive-control; type-valid-sentinel), #208 (population claim; run-keyed
+artifacts) — all landed upstream via owner consolidation #215, which narrowed
+the run-keyed clause to a collision error with an append-only carve-out
+(R1-FIX-1) rather than banning a stable path. All ship `unprobed`.
 
 Distilled from `/Users/yauch/Documents/claude code technique/ground-truth-harness-pattern.md`
 (longer worked example, TypeScript shape; full `export-from-X` anonymizer/self-test

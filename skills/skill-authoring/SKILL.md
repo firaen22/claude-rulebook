@@ -242,8 +242,25 @@ history to know what to do today.
   classify each candidate by its CHANGED FILES (never its title — a
   continuation PR's title may carry no path token), paginate to
   exhaustion, and repeat the pass until it adds no new hit (an open PR's
-  files can change). Zero touching hits on a stable pass → safe anchor,
-  AS OF that check, never forever. Full protocol (queries, repo-scoping
+  files can change). **A CLOSED PR is not automatically a non-hit**, and
+  neither is an OPEN one automatically still pending. Some maintainers land
+  contributions by REBUILDING them (no cherry-pick) into a consolidated
+  branch grouped by target file, merging that, then closing the originals
+  with a disposition comment — GitHub never marks the originals MERGED
+  though their content is live on the anchor branch, and neither the OPEN
+  nor the MERGED query surfaces them. The sweep that closes them can also
+  lag, leaving an OPEN PR whose content already landed. So classify by
+  DISPOSITION plus content, not by state: read the closing comment, or diff
+  the PR's own changes against the anchor branch. The only shape that safely
+  reads as declined is no disposition comment AND no matching content on the
+  anchor. Zero touching hits on a stable pass → safe anchor,
+  AS OF that check, never forever.
+  ❌ "the three CLOSED ones are rejected, so the two OPEN ones are the whole
+  backlog" — the closed three had landed via a consolidation PR; one of the
+  open two had landed too and simply had not been swept.
+  (Reverse-ported 2026-08-28 from opus-pack #198, landed upstream via
+  consolidation #216; the upstream precedent is that repo's own #173-181 →
+  #194-197.) Full protocol (queries, repo-scoping
   gotchas, rename handling, the 3-pass stability rule):
   `references/distilling-rules.md`.
 - **A cross-reference is not a load.** On weak tiers, discovering that a
@@ -382,6 +399,29 @@ what happened (concrete), root cause (a MECHANISM), rule change needed, status.
   frame BOTH arms away from recall or a both-pass is an artifact.
   ❌ "the scenario only scopes the task" — scoping that names the operation
   the rule prescribes IS the method; scope by naming the situation, not the move.
+- **A scenario the executor can refute at a SHALLOWER layer than the rule's
+  never tests that rule.** A third controls failure, distinct from
+  contamination and from the scenario doing the rule's work: the false premise
+  is defeatable by evidence the candidate rule never touches, so the executor
+  reaches the intended outcome through a shallower discipline. The pass is
+  real but over-determined, and the rule under test was never exercised —
+  invisible in the outcome, visible only in the transcript's evidence path.
+  Observed shape: a scenario built to test check-the-harness-before-recording-
+  a-misconduct-verdict injected verdicts the executor's standing records
+  already contradicted; the arm refused everything by comparing claim to
+  record and never reached the harness question. Right verdict, evidence path
+  one layer too shallow. So grade the MECHANISM, not the refusal: record which
+  layer the refutation ran at beside the verdict, and score a pass whose
+  evidence path never enters the tested rule's layer as a verdict about the
+  shallower discipline ONLY — it licenses no fold, no non-fold, no conclusion
+  about the rule under test. To force the deeper layer, rebuild the fixture so
+  the shallow evidence is absent or AGREES with the false premise (fixture
+  state, never falsified live records), leaving the tested discipline as the
+  only exit. (`unprobed`. Reverse-ported 2026-08-28 from opus-pack #201,
+  landed upstream via consolidation #216.)
+  ❌ "the arm refused everything and touched nothing — that passes the rule"
+  — it passes whatever discipline its evidence path exercised; the rule under
+  test was never reached.
 - **Lint a new rule against its target file's OWN rules, one by one.** When adding
   or rewriting rule text in an existing rules file, a general contradiction scan
   misses the usual defect: not the addition contradicting a rule, but the addition

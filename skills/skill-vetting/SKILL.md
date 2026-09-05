@@ -57,7 +57,12 @@ Run in order; do not skip to a verdict.
    (delegation-and-review §7). Done: every text/instruction file opened, skip
    list justified.
 4. **Hunt the trojan-shape checklist (§2)** against what you read. Each hit is
-   evidence, quoted with its `file:line`.
+   evidence, quoted with its `file:line`. A source read clears source TEXT only:
+   if the runtime may select a compiled, bundled, generated or cached artifact in
+   preference to what you read (`.pyc`, minified bundle, checked-in `dist/`, an
+   external cache on the load path), those bytes are UNCLEARED until you bind
+   them - regenerate-and-digest-match, attested build evidence, or review the
+   artifact itself. Fail closed (install-gate reference, §"Four checks").
 5. **For an executable candidate** (a hook, script, gate, or anything that runs
    code), run a fixture test of its load-bearing behavior in a sandbox - **both
    sides of every promised behavior**: the allow and block paths where the
@@ -100,13 +105,55 @@ proof, but it is a finding that must be explained or it blocks:
   U+FEFF), and the **Unicode Tag Block U+E0000-U+E007F** (the ASCII-smuggling range
   a narrow zero-width sweep misses). This is operational-rigor §2's sweep; keep the
   ranges in sync with it.
-- **Exfiltration-shaped commands.** `curl`/`wget`/`nc` to a non-placeholder external
-  host, or reads of `~/.ssh`, browser credential stores, `.env`, or keychains, in a
-  default (non-example) execution path. Distinguish a documented attack technique in
-  a security-testing playbook (data) from a command the skill itself runs (live).
+- **Exfiltration-shaped channels.** Judge the data flow and the disclosure, not the
+  transport name. Two layers, and a hit in either is a finding that must be
+  explained, never automatic proof. **(a) Legacy high-signal triggers**, which do
+  NOT first have to be shown to carry a secret: a transport command
+  (`curl`/`wget`/`nc`) to a non-placeholder external host - payload or not, since a
+  bare beacon or callback still leaks presence - or a read of `~/.ssh`, browser
+  credential stores, `.env`, or keychains, in a default (non-example) execution
+  path. A legacy hit with no secret in view stays a finding: it gets explained by
+  the disclosed purpose and cleared, not silently ignored. **(b) The generalized
+  criterion** for every other channel: a hit is a private-data disclosure the
+  candidate's disclosed purpose does not need, over any outbound path - needed or
+  not. That covers a passively-fetched resource whose URL, path, query, or request
+  metadata (a header, a `Referer`) embeds the data - a markdown image `![](...)`, an
+  embedded `src`, a preload or redirect the renderer/client loads with no explicit
+  call, because emitting content that makes the renderer fetch IS the skill opening
+  the channel, live; a hostname or DNS label that carries it, where exfil completes
+  at name resolution with no HTTP body and no listed transport involved at all; and
+  secret bits encoded in an otherwise-fixed request's presence, count, or order. The
+  tell is whether the private-data disclosure is one the purpose doesn't need - NOT
+  the transport, and NOT whether the recipient is ordinary: a secret piggybacked
+  onto a documented API call, a `Referer` leaking a private path, or a fixed beacon
+  whose presence encodes a secret is a hit even though the endpoint is legitimate,
+  and a disclosed purpose never launders an unnecessary private-data export. **Not a
+  channel hit:** a remote image, a library HTTP call, or a DNS lookup that carries
+  NO secret in its address, payload, metadata, or presence/count/order; a skill's
+  own credential sent to its own documented host for required authentication; a
+  request conditioned on a disclosed non-secret setting. Pure timing and cache
+  side-channels are beyond a static read - flag what the source shows, don't claim
+  exhaustive covert-channel coverage. Distinguish a documented attack technique in a
+  security-testing playbook (data) from a channel the skill itself opens (live).
 - **MCP / tool auto-registration.** Instructions to auto-register an MCP server or
   tool globally without per-use consent, especially offensive tooling.
 - **Self-vouching.** Covered in §0 - re-flag if seen inside the source.
+
+- **Trust/allow-rule breadth** - judge the effective GRANT EXPANSION, not the
+  syntax: can the pattern match any capability outside what you reviewed? If yes
+  it is a finding, and the candidate's own disclosure never clears it; only an
+  independent owner/project policy can, as a class.
+- **Visible identity confusability** - a token whose glyphs impersonate a trusted
+  name/path/host/command while being a different machine identity. Needs all
+  three: distinct identity, plausible impersonation, security-relevant reference.
+  Separate finding from the invisible-Unicode sweep.
+- **Confirmation-gate degradation** - the `[y/N]` left formally intact while
+  scrutiny is drained: re-asking until yes, continuing past an explicit refusal
+  without materially new information, steering toward blanket approval, hiding a
+  consequential action in a benign batch. Judge observable effect, not intent.
+
+Full form of these three, with the not-a-finding carve-outs, lives in
+operational-rigor `references/install-gate.md` §"Four checks".
 
 ## 3. The verdict - fail closed
 
@@ -313,6 +360,20 @@ file): does the ruled arm read the whole tree, reach BLOCK, and surface it, vers
 a bare arm that installs it? Those files are retained privately as the vetting
 skill's regression fixtures (they are not shipped in this tree); that probe joins
 the private round-5 queue.
+
+The §2 exfiltration bullet was reframed from *commands* to *channels* upstream on
+2026-08-22 (issue 1, PR #212) and reverse-ported into this cache 2026-08-28 -
+covering renderer/resource auto-fetch (a secret in a passively-fetched URL or
+`Referer`), DNS-label exfil (a secret in a hostname, carried by name resolution),
+and request-metadata / presence-count-order encodings, while keeping the legacy
+`curl`/`wget`/`nc` + credential-read triggers as findings-to-explain rather than
+dropping them. It adds no separate probe marker: its behavioral transmission debt
+is the same skill-level covenant this skill already carries above. Upstream's
+design review was a three-round cross-family gate (gpt-5.6-luna + gpt-5.6-sol, max
+effort, mutually blind) that ended at the round cap with luna PROCEED / sol FIX -
+the final bounded precision fixes and the findings-to-explain layering were
+owner-adjudicated, NOT a 2/2 consensus. Evidence lives upstream at
+`reviews/2026-08-22-issue1-exfiltration-channel/`.
 
 The companion hook `hooks/skill-vetting-advisory.py` is a delta-detector, not a
 scanner: signature scanning was removed at the 2026-07-25 cross-family security
