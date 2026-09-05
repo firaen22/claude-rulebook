@@ -1,0 +1,126 @@
+# Reliability review — hook-v27.sh (candidate replacing v26)
+
+## Context
+`v22-installed.sh` is the LIVE macOS Claude Code PreCompact/SessionStart observability
+hook, invoked as `/bin/bash --noprofile --norc -p <path> <matcher>` on bash 3.2.57.
+
+Reliability contract on EVERY path:
+- **C1** exit status 0 always
+- **C2** zero bytes on stdout
+- **C3** never block the calling process, and never leave a stuck or CPU-spinning
+  child process behind
+- **C4** never delete or replace a pre-existing file
+
+A lost measurement event is acceptable (cheap). A hang, stray stdout byte, nonzero
+exit, clobbered file, or **abandoned spinning process** is not (expensive).
+
+## History of this review loop
+- **v24** (a process-group approach using `set -m`) was returned DO-NOT-APPLY: moving
+  the worker to its own pgid broke caller group-directed signal delivery.
+- **v26** was returned DO-NOT-APPLY by two independent reviewers. Both found the same
+  Critical (independently reproduced here by execution): the interpreter self-test ran
+  as a **grandchild** of the hook (a child of the worker subshell). The hook's
+  top-of-file cleanup trap runs `kill -KILL $(builtin jobs -pr)`, which lists only the
+  hook's OWN jobs — so a terminating signal delivered PID-directed to the hook while a
+  self-test was hung killed the worker and **abandoned the hung self-test**, which then
+  reparented to launchd and spun at 100% CPU with no deadline left. A second Critical:
+  the self-test's inner deadline and the outer watchdog deadline were computed in two
+  different processes and could resolve to the same integer `SECONDS`, letting the outer
+  kill the worker before the inner killed the self-test.
+
+## What v27 changes (the whole diff is `files/DIFF-v26-to-v27.txt`; verify it yourself)
+v27 moves the interpreter self-test OUT of the worker subshell and UP into the parent:
+
+1. Each candidate interpreter is tested inside a background subshell **of the parent**:
+   `( stat-tests && builtin exec "$_p" -I -S -B -c '<probe body>' ) </dev/null 3<&- ... &`.
+   The `( )` keeps the `[ -x ]` stat(2) OFF the parent's synchronous path (a wedged
+   automount must block only that child, never the parent — a prior constraint). The
+   `builtin exec` REPLACES the subshell with the interpreter, so `$!` IS the interpreter
+   pid and it is a DIRECT job of the parent: `jobs -pr` lists it, and the top-of-file
+   trap therefore reaches it. This is intended to close the v26 grandchild-orphan
+   Critical.
+2. The self-test deadline (`_pend`) and the worker watchdog (`end`) now run
+   **sequentially in the same process** (the parent): the probe phase fully resolves
+   before the worker is spawned. This is intended to close the v26 cross-process
+   deadline race.
+3. The worker is now a bare `( builtin exec "$_chosen" -I -S -B -c "$OBS_CODE" ) <&3 ... &`
+   — no poll loop, no `/bin/sleep` runs in it, so no foreground grandchild can inherit
+   the caller's stdin.
+4. NO process-group membership changes anywhere (`set -m` is absent). Caller-directed
+   group signals keep exactly the v22 delivery. The probe body, the exit-37 success
+   channel, the shared 1s budget and the pid-directed kill are UNCHANGED from v26 —
+   only the process that owns them moved up one level.
+5. `3<&-` on each probe closes the parent's fd-3 event dup inside the probe, so a
+   probe abandoned during interpreter startup cannot hold the caller's stdin.
+
+## Measurements already taken (please verify what you can, and challenge them)
+All by execution on this host (bash 3.2.57); `/bin/ps` and `killpg` are available here.
+- `pidhang.py` (a multi-trial instrument: interpreter hangs AND a pid-directed SIGTERM
+  is delivered during the hang, repeated with the signal confirmed to land on a live
+  target): **v22 orphaned in 10/10 landed trials, v26 in 9/10, v27 in 0/N**. This is the
+  v26 Critical, and its fix.
+- `contract.py` (56 single-shot cases): v27 **56/56**; v22 55/56 (its known H01 loss).
+- `grpsig2.py` (caller group-directed KILL and STOP/CONT, delivered ONLY after a
+  ready-handshake confirms the hung probe is alive IN the hook's process group,
+  retried until it lands, survivors double-sampled >=0.45s apart -- this closes
+  the old grpsig.py blind-sleep race that had scored v27 a false EPERM): **v27
+  PASS 5/5 on BOTH cases**. On the SAME instrument v26 also PASSES and the LIVE
+  v22 FAILS I02 (group STOP then CONT) with 2 reproduced survivors every trial --
+  the hook's own bash plus an orphaned, spinning `/bin/sh .../interp_hang/python3`
+  probe grandchild. So v27 does NOT regress the group-signal axis; it FIXES a
+  latent v22 C3 leak on it. Graded run: files/GRPSIG2-RESULT.txt; the old racy
+  grpsig.py is kept in files/ only for comparison.
+- `gap.py` (the launcher startup-window stop-signal cases): v27 6/6.
+- Happy path writes a `.complete.json` record with `saw_eof:true` — event delivery
+  through the new topology is intact.
+- `bash -n` clean under both `-p` and plain; exec-text differs from v26 (a real code
+  change, so it needs full review, not an inherited approval).
+
+## Known limits — please confirm these are NOT regressions vs the live v22
+These are believed identical in the approved live v22 and NOT closeable inside this
+single file. Please verify each is truly the same in v22 (or flag it if v27 made it
+worse):
+- **Detaching interpreter + caller group-KILL.** If the pinned interpreter were replaced
+  by a binary that calls `setsid()`, it escapes the caller's process group; a caller
+  group-KILL then kills the hook but not the detached process. Reproduced here: v22 AND
+  v26 both leak one such survivor. The pinned candidate paths are root-owned, so this
+  requires a hostile root-owned binary. Closing it needs a supervisor process outside
+  the caller's group, which the fire-and-forget design (accepted for v22) does not have.
+- **exit-37 is a skip-broken-file check, not authentication.** A shebang-less file that
+  exits 37 passes the probe and is then exec'd. Safety rests on the pinned paths being
+  root-owned. Same as v22.
+- **Plain (non-`-p`) invocation** still permits `BASH_ENV` execution before the IFS line;
+  the installed `-p` form does not read `BASH_ENV`. Same as v22.
+- **A genuine D-state self-test** holds a pending SIGKILL until its syscall returns; its
+  fds 0/1/2 are `/dev/null` and fd 3 is closed, but launcher-leaked higher fds persist
+  until the probe body's `closerange` runs. Launcher-owned, same as v22.
+
+## Your job
+Find any way v27 falls short of the contract that is **NEW relative to the live v22** —
+a defect v22 does not have, or a regression the restructure introduced. Default
+DO-NOT-APPLY unless you find no such defect. Specific areas to scrutinize:
+
+- a. The parent-level probe loop: is the `( stat && exec )` subshell truly a direct job
+  of the parent (does `jobs -pr` list it, does the top-of-file trap kill it on a
+  pid-directed signal)? Any path where the stat runs in the parent itself?
+- b. Sequencing: probe phase then worker phase. Any path where the parent blocks
+  unbounded, or exits nonzero, or emits a stdout byte, that v22 did not have?
+- c. `_chosen` empty (no interpreter passes): the watchdog is skipped via
+  `if builtin [ -z "$wid" ]; then builtin exit 0; fi`. Correct on every path?
+- d. fd bookkeeping: `exec 3<&0` then `exec 0</dev/null` early, probe children
+  `</dev/null 3<&-`, worker `<&3 3<&-`, parent `exec 3<&-` after worker spawn. Does the
+  worker still receive the event on fd 0? Can any probe or the worker hold caller stdin
+  after abandonment?
+- e. Regressions on the other cases (A/B/C/D/E/F/G/H01-H04) and the fixture semantics.
+- f. Anything that is safe only because of this host's configuration, environment, or
+  invocation form — that is a finding, not a pass, unless it is demonstrably identical
+  in v22.
+
+## Method
+- Execute rather than only read: copy `files/*.sh` anywhere writable and test them. If
+  your sandbox denies `/bin/ps` or `killpg`, say so and label those claims [unverified].
+- Write expected-before-actual for every check.
+- Findings: location (file:line) + mechanism + concrete fix, severity-ranked. Tag every
+  claim [verified: how] / [unverified].
+- Report inability honestly.
+- End with EXACTLY one line: `VERDICT: APPLY` or `VERDICT: DO-NOT-APPLY`.

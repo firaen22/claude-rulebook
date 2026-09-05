@@ -1,0 +1,6 @@
+# md5 manifest 2026-09-01 (v28 = final candidate; comment-only over the reviewed v27)
+v28.sh: 4472d36bbead8245681c54e0671c21b7
+v27.sh: 656ebe375c5d31281d5161322abb2f4c   # reviewed: sol APPLY + grok APPLY
+v26.sh: 55de58c90111df43abafd68d412d4a2a
+v22-installed.sh: d1f0a874d6269592c3807d90f8f49353   # LIVE
+# v28 vs v27: EXEC-TEXT IDENTICAL (sha256 9363f7fa...) -> comment-only -> inherits v27 approval

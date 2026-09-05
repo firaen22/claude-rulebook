@@ -1,0 +1,49 @@
+BLUF: v26 still violates C3 and should not replace v22. A terminating signal, a detached candidate, and a deadline race can each leave a live self-test child behind. [verified: PID-marker adversarial executions on macOS bash 3.2.57]
+
+## Findings
+
+1. **Critical — parent termination destroys the only cleanup authority**
+
+At [v26.sh:218](/private/tmp/claude-501/-Users-yauch-Documents-claude-code-technique/d8a69179-c2ab-4c5b-927b-3b9417b15cb6/scratchpad/round23/review/sol26/files/v26.sh:218), the parent trap kills only its direct background job—the worker. The probe PID exists only inside that worker at [v26.sh:731](/private/tmp/claude-501/-Users-yauch-Documents-claude-code-technique/d8a69179-c2ab-4c5b-927b-3b9417b15cb6/scratchpad/round23/review/sol26/files/v26.sh:731). Once the worker is killed, nobody executes the inner deadline or PID kill at line 744. Therefore the “left for up to the 1s budget” statement at lines 700–704 is false. [verified: busy probe wrote its PID before PID-directed TERM; hook exited 0 with zero stdout, but probe remained alive and spinning 1.1 seconds later until explicitly killed]
+
+Concrete fix: flatten ownership so the outer watchdog directly spawns and tracks the probe as well as the eventual worker, killing all known live PIDs before exiting. Alternatively, provide a cleanup supervisor that survives parent termination; merely adding a trap inside the worker is insufficient for SIGKILL/D-state paths. Add a ready-gated `H01 × D_pid_TERM` regression.
+
+2. **Critical — a session-detached probe survives caller group KILL**
+
+The claim at [v26.sh:691](/private/tmp/claude-501/-Users-yauch-Documents-claude-code-technique/d8a69179-c2ab-4c5b-927b-3b9417b15cb6/scratchpad/round23/review/sol26/files/v26.sh:691) is true only while the worker remains alive to execute its PID kill. If a probe calls `setsid()` and the caller then KILLs the original group, both parent and worker die immediately; the detached probe survives. [verified: `killpg(SIGKILL)` succeeded, hook returned `-9`, detached probe PID remained alive, zero hook stdout]
+
+This also reproduced an EOF hazard: the detached child retained an injected fd 10 pipe writer; its reader returned `WOULD_BLOCK` until the orphan was killed, then returned EOF. [verified: `fstat` plus nonblocking pipe read]
+
+Concrete fix: either use a cleanup supervisor outside the caller-directed group that tracks and kills the probe, or explicitly narrow the contract and cryptographically/structurally guarantee that only trusted non-detaching binaries can run. Under the present “every path” contract, the current topology cannot satisfy this case.
+
+3. **Critical — the inner deadline is not strictly nested inside the outer deadline**
+
+The independent calculations at [v26.sh:653](/private/tmp/claude-501/-Users-yauch-Documents-claude-code-technique/d8a69179-c2ab-4c5b-927b-3b9417b15cb6/scratchpad/round23/review/sol26/files/v26.sh:653) and [v26.sh:791](/private/tmp/claude-501/-Users-yauch-Documents-claude-code-technique/d8a69179-c2ab-4c5b-927b-3b9417b15cb6/scratchpad/round23/review/sol26/files/v26.sh:791) can resolve to the same `SECONDS` value if worker scheduling is delayed across an integer boundary. Then the outer loop may kill the worker before the worker kills its probe. [verified: instrumented copy delayed only `_pend` assignment until `SECONDS==1`; on attempt 3 of 3, hook exited 0/zero stdout while the busy probe survived]
+
+Concrete fix: establish one absolute deadline in the cleanup owner before spawning anything, prevent new probe creation once its inner cutoff has passed, and keep the cleanup owner alive until every runnable child is confirmed terminated. Flattening the nested ownership also removes this race.
+
+4. **High — supplied group harness does not test the failing topology**
+
+[grpsig.py:61](/private/tmp/claude-501/-Users-yauch-Documents-claude-code-technique/d8a69179-c2ab-4c5b-927b-3b9417b15cb6/scratchpad/round23/review/sol26/files/grpsig.py:61) uses the ordinary in-group `hang` stub. Its command-line scan can detect a moved process, but no test candidate actually calls `setsid()`. Thus an I01/I02 pass does not prove F2 closed. [verified: source inspection plus detached-stub counterexample]
+
+Concrete fix: add ready-gated detached variants for I01 and I02, grade their PIDs directly in addition to `ps`, and add the PID-TERM/hanging-probe cross-product. The existing fixed `sleep(0.35)` should become a ready handshake to guarantee “mid-self-test.”
+
+5. **Host/invocation dependencies**
+
+- The exit-37 protocol correctly distinguishes the two real Python 3.9 candidates, a zero-byte executable, and a malformed Mach-O: observed statuses were 37, 37, 0, and 126. A shebang-less `exit 37` file also returned 37 and passed the probe. Therefore `-x/-f` plus exit 37 is not authentication; safety depends on the fixed candidates and their resolution remaining root-controlled. [verified: exact probe argv under macOS bash 3.2]
+- A pending SIGKILL against a genuine D-state probe can persist indefinitely. Its stdio is safe—fds 0/1/2 were `/dev/null`, and inherited fd 3 was closed before probe startup—but leaked higher descriptors remain a launcher dependency until Python’s closerange body runs. [verified: fd snapshot for stdio/fd3 and injected fd10; genuine D-state injection unverified]
+- `$' \t\n'` produced bytes `20 09 0a` under protected and plain bash 3.2. With `BASH_ENV` setting `IFS=:`, the main hook’s two direct jobs were parsed and killed correctly. F3 is closed. [verified: plain-invocation PID-marked test]
+- Protected invocation remains load-bearing; plain invocation still permits arbitrary `BASH_ENV` execution before line 193. [verified: source ordering; stated deployed invocation was not independently inspected]
+- Responsive `/dev/null`, `/bin/sleep`, candidate paths, and local filesystem behavior remain host assumptions. [verified: source; failure behavior under genuinely wedged filesystem unverified]
+
+## Other verification
+
+- The copied candidate matched the original MD5 `55de58c90111df43abafd68d412d4a2a`; protected and plain syntax checks returned 0. [verified: `md5`, `bash -n`]
+- The 56-case contract run observed 56/56 rc 0, zero stdout, within-ceiling completion, and clean C4 snapshots. The harness nevertheless reported 0/56 because this sandbox denies `/bin/ps`, making every orphan result `-1`; survivor coverage is therefore unverified by that run. [verified: result JSON and sandbox error]
+- `gap.py` passed all six PID/group stop-signal cases. [verified: exit 0]
+- `grpsig.py` could not be validated here because `ps` was denied and its I01 group signal returned EPERM after the ungated target timing; its claimed pass remains unverified. [verified: harness output]
+- Exact newline PID matching worked for `2923` versus `29235`, worked with a prior stopped job present, and the already-reaped exit-37 branch returned status 37 with `WAIT_SECONDS=0`. [verified: bash 3.2 micro-tests]
+- H02/H03/H04 each had rc 0, zero stdout, bounded runtime, and no C4 mutation. H04’s change to `exit 37` is sound for C2 because it exercises noise during both probe and final exec; lost-event tolerance means it is not a measurement-success test. [verified: result JSON and fixture inspection]
+- This is a fresh-context but single-lens review; no genuinely independent model-family review was available. [verified: review method]
+
+VERDICT: DO-NOT-APPLY

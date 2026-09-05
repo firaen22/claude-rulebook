@@ -1,0 +1,29 @@
+--- /private/tmp/claude-501/-Users-yauch-Documents-claude-code-technique/d8a69179-c2ab-4c5b-927b-3b9417b15cb6/scratchpad/round23/candidate/v27.sh	2026-09-01 09:23:47
++++ /private/tmp/claude-501/-Users-yauch-Documents-claude-code-technique/d8a69179-c2ab-4c5b-927b-3b9417b15cb6/scratchpad/round23/candidate/v28.sh	2026-09-01 10:32:17
+@@ -50,9 +50,12 @@
+ #     filesystem. A worker wedged in an uninterruptible syscall on a network or
+ #     FUSE $HOME cannot be killed by any userspace watchdog; this parent abandons
+ #     it and still exits 0, so the HOOK is bounded even when the worker is not.
+-#     Claiming more than that would be false. Since v13 the interpreter probe
+-#     also runs INSIDE the watched child (round 12: a parent-side stat of an
+-#     automounted path had no time bound at all). The parent still execs
++#     Claiming more than that would be false. Since round 27 the interpreter
++#     probe runs in its OWN direct-child subshell at parent level, with the
++#     [ -x ]/[ -f ] stat kept off the parent's synchronous path by that ( )
++#     (round 12: a parent-side stat of an automounted path had no time bound at
++#     all; before round 27 the probe was nested inside the worker child). The
++#     parent still execs
+ #     /bin/sleep every 50ms in the watchdog (a standing, adjudicated
+ #     trade-off: a builtin busy-poll burns CPU on every event and a same-UID
+ #     STOP can freeze the parent either way) and /dev/null; those are the
+@@ -655,7 +658,9 @@
+ # comment claimed a 0.05s lower bound; corrected here per the L1 review nit). A
+ # slow-but-honest first interpreter whose startup crosses that tick is killed and
+ # the event lost: load/FS-dependent event loss, which the contract prices cheap.
+-# The C3 bound still holds: the whole probe phase is < the outer DEADLINE=2.
++# The C3 bound still holds: the probe phase is < 1s (SECONDS+1) and the worker
++# watchdog is a SEPARATE fresh DEADLINE=2 AFTER it, so the hook is bounded by
++# their sum (~3s worst case), not by a single DEADLINE=2 shared with the worker.
+ _chosen=""
+ _pend=$(( SECONDS + 1 ))
+ for _p in /Library/Developer/CommandLineTools/usr/bin/python3 \

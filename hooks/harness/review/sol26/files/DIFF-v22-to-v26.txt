@@ -1,0 +1,146 @@
+71,76c71,82
+< # before line 121 runs), a direct contract-2 byte. Both are properties of
+< # the invoking configuration, listed here so they are not rediscovered. The live settings.json runs
+< # `bash <path> <matcher>`, and an explicit `bash` IGNORES the shebang: measured
+< # 2026-08-31, a BASH_ENV payload RAN under that form and was ignored under both
+< # `./<path>` and the -p form below. Installing this file without also changing
+< # settings.json leaves the code-execution path open.
+---
+> # before line 183 runs), a direct contract-2 byte. Both are properties of the
+> # invoking configuration, listed here so they are not rediscovered. The live
+> # settings.json had already been calling `bash -p <path> <matcher>` when measured
+> # 2026-08-31/09-01; what it lacked was `/bin/bash --noprofile --norc`. An explicit
+> # `bash` IGNORES the shebang: measured 2026-08-31, a BASH_ENV payload RAN under
+> # the bare form and was ignored under both `./<path>` and the -p form below.
+> # Installing this file without also changing settings.json leaves the
+> # code-execution path open.
+> # This hook is registered in SEVEN settings.json entries: PreCompact (manual, auto)
+> # and SessionStart (startup, resume, clear, compact, fork). All seven were moved to
+> # the full form above and INSTALLED on 2026-09-01; changing only one entry silently
+> # leaves six on the old form.
+134c140,141
+< # first executable command. Line below (the redirect) is that first command;
+---
+> # first executable command. The early exit-0 trap at line 181 is the first
+> # executable command; the redirect at line 183 follows it.
+163,164c170,171
+< # ROUND 21 (sol): line 164's `trap ''` only takes effect once it RUNS. Between
+< # this early exit-0 trap (the FIRST executable line) and line 164, TSTP/TTIN/TTOU
+---
+> # ROUND 21 (sol): line 182's `trap ''` only takes effect once it RUNS. Between
+> # this early exit-0 trap (the FIRST executable line) and line 182, TSTP/TTIN/TTOU
+170c177
+< # include TSTP/TTIN/TTOU in THIS exit-0 trap too, so the gap is covered; line 164
+---
+> # include TSTP/TTIN/TTOU in THIS exit-0 trap too, so the gap is covered; line 182
+173c180
+< # stopped foreground child, and none is spawned until after line 164.
+---
+> # stopped foreground child, and none is spawned until after line 182.
+176a184,193
+> 
+> # ROUND 26 (sol finding, reproduced 2026-09-01): under the plain (non--p)
+> # invocation a BASH_ENV file can set IFS=":" and the trap's unquoted
+> # $(jobs -pr) expansion then joins two newline-separated pids into ONE word,
+> # so neither job is killed (measured: alive=2 plain vs alive=0 under -p).
+> # The -p invocation never reads BASH_ENV; this assignment makes the plain
+> # form carry the same invariant instead of inheriting it from the flag.
+> # Pure assignment: no command, no fork, cannot fail, runs before any
+> # expansion in this file that splits words.
+> IFS=$' \t\n'
+623c640
+<   # program that prints 1337 passes it and is then exec-ed with this
+---
+>   # program that exits 37 passes it and is then exec-ed with this
+626a644,654
+>   # ROUND 26: ONE probe budget shared by every candidate, set before the
+>   # loop. Per-candidate budgets could sum past the outer DEADLINE=2 and let
+>   # the outer kill land while a probe is still alive; a shared 1s budget
+>   # bounds the whole probe phase strictly inside it. SECONDS granularity is
+>   # a whole second, so "+ 1" fires between ~0.05s and ~1.05s -- both ends
+>   # safely under the outer deadline. A second candidate that finds the
+>   # budget already spent is killed at spawn and the event is lost: that
+>   # prices the broken-first-candidate host (wedged xcrun) as event loss,
+>   # which the contract calls cheap.
+>   _pend=$(( SECONDS + 1 ))
+>   _ppid=""
+643,653c671,706
+<     # (b) 1337 is printed only on python >= 3.7 — 3.6 would
+<     # pass a bare probe, then die on time.time_ns at every event, silently
+<     # and forever (round-14 sol finding, version-gated here instead).
+<     # HONEST LIMIT (round 14, reproduced): the deadline kills the WAITER
+<     # subshell, not this probe child. A probe wedged BEFORE its closerange
+<     # runs (a non-python stub, or an exec stuck in D-state) is abandoned
+<     # still holding every inherited non-CLOEXEC launcher descriptor. No
+<     # in-file code can reach that window — the launcher must not leak fds.
+<     # LAUNCHER-OWNED residue.
+<     if builtin [ -x "$_p" ] && builtin [ -f "$_p" ] \
+<        && builtin [ "$("$_p" -I -S -B -c '
+---
+>     # (b) exit code 37 is returned only on python >= 3.7 — 3.6 would
+>     # pass an ungated probe, then die on time.time_ns at every event,
+>     # silently and forever (round-14 sol finding, version-gated here).
+>     # Round-14's HONEST LIMIT (deadline kills the waiter, not the probe)
+>     # is CLOSED by the ROUND 26 restructure below: the probe is now killed
+>     # by its own pid. What remains launcher-owned: a probe wedged BEFORE
+>     # its closerange runs still holds inherited non-CLOEXEC launcher fds
+>     # until the pending KILL completes — the launcher must not leak fds.
+>     # ROUND 26: the probe is no longer a blocking command substitution. The
+>     # old form put a $() subshell between this worker and a hung interpreter:
+>     # the outer deadline killed only $wid, and the cmdsub child plus the hung
+>     # interpreter survived, reparented to init, spinning at 100% CPU while
+>     # holding the fd-3 dup of the caller's stdin (reproduced: 6 live orphans
+>     # on this host). Now the interpreter is a DIRECT background child of this
+>     # worker, polled with the same builtin jobs -pr pattern as the outer
+>     # watchdog, and killed BY PID on its own deadline. Pid-directed KILL on a
+>     # runnable process always completes, so the spinning-orphan class is
+>     # closed by construction; a probe wedged in an uninterruptible syscall
+>     # keeps the pending KILL at 0% CPU and dies the moment the syscall
+>     # returns (same adjudicated class as the other D-state limits here). No
+>     # process-group membership changes anywhere: caller-directed group
+>     # signals keep exactly the approved v22 delivery, and a candidate that
+>     # calls setsid() is still reached because the kill targets the pid we
+>     # spawned, not a group. The success channel moved from stdout ("1337")
+>     # to exit code 37: bash holds the reaped status in memory (verified in
+>     # the outer-watchdog notes below), an ENOEXEC fallback exits 0, and a
+>     # corrupted exec exits 126/127 -- all != 37, so broken files are still
+>     # skipped. wait runs ONLY in the reaped branch, never after a kill, for
+>     # the same wedged-syscall reason as the outer deadline.
+>     # HONEST LIMIT: a terminating signal to the PARENT while a probe hangs
+>     # fires the top-of-file trap, which KILLs $wid; this worker dies before
+>     # its inner deadline and the hung probe is abandoned exactly as before.
+>     # That window is now at most the shared 1s probe budget per event
+>     # instead of unbounded.
+>     if builtin [ -x "$_p" ] && builtin [ -f "$_p" ]; then
+>       "$_p" -I -S -B -c '
+677,678c730,756
+< print(7*191 if sys.version_info >= (3, 7) else 0)' </dev/null 2>/dev/null)" = "1337" ]; then
+<       builtin exec "$_p" -I -S -B -c "$OBS_CODE"
+---
+> sys.exit(37 if sys.version_info >= (3, 7) else 0)' </dev/null >/dev/null 2>/dev/null &
+>       _ppid=$!
+>       _pkilled=no
+>       while builtin :; do
+>         _prun=$(builtin jobs -pr)
+>         case "
+> $_prun
+> " in
+>           *"
+> $_ppid
+> "*) builtin : ;;
+>           *) builtin break ;;
+>         esac
+>         if builtin [ "$SECONDS" -ge "$_pend" ]; then
+>           builtin kill -KILL "$_ppid" 2>/dev/null || builtin true
+>           _pkilled=yes
+>           builtin break
+>         fi
+>         /bin/sleep 0.05 || builtin true
+>       done
+>       _prc=137
+>       if builtin [ "$_pkilled" = no ]; then
+>         if builtin wait "$_ppid" 2>/dev/null; then _prc=0; else _prc=$?; fi
+>       fi
+>       if builtin [ "$_prc" -eq 37 ]; then
+>         builtin exec "$_p" -I -S -B -c "$OBS_CODE"
+>       fi
