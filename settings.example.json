@@ -1,0 +1,101 @@
+{
+  "_comment": "Hook registration only \u2014 merge the `hooks` key into your own ~/.claude/settings.json. Replace ~/.claude with your absolute path: Claude Code does not expand ~ in hook commands. Each hook's contract is in hooks/README.md; run the two test scripts before enabling the gates.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -p ~/.claude/hooks/gate-before-commit.sh"
+          },
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/gate-credential-destruction.py"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -p ~/.claude/compact-context-monitor.sh",
+            "statusMessage": "Checking context size...",
+            "asyncRewake": true,
+            "rewakeMessage": "SYSTEM: Context window is approximately 50% full."
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "manual",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash --noprofile --norc -p ~/.claude/hooks/observe-compaction-events.sh manual"
+          }
+        ]
+      },
+      {
+        "matcher": "auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash --noprofile --norc -p ~/.claude/hooks/observe-compaction-events.sh auto"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash --noprofile --norc -p ~/.claude/hooks/observe-compaction-events.sh startup"
+          }
+        ]
+      },
+      {
+        "matcher": "resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash --noprofile --norc -p ~/.claude/hooks/observe-compaction-events.sh resume"
+          }
+        ]
+      },
+      {
+        "matcher": "clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash --noprofile --norc -p ~/.claude/hooks/observe-compaction-events.sh clear"
+          }
+        ]
+      },
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash --noprofile --norc -p ~/.claude/hooks/observe-compaction-events.sh compact"
+          }
+        ]
+      },
+      {
+        "matcher": "fork",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash --noprofile --norc -p ~/.claude/hooks/observe-compaction-events.sh fork"
+          }
+        ]
+      }
+    ]
+  }
+}

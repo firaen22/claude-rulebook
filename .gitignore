@@ -21,3 +21,13 @@
 *.bak
 !lib/
 !lib/grok_preflight.py
+
+# Hooks: sources + tests only. hooks.log is a runtime log, *.bak* are snapshots,
+# settings.json is machine-specific (absolute paths, permissions, MCP) — ship the
+# example instead.
+!hooks/
+!hooks/*.sh
+!hooks/*.py
+!hooks/README.md
+!compact-context-monitor.sh
+!settings.example.json
