@@ -3,3 +3,7 @@ mrepwd_*/
 out/
 __pycache__/
 .DS_Store
+# per-build scratch (mutation stubs, soak/controls logs) kept co-located with the
+# curated evidence but out of git; move throwaway files into a _scratch/ subdir.
+# Added 2026-09-06 for candidate/v29-build/_scratch/ (v29-era, superseded by v30).
+_scratch/
