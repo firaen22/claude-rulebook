@@ -1,0 +1,79 @@
+--- v29-build/v28-installed-base.sh	2026-09-06 15:21:48
++++ v29.sh	2026-09-06 15:22:18
+@@ -1,7 +1,20 @@
+ #!/bin/bash -p
+-# PHASE 0 — MEASUREMENT ONLY. v22, one file per event. INSTALLED 2026-09-01: registered
++# PHASE 0 — MEASUREMENT ONLY. v29, one file per event. v28 (this file minus the two
++# breadcrumbs) is INSTALLED 2026-09-01: registered
+ # 7 times in settings.json — PreCompact (manual, auto) + SessionStart (startup, resume,
+ # clear, compact, fork) — each as `/bin/bash --noprofile --norc -p <path> <matcher>`.
++#
++# v29 BREADCRUMB (2026-09-06), the ONLY change from v28: the two pre-worker
++# `builtin exit 0` paths (OBS_CODE marker mismatch; no interpreter passed the probe)
++# were silent by design, so the 2026-09-06 harness VOID — hook exit 0 at 26 ms with
++# no file under observed/ — could not be attributed to either. Each now writes one
++# small $LOG_DIR/<pid>.dropped.txt naming the path, and for the probe path each
++# candidate's rc/killed plus SECONDS vs the budget. Pure builtins (no date, no
++# mkdir); `set -C` so it can never replace an existing file (contract 2); every
++# added command ends `|| builtin true` so the ERR trap and the exit status are
++# untouched. $LOG_DIR is NOT guaranteed to exist here (only the worker mkdirs it),
++# and these paths deliberately do not fork one — the redirect just fails and the
++# breadcrumb is lost, same price the contract already puts on these events.
+ #
+ # WHAT IT DOES: writes ONE file per hook event into $LOG_DIR/observed/, named
+ #   <ns>-<pid>.complete.json   EOF was OBSERVED and nothing was discarded
+@@ -601,8 +614,13 @@
+ # handing it to an interpreter. An inherited or truncated OBS_CODE fails here.
+ case "$OBS_CODE" in
+   "#OBSERVE-WORKER-V9"*) builtin : ;;
+-  *) builtin exit 0 ;;   # silent by design: stderr is closed, and no worker ran, so
+-                 # there is no .error.txt either. The event is lost — cheap.
++  *) # v29: was silent by design — stderr is closed and no worker ran, so there is
++     # no .error.txt either. The event is still lost (cheap); the breadcrumb below
++     # is the only trace that it was THIS path and not the probe path.
++     builtin set -C
++     builtin printf '%s\n' "drop=OBS_CODE_MARKER_MISMATCH pid=$$ secs=$SECONDS" \
++       > "$LOG_DIR/$$.dropped.txt" 2>/dev/null || builtin true
++     builtin exit 0 ;;
+ esac
+ 
+ # `exec 3<&0` + `<&3` is LOAD-BEARING. bash redirects a background job's stdin
+@@ -664,12 +682,13 @@
+ # watchdog is a SEPARATE fresh DEADLINE=2 AFTER it, so the hook is bounded by
+ # their sum (~3s worst case), not by a single DEADLINE=2 shared with the worker.
+ _chosen=""
++_pdrop=""                 # v29 breadcrumb: per-candidate probe outcome, pure assignments
+ _pend=$(( SECONDS + 1 ))
+ for _p in /Library/Developer/CommandLineTools/usr/bin/python3 \
+           /usr/bin/python3; do
+   # Budget already spent by an earlier candidate: do not even spawn (the wedged
+   # first-candidate host prices as event loss, round 26).
+-  if builtin [ "$SECONDS" -ge "$_pend" ]; then builtin break; fi
++  if builtin [ "$SECONDS" -ge "$_pend" ]; then _pdrop="$_pdrop [$_p=budget-spent-before-spawn]"; builtin break; fi
+   # `( stat && exec python )` -- see (a)/(b) above. `</dev/null` so the probe
+   # cannot eat event bytes; `3<&-` so an abandoned probe cannot hold the caller's
+   # fd-3 event dup during python startup (before the body's own closerange runs);
+@@ -729,6 +748,7 @@
+   if builtin [ "$_pkilled" = no ]; then
+     if builtin wait "$_ppid" 2>/dev/null; then _prc=0; else _prc=$?; fi
+   fi
++  _pdrop="$_pdrop [$_p=rc$_prc,killed=$_pkilled]"
+   if builtin [ "$_prc" -eq 37 ]; then _chosen="$_p"; builtin break; fi
+ done
+ 
+@@ -749,7 +769,14 @@
+ # No interpreter passed the probe: no worker exists to bound. The event is
+ # already lost (cheap); skip the watchdog entirely -- an empty $wid would make
+ # the poll `case` below match a blank line and mis-detect "finished".
+-if builtin [ -z "$wid" ]; then builtin exit 0; fi
++if builtin [ -z "$wid" ]; then
++  # v29 breadcrumb (see header): record WHY each candidate failed, plus the
++  # SECONDS/budget pair, so this path is distinguishable from the OBS_CODE one.
++  builtin set -C
++  builtin printf '%s\n' "drop=NO_INTERPRETER pid=$$ secs=$SECONDS pend=$_pend probes:$_pdrop" \
++    > "$LOG_DIR/$$.dropped.txt" 2>/dev/null || builtin true
++  builtin exit 0
++fi
+ 
+ # Poll with a BUILTIN, never by forking /bin/ps. A synchronous ps runs BEFORE the
+ # shell can look at its own deadline, and Apple ps retries a failing process-table

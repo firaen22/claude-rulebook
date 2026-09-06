@@ -21,11 +21,16 @@ discriminated, `run_all --pidhang` rc 0.
   interpreter, or a trap). 1 in ~400 hook launches that day; 30 isolated
   `D_pid_INT` repeats + 60 boundary-timed launches did not reproduce it. The
   "whole-second `SECONDS` budget collapses near a wall-clock boundary" theory
-  was TESTED and REJECTED (bash 3.2 here does not tick at the boundary; 0/45
-  primitive probes expired). Mechanism UNIDENTIFIED — the hook's exit-0 paths are
-  silent by design, so the harness cannot tell a hook-side drop from a VOID.
-  A single `D_pid_*` VOID in an otherwise-green run is a re-run, not a regression;
-  a repeat in the same run, or any case other than a `sig_*` kind, is a finding.
+  was first REJECTED on 0/45 primitive probes — that rejection was WRONG (the probes
+  had no positive control). Same day, breadcrumb candidate `candidate/v29.sh`
+  soaked 1500 launches and caught it once at 16 ms:
+  `drop=NO_INTERPRETER secs=1 pend=1 probes: [...python3=rc137,killed=yes]
+  [/usr/bin/python3=budget-spent-before-spawn]`; a pure-builtin re-test of
+  `_pend=$((SECONDS+1))` then expired 6/400 (~1.5%). MECHANISM: the probe budget
+  is a whole-second `SECONDS+1`, uniformly (0,1] s, so ~1–2% of launches get
+  <20 ms, the watchdog kills the first probe, no interpreter → silent exit 0, event
+  lost. Until a fixed hook (v30) is installed: a single `D_pid_*`/any VOID with the
+  0.0x s signature in an otherwise-green run is this defect, not a harness flake.
 - 2026-09-01/02 — the review this tree was curated from; mutants M14/M16/M17
   fail as intended. Trail: `reviews/2026-09-01-cross-model-harness-review.md`.
 - 2026-09-05 — the `HOME=` orphan clause does not reach platform binaries;

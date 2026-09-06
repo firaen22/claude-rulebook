@@ -1,0 +1,6 @@
+contract PASS [v29] 57/57 pass, 0 FAIL   md5=89e49e4b54cbc7463b581969dc352f3a   table=/var/folders/wf/s5ctj32x6zd9p52g7kwphx7h0000gn/T/hook-harness-v29.cSLZ3W/contract/TABLE-v29.txt
+gap      PASS PASS v29.sh         TSTP/pid=exit0  TSTP/grp=exit0  TTIN/pid=exit0  TTIN/grp=exit0  TTOU/pid=exit0  TTOU/grp=exit0
+grpsig2  PASS PASS v29.sh               I01_grp_KILL: 5/5 landed clean || I02_grp_STOP: 5/5 landed clean
+pidhang  PASS DISCRIMINATED: control v26 leaks (orph=9 over 10 landed trials), v29 clean and unblocked across 10 landed trials
+logs: /var/folders/wf/s5ctj32x6zd9p52g7kwphx7h0000gn/T//hook-harness-v29.cSLZ3W
+RUN_ALL_RC=0
