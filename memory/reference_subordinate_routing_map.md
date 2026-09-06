@@ -6,7 +6,7 @@ metadata:
   type: reference
 ---
 
-# Subordinate routing map — 2026-08-28
+# Subordinate routing map — 2026-09-06
 
 Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 [[workflow-codex-subordinate]] [[workflow-agy-subordinate]] [[workflow-grok-subordinate]]
@@ -113,7 +113,7 @@ is not.
 | Same, but needs the file actually edited | **opencode** (only free tier with an agent layer) | 4/4 clean on simple single-file |
 | Enumerating ambiguities in a spec BEFORE building | **codex as spec-reviewer** | MEASURED N=1016; run this pass first. Model slug unmeasured astra-vs-luna here — the R1 "not luna for review" line (§3) does NOT apply to spec review |
 | Adversarial edge-hunting, PRE-implementation | **agy** `gemini-3.7-flash-medium` | 24/24 recall, 0/32 fabrication w/ escape clause |
-| Reviewing a large real-repo packet | **agy** `gemini-3.6-flash-high` (review pin) | pin held on measurement, N=30, p=1.000 |
+| **IF** agy reviews a large real-repo packet (e.g. as an extra lens), which agy model | **agy** `gemini-3.6-flash-high` (review pin) | pin held on measurement, N=30, p=1.000 — but that sweep compared 3.7-high vs 3.6-high ONLY (22/30 vs 23/30), never agy vs codex. This row picks the agy MODEL; whether agy reviews post-impl at all is the "NOT agy" row below (reworded 2026-09-06 to remove the apparent conflict both cross-model reviewers flagged) |
 | Structured/JSON-schema fan-out, N verdicts parsed | **grok** | 16/16 (08-23 regraded) + 15/16 (08-27 fresh) adherence + free cost telemetry (SINGLE-ARM). Read `.structuredOutput` from the WHOLE buffer; a null `structuredOutput` is a failed rep — drop it, never rescue from `.text` |
 | Third review lens after codex (diff/rules-file review) | **grok — pick the shape by the MATERIAL: reviewing FILES ⇒ STAGE them in `--cwd` and tell it to read them (🔴 never inline a review target); judgement on already-inline material ⇒ keep it inline + `--json-schema`. Isolated HOME either way** | ⛔ the "always inline" form of this row is RETRACTED 2026-08-28. Three INLINED-code review packets gave schema-valid-empty / 0 bytes / narration; attempt 4 on the staged-files recipe gave 5.4KB, 5 findings, 3 real. The 0/3 "idle" was MY packet error — grok was hunting for files never written. [[finding-misroutewatch-grok-review-2026-08-28]]. Its finds are real; its all-clears are void (R-B corollary) |
 | Second reviewer AFTER codex on the same artifact | **grok on the staged-files recipe — they are COMPLEMENTARY, not redundant** | MEASURED 2026-08-28, byte-identical brief + same pre-fix file: **zero overlap on 3 real defects.** codex finds mechanism/contract bugs via contrived inputs; grok finds the realistic corpus path that actually fires them. codex missed both of grok's; grok missed codex's. n=1 file, 2 reviewers. Neither alone was sufficient |
@@ -122,6 +122,7 @@ is not.
 | Anything with a loop / iteration / termination edge | codex or agy — or grok WITH the edge stated | PROVISIONAL, n=3, p=0.17 pooled |
 | Same, but the edge CANNOT be stated (unstated-edge exposure is the risk) | **agy `gemini-3.7-flash-low`** — then verify by execution regardless | 15/20 fresh-day repeat (prior 14/20, p=1.000); `-medium` 4/20 same day. NOT safe, just least-bad |
 | Post-implementation code review on a real repo | **NOT agy** | adoption 0/5, 0/5, 1/5, 3/8 across 4 sweeps. Scope note 2026-08-25: on a SMALL single-file seeded-defect review, codex and agy TIED 8/8 vs 8/8 (saturated instrument) — this row does not generalize down to small single-file review, stays scoped to large real-repo packets → [[finding-step4-seeded-review-2026-08-25]] |
+| Pre-commit / post-impl review of SMALL code with unstated hazards (the R1 shape) | **codex `-m gpt-6-astra -c model_reasoning_effort=medium`**; sol = optional extra codex pass when a miss is catastrophic and time is free; not luna for this shape | R1 2026-09-06, N=3/model, ONE JS subject file, PROVISIONAL: astra 9/10 ×3 (0 nits) > sol 8/10 ×3 (2–3 nits, ~2× slower) > luna 5/8/6. Within-codex pick only — astra never benched vs agy. Does NOT cover large real-repo packets (row above) or spec-before-building (slug unmeasured there); does not override "post-impl real-repo → NOT agy" → [[finding-codex-56-family-2026-07-22]] |
 | Multi-file / long-horizon agentic work | **none of them — do it yourself** | UNMEASURED on all five; opencode 0 edits on 20/20 hard |
 
 ### 2a. Review packet SHAPE — codex and grok need OPPOSITE shapes
