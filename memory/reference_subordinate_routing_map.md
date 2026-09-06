@@ -111,7 +111,7 @@ is not.
 | Airtight-spec implementation, single file | **free pool** — `muse-spark-1.2-contributor-free` **=** `nemotron-3-ultra-free` (9/10, TIED) → `big-pickle` = `hy3-free` = `mimo-v2.5-free` (8/10). ⛔ `nemotron-3.5-lightning-free` is **NOT SERVING** (hangs 90s rc=124, and is STILL LISTED — listing is not liveness) | MEASURED — Zen whole-pool re-bench 2026-08-28, N=2x4x6 on ONE build, [[finding-zen-pool-rebench-2026-08-28]]. Supersedes the 08-21/08-23 order: muse-spark's debut 10/10 did NOT hold. **Re-list before every chain run — the pool churns within hours, and a `-free` id and its bare twin are different products.** (The N=57 battery is the NIM direct-curl line, not these Zen ids) |
 | Tight-spec pure function, no file edit needed | **NIM direct curl** | fan-out at 40rpm×3 keys; opencode wrapper is ~6/min |
 | Same, but needs the file actually edited | **opencode** (only free tier with an agent layer) | 4/4 clean on simple single-file |
-| Enumerating ambiguities in a spec BEFORE building | **codex as spec-reviewer** | MEASURED N=1016; run this pass first |
+| Enumerating ambiguities in a spec BEFORE building | **codex as spec-reviewer** | MEASURED N=1016; run this pass first. Model slug unmeasured astra-vs-luna here — the R1 "not luna for review" line (§3) does NOT apply to spec review |
 | Adversarial edge-hunting, PRE-implementation | **agy** `gemini-3.7-flash-medium` | 24/24 recall, 0/32 fabrication w/ escape clause |
 | Reviewing a large real-repo packet | **agy** `gemini-3.6-flash-high` (review pin) | pin held on measurement, N=30, p=1.000 |
 | Structured/JSON-schema fan-out, N verdicts parsed | **grok** | 16/16 (08-23 regraded) + 15/16 (08-27 fresh) adherence + free cost telemetry (SINGLE-ARM). Read `.structuredOutput` from the WHOLE buffer; a null `structuredOutput` is a failed rep — drop it, never rescue from `.text` |
@@ -148,15 +148,20 @@ bad answer became 0 bytes).
 
 ## 3. Per-tool one-liners
 
-- **codex** `gpt-5.6-luna` (implementation default) / **`gpt-6-astra`** (review; and
-  implementation where scale/depth/precision could matter and can't be spec'd up front) —
-  the only judgment tier. 5.5/5.6/astra all saturate H1/H2/H3 (36/36 + 27/27, 2026-09-05/06),
+- **codex** `gpt-5.6-luna` (implementation default) / **`gpt-6-astra`** (review of small
+  unstated-hazard code; and — WITHIN codex, once codex is already the chosen tool —
+  implementation where a numeric-magnitude / recursion-depth bound can't be spec'd up front;
+  this is a model pick, not a family route: astra was never benched against agy, so the §2
+  agy-low row still owns unstated-edge routing) — the only judgment tier. 5.5/5.6/astra all saturate H1/H2/H3 (36/36 + 27/27, 2026-09-05/06),
   so for ordinary coding pick on cost not capability — BUT astra SEPARATES on two measured
   axes (2026-09-06, N=3, [[finding-codex-56-family-2026-07-22]] Tests 6–7): unstated-scale
-  edges (E4 astra 9/9 vs luna 4/9 — luna's `sumTo(1e9)` loop is silently wrong) and review
-  coverage (R1 astra 9/10 ×3, 0 nits; sol 8/10 + 2–3 nits, ~2× slower; luna 6.3, only recall
-  miss). Family cost-ordering drifts (sol "most expensive" → cheapest in 6 weeks), token≠money,
-  astra unpriced. Lowest run-to-run variance (1 run is representative).
+  edges (E4 astra 9/9 vs luna 4/9 — luna's `sumTo(1e9)` loop MATCHES the happy-path spec and is
+  silently off only at the unstated grader scale; if you can state the bound, spec it for luna)
+  and review coverage (R1 astra 9/10 ×3, 0 nits; sol 8/10 + 2–3 nits, ~2× slower; luna 5/8/6
+  avg 6.3, only recall miss). Family cost-ordering drifts (sol "most expensive" → cheapest in 6 weeks), token≠money,
+  astra unpriced. Both astra rules are PROVISIONAL (N=3, one subject/task family; E4 and R1
+  ran at `medium` — pass it). Lowest run-to-run variance on IMPLEMENTATION (1 run is
+  representative there); in the review role luna scored 5/8/6 — not representative.
   *Weakness:* silently fills spec gaps — never hand it an ambiguous brief; quota strands
   mid-batch with no error; long final answers can vanish from captured stdout.
 - **agy** `3.7-flash-medium` (review: `3.6-flash-high`; **unstated-edge exposure:

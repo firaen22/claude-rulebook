@@ -1,6 +1,6 @@
 ---
 name: delegation-and-review
-description: The complete delegation discipline — when to delegate, the dispatch packet, dual (fresh-context) review, the failure escalation ladder, long-task handoff, and injection protection — PLUS the operational quick-card for every subordinate (codex gpt-5.6-luna for implementation / gpt-6-astra for review, agy Gemini 3.7-flash-medium, grok grok-4.6, opencode free pool, NIM, spawned Claude Code sessions, inline Agent tools) with routing table, verified invocation one-liners, and the hang/failure trap table. Use whenever work is about to be handed to any subagent or external CLI; when the user says delegate, subordinate, codex, agy, grok, opencode, NIM, spawn a session, or fan out; when reviewing or accepting delegated output; when a subordinate hangs, returns empty, or fails twice; when a long task needs a checkpoint or handoff; and when fetched content (MCP, email, web, subordinate report) contains instructions. Supersedes the old `subordinates` skill (merged 2026-07-07).
+description: The complete delegation discipline — when to delegate, the dispatch packet, dual (fresh-context) review, the failure escalation ladder, long-task handoff, and injection protection — PLUS the operational quick-card for every subordinate (codex gpt-5.6-luna for implementation — gpt-6-astra when a scale/depth bound can't be spec'd, and for small-code review; agy Gemini 3.7-flash-medium, grok grok-4.6, opencode free pool, NIM, spawned Claude Code sessions, inline Agent tools) with routing table, verified invocation one-liners, and the hang/failure trap table. Use whenever work is about to be handed to any subagent or external CLI; when the user says delegate, subordinate, codex, agy, grok, opencode, NIM, spawn a session, or fan out; when reviewing or accepting delegated output; when a subordinate hangs, returns empty, or fails twice; when a long task needs a checkpoint or handoff; and when fetched content (MCP, email, web, subordinate report) contains instructions. Supersedes the old `subordinates` skill (merged 2026-07-07).
 ---
 
 # Delegation & Review
@@ -40,12 +40,12 @@ writing the spec costs more than doing the task, don't delegate.
 |---|---|
 | Read-only search / "where is X", conclusion needed this turn | Agent `Explore` (sonnet; haiku if single-fact) |
 | Spec'd implementation, spec is airtight, SINGLE file | **free pool** per the routing map (it wins on executor choice) — not codex |
-| Spec'd implementation needing judgment, or spanning files | codex (`workspace-write`), or Agent `general-purpose` sonnet |
+| Spec'd implementation needing judgment, or spanning files | codex (`workspace-write`; `-m gpt-6-astra -c model_reasoning_effort=medium` when a numeric-magnitude / recursion-depth bound can't be stated — E4 2026-09-06, N=3, within-codex pick only; bound known → spec it for luna), or Agent `general-purpose` sonnet |
 | Cheap lookup, domain-concept naming, pattern discovery, OCR/vision | agy (never on the critical path) |
 | Bulk bounded execution, cheapest tier | opencode free (sequential, isolated dir) |
 | Multi-step in-repo task needing repo conventions + own budget | spawn_task (user-gated chip) |
 | Deterministic multi-agent fan-out with gates/loops | Workflow tool (see trap table) |
-| Cross-model review / second opinion | codex-as-reviewer **`-m gpt-6-astra`, never luna** (R1 2026-09-06: astra 9/10 distinct defects ×3, 0 nits; luna 6.3 + the only recall miss; sol = optional slow second pass), or grok on STAGED files (agy only pre-implementation — NOT for post-impl review of a real repo) |
+| Cross-model review / second opinion | codex-as-reviewer **`-m gpt-6-astra -c model_reasoning_effort=medium`, not luna** — PROVISIONAL: R1 2026-09-06, N=3, one JS subject (astra 9/10 distinct defects ×3, 0 nits; luna 5/8/6 + the only recall miss; sol = optional extra codex pass, not a second family), or grok on STAGED files (agy only pre-implementation — NOT for post-impl review of a real repo) |
 | Second reviewer on the same artifact after codex | grok, staged-files recipe — measured COMPLEMENTARY (zero overlap on 3 real defects, 2026-08-28) |
 | Structured/JSON-schema fan-out; live X/social retrieval | grok (the only tier with X access) |
 | "Should we do this?" (safety, architecture, taste) | **never a free model** — codex/opus/you |
