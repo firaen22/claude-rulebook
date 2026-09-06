@@ -157,3 +157,61 @@ invokes it automatically, and it is not a substitute for `contract.py`.
 `pidhang.py` takes the candidate as `argv[1]` (default `candidate/v28.sh`) and
 must run from the repo root: it opens `candidate/v26.sh` as its positive control,
 which has to keep leaking for a clean result on the target to mean anything.
+
+## Passive VOID detection on the LIVE dir (added 2026-09-06)
+
+A v30 `D_pid_INT`-class VOID is silent (exit 0, no file), so no directory
+watcher can see it — the 5-second polling monitor used on install day could
+only ever count files that appeared. `harness/reconcile_pairs.py` detects the
+silent case from data the hooks already write: every compaction produces a
+`PreCompact` record and then a `SessionStart` record with `source: "compact"`
+carrying the same `session_id` AND the same `prompt_id` (verified on the live
+dir: 67/67 completed compactions, 0 records without it, 0 reuse across
+sessions). Records are grouped by `(session_id, prompt_id)`: PC+SSC → pair;
+SSC alone → **VOID** (the silent drop); PC alone → ORPHAN (informational —
+cancelled compaction, session exit, or the SessionStart hook dropping);
+duplicate identity, SSC not after its PC, or a pair gap over `--window`
+(default 1800s; live gaps 39–282s) → ANOMALY. Hook failure-path files
+(`*.error.txt` / `*.partial.json` / `*.dropped.txt`) are ANOMALY. Exit 0
+clean, 1 VOID/anomaly, 2 unparseable — an explicit whitelist of shapes, so a
+missing/unknown `hook_event_name`/`source`, non-string `raw`, an id with a
+lone surrogate, or a file not named exactly `<ns>-<pid>.<known suffix>` (a
+stray `.DS_Store`, a trailing newline) is rc 2 until removed; `--since` cannot
+hide it (such a name is counted in_scope, so `files == in_scope + excluded`
+always). `--since <ns|ISO-Z>` scopes REPORTING: older files are counted only
+as `excluded` and never reported on their own, but pre-cutoff PreCompact AND
+SessionStart/compact records still load as pairing context — a group is
+checked once any member is in scope, skipped when none is — so a pair
+straddling the cutoff is not a false VOID, a pre-cutoff duplicate cannot hide
+an in-scope dup ANOMALY, and a wholly pre-cutoff duplicate is not reported.
+Known blind spots: both hooks dropping on one compaction;
+a PreCompact drop on a compaction that was then cancelled; two compactions
+in one user turn sharing a prompt_id. Zero standing cost: run it whenever you
+want, e.g. `python3 harness/reconcile_pairs.py --since 2026-09-06T00:00:00Z`.
+Deliberately NOT folded into `run_all.sh`, which grades synthetic state — a
+live-dir check would go permanently red on any historical anomaly.
+
+History: the first version (packet `reviews/PACKET_reconcile_pairs_2026-09-06.md`)
+paired on `session_id` + time window only. Cross-model review the same day
+(codex gpt-6-astra FIX F1–F7, fresh Fable FIX F-1..F-4, both reproduced here)
+showed a cancelled PreCompact inside the window would be claimed by the next
+compaction's SessionStart and turn a real VOID into `CLEAN`; Fable found the
+`prompt_id` identity that closes it. Round 2 on the identity version (packet
+`reviews/PACKET_reconcile_pairs_v2_2026-09-06.md`; codex FIX F1–F6, Fable
+`reviews/FABLE_reconcile_pairs_r2_2026-09-06.md` FIX F-A F-B — no code defect,
+two suite branches no fixture could fail): all reproduced and fixed — `--since`
+dropped SSC context so a pre-cutoff duplicate could hide a dup ANOMALY (F1) and
+a wholly pre-cutoff duplicate still reported (F2); a lone surrogate in an id
+was a `UnicodeEncodeError` traceback (F4); `$` accepted a trailing newline in
+a filename (F5); an unrecognised name fell out of both `in_scope` and
+`excluded` (F6); dup-SSC and no-EOF-only mutants survived the suite (codex
+F3 / Fable F-A, F-B). Fixture suite: `scripts/test_reconcile_pairs.sh`
+(65 cases, exact-token assertions, plus two positive controls — an always-CLEAN
+stub and a correct-exit/corrupted-count wrapper — that prove the suite can go
+red); 10 single-point mutants re-run after round 2 (the two Fable survivors,
+the six codex regressions, outer-list, unreadable-file) all RED. Live run
+2026-09-06 over 407 files: PC=72 SSC=68 pairs=68 **VOID=0** ORPHAN=4 ANOMALY=7
+(six `.error.txt` from 2026-08-31 empty-stdin tests, one from 2026-09-05),
+matching the pre-written prediction; `--since 2026-09-06T00:00:00Z`: 15/15
+pairs CLEAN. Fable's round-2 "new ORPHAN in the review session" was a
+compaction in flight — its SessionStart/compact landed 72 s later.
