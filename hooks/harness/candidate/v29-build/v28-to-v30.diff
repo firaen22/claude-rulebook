@@ -1,0 +1,48 @@
+2a3,11
+> #
+> # v30 = v28 (the installable, breadcrumb-free base) + ONE fix: the probe budget
+> # `_pend=$(( SECONDS + 1 ))` becomes `+ 2`, closing the boundary-phase collapse
+> # that dropped ~1-2% of hook launches (the `D_pid_INT` VOID; see the budget block
+> # below and finding_harness_rerun_void_2026-09-06.md). v29 was the breadcrumb
+> # INSTRUMENT that found the bug and is NOT an install candidate; v30 carries none
+> # of its diagnostic writes. Nothing else changed from v28. Reviewed 2026-09-06
+> # (Fable + codex gpt-6-astra + grok, per cross-model-review); install is the
+> # owner's call.
+655,663c664,686
+< # The shared 1s budget is set ONCE before the loop. SECONDS is whole-second
+< # granularity, so the budget expires at the next integer tick -- between (0,1]s
+< # after this assignment depending on the sub-second phase when it runs (v26's
+< # comment claimed a 0.05s lower bound; corrected here per the L1 review nit). A
+< # slow-but-honest first interpreter whose startup crosses that tick is killed and
+< # the event lost: load/FS-dependent event loss, which the contract prices cheap.
+< # The C3 bound still holds: the probe phase is < 1s (SECONDS+1) and the worker
+< # watchdog is a SEPARATE fresh DEADLINE=2 AFTER it, so the hook is bounded by
+< # their sum (~3s worst case), not by a single DEADLINE=2 shared with the worker.
+---
+> # The shared probe budget is set ONCE before the loop. SECONDS is whole-second
+> # granularity, so `SECONDS + N` expires at the next integer tick -- between
+> # (N-1, N]s after this assignment, depending on the sub-second phase when it runs.
+> #
+> # v30 FIX (budget only): this was `SECONDS + 1` through v28/v29, giving a budget in
+> # (0,1]s -- and at a whole-second boundary phase it collapses toward 0. Measured
+> # 2026-09-06 (v29 breadcrumb soak, 1 hit in 1500 launches at 16 ms; independently
+> # re-derived by a pure-builtin `SECONDS+1` spin, ~1.5% expiring <20 ms): the
+> # watchdog then killed the first interpreter probe before it could exit 37, no
+> # worker spawned, the event silently lost -- the `D_pid_INT` VOID. `+ 2` moves the
+> # floor: the budget is now (1,2]s, so its MINIMUM exceeds 1 s regardless of phase,
+> # and a python startup (~30-100 ms here) can no longer be clipped by an unlucky
+> # tick. Cost: worst-case probe phase grows from ~1s to ~2s. This is the SAME whole-
+> # second source and the SAME (kill-at-tick) mechanism as before -- only the budget
+> # WIDTH changed -- so every round-9..27 property of the loop below is preserved; it
+> # is deliberately NOT a new sub-second clock (bash 3.2 has none) or a poll-iteration
+> # counter (which would re-introduce the clip via a fast-returning `/bin/sleep`).
+> # The worker watchdog is a SEPARATE `SECONDS + DEADLINE` (DEADLINE=2) whose floor is
+> # already >1s; no VOID was ever traced to it, so v30 leaves it UNCHANGED (scope).
+> # See ~/.claude/projects/.../memory/finding_harness_rerun_void_2026-09-06.md.
+> # The C3 bound still holds: the probe phase is < 2s (SECONDS+2) and the worker
+> # watchdog is a SEPARATE fresh DEADLINE=2 AFTER it, so the hook is bounded by
+> # their sum (~4s worst case), not by a single DEADLINE=2 shared with the worker.
+665c688
+< _pend=$(( SECONDS + 1 ))
+---
+> _pend=$(( SECONDS + 2 ))

@@ -1,0 +1,188 @@
+Reading additional input from stdin...
+OpenAI Codex v0.153.4
+--------
+workdir: /Users/yauch/.claude/hooks/harness/candidate/v29-build
+model: gpt-6-astra
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: medium
+reasoning summaries: none
+session id: 01a07656-bed9-7a03-b18d-8f5d5df469e2
+--------
+user
+# Review packet — v30 probe-budget fix (compaction hook)
+
+You are reviewing ONE change to a macOS PreCompact hook. You cannot see the repo;
+everything you need is inlined below. Return a structured verdict (last line
+`PROCEED` or `FIX <ids>`).
+
+## What the hook is (context)
+`observe-compaction-events.sh` (bash 3.2, `#!/bin/bash -p`) records one file per
+compaction event under `$LOG_DIR/observed/`. Before spawning its python worker it
+runs a **probe loop**: for each candidate python3 it forks a subshell that closes
+inherited fds and `exit 37` iff python>=3.7, polls it with a builtin `jobs -pr`
+loop ticking every `/bin/sleep 0.05`, and KILLS it if a shared budget expires. The
+first candidate that exits 37 becomes the worker interpreter. If none passes, the
+event is silently lost (contract prices this "cheap"). bash 3.2 has NO sub-second
+clock builtin; `SECONDS` is whole-second.
+
+## The bug being fixed (reproduced, not theorized)
+The probe budget was `_pend=$(( SECONDS + 1 ))`. `SECONDS` increments on integer
+wall-clock ticks, so `SECONDS+1` expires between (0,1]s after assignment depending
+on sub-second phase — at a boundary phase it collapses toward 0 ms. When it does,
+the watchdog kills the FIRST python probe before it can reach exit 37, no worker
+spawns, and the event is lost with rc 0 and no file: the `D_pid_INT` VOID seen
+once in ~400 live harness launches.
+
+Evidence (all executed 2026-09-06):
+- v29 breadcrumb instrument, 1500-launch soak: 1 hit at 16 ms showing
+  `drop=NO_INTERPRETER secs=1 pend=1 ... rc137,killed=yes ... budget-spent-before-spawn`.
+- Pure-builtin `SECONDS+1` spin at random phases: ~1.5% expired <20 ms.
+- Positive control replicating the EXACT probe loop (kill-at-tick, 0.05 poll)
+  around a 0.05 s "startup", 150 trials each:
+  `+1 → KILLED(dropped)=5/150 (3.3%)`, `+2 → KILLED(dropped)=0/150`.
+
+## The fix (the entire executable change)
+`_pend=$(( SECONDS + 1 ))` → `_pend=$(( SECONDS + 2 ))`. Nothing else executable
+changed (comments only). Budget is now (1,2]s: minimum >1 s regardless of phase,
+so a ~30–100 ms python startup can never be clipped. Worst-case probe phase grows
+~1s→~2s; C3 total hook bound ~3s→~4s (well under the 10 s ceiling). Same whole-
+second source, same kill-at-tick mechanism — only the WIDTH changed.
+
+Rejected alternatives (state if you disagree): a poll-iteration counter (a
+fast-returning `/bin/sleep`, e.g. signal-interrupted, would burn ticks with no
+wall-clock and re-introduce the clip); a new sub-second clock (bash 3.2 has none;
+forking `date`/`perl` per tick adds the fork surface the loop spent rounds 9–27
+removing). The worker watchdog is a SEPARATE `SECONDS + DEADLINE` (DEADLINE=2),
+floor already >1 s, never implicated in a VOID — left UNCHANGED on scope.
+
+## Full diff (v28 → v30)
+```diff
+2a3,11
+> #
+> # v30 = v28 (the installable, breadcrumb-free base) + ONE fix: the probe budget
+> # `_pend=$(( SECONDS + 1 ))` becomes `+ 2`, closing the boundary-phase collapse
+> # that dropped ~1-2% of hook launches (the `D_pid_INT` VOID; see the budget block
+> # below and finding_harness_rerun_void_2026-09-06.md). v29 was the breadcrumb
+> # INSTRUMENT that found the bug and is NOT an install candidate; v30 carries none
+> # of its diagnostic writes. Nothing else changed from v28. Reviewed 2026-09-06
+> # (Fable + codex gpt-6-astra + grok, per cross-model-review); install is the
+> # owner's call.
+655,663c664,686
+< # The shared 1s budget is set ONCE before the loop. SECONDS is whole-second
+< # granularity, so the budget expires at the next integer tick -- between (0,1]s
+< # after this assignment depending on the sub-second phase when it runs (v26's
+< # comment claimed a 0.05s lower bound; corrected here per the L1 review nit). A
+< # slow-but-honest first interpreter whose startup crosses that tick is killed and
+< # the event lost: load/FS-dependent event loss, which the contract prices cheap.
+< # The C3 bound still holds: the probe phase is < 1s (SECONDS+1) and the worker
+< # watchdog is a SEPARATE fresh DEADLINE=2 AFTER it, so the hook is bounded by
+< # their sum (~3s worst case), not by a single DEADLINE=2 shared with the worker.
+---
+> # The shared probe budget is set ONCE before the loop. SECONDS is whole-second
+> # granularity, so `SECONDS + N` expires at the next integer tick -- between
+> # (N-1, N]s after this assignment, depending on the sub-second phase when it runs.
+> #
+> # v30 FIX (budget only): this was `SECONDS + 1` through v28/v29, giving a budget in
+> # (0,1]s -- and at a whole-second boundary phase it collapses toward 0. Measured
+> # 2026-09-06 (v29 breadcrumb soak, 1 hit in 1500 launches at 16 ms; independently
+> # re-derived by a pure-builtin `SECONDS+1` spin, ~1.5% expiring <20 ms): the
+> # watchdog then killed the first interpreter probe before it could exit 37, no
+> # worker spawned, the event silently lost -- the `D_pid_INT` VOID. `+ 2` moves the
+> # floor: the budget is now (1,2]s, so its MINIMUM exceeds 1 s regardless of phase,
+> # and a python startup (~30-100 ms here) can no longer be clipped by an unlucky
+> # tick. Cost: worst-case probe phase grows from ~1s to ~2s. This is the SAME whole-
+> # second source and the SAME (kill-at-tick) mechanism as before -- only the budget
+> # WIDTH changed -- so every round-9..27 property of the loop below is preserved; it
+> # is deliberately NOT a new sub-second clock (bash 3.2 has none) or a poll-iteration
+> # counter (which would re-introduce the clip via a fast-returning `/bin/sleep`).
+> # The worker watchdog is a SEPARATE `SECONDS + DEADLINE` (DEADLINE=2) whose floor is
+> # already >1s; no VOID was ever traced to it, so v30 leaves it UNCHANGED (scope).
+> # See ~/.claude/projects/.../memory/finding_harness_rerun_void_2026-09-06.md.
+> # The C3 bound still holds: the probe phase is < 2s (SECONDS+2) and the worker
+> # watchdog is a SEPARATE fresh DEADLINE=2 AFTER it, so the hook is bounded by
+> # their sum (~4s worst case), not by a single DEADLINE=2 shared with the worker.
+665c688
+< _pend=$(( SECONDS + 1 ))
+---
+> _pend=$(( SECONDS + 2 ))
+```
+
+## Verification already run (reproduce/challenge as you see fit)
+- `bash -n candidate/v30.sh` → OK. Non-comment diff vs v28 = the single line above.
+- run_all.sh v30 --pidhang: contract **57/57**, gap PASS, grpsig2 5/5+5/5,
+  pidhang **DISCRIMINATED** (v26 control leaks 10/10, v30 clean 10/10).
+- Positive control above.
+- soak_launch.py v30, 1500 launches: **1500 launches, 0 anomalies, 0 dropped files.**
+
+## Rubric — answer each
+1. Does `+2` actually eliminate the boundary collapse, or is there a phase/edge
+   where the budget still floors below a python startup? Show the arithmetic.
+2. Does widening the probe budget to (1,2]s break any C-bound or watchdog
+   invariant (total hook lifetime, worker watchdog independence, the abandoned-
+   orphan bound)? The loop body is unchanged — is that safe with the wider budget?
+3. Is leaving the worker watchdog (DEADLINE=2) unchanged correct, or does the same
+   class of boundary bug live there too and warrant inclusion in THIS fix?
+4. Any regression the one-token change introduces that the green suites above
+   would NOT catch?
+5. Cost asymmetry: a budget too SHORT drops events silently (the bug); a budget
+   too LONG only delays a rare wedged-probe host by up to ~1 extra second. Probe
+   the short/silent side hardest.
+
+Report each finding as: location + mechanism + concrete fix, severity-ranked.
+Tag claims [verified: how] / [reasoned]. Last line: `PROCEED` or `FIX <ids>`.
+
+---
+Review the change above per the rubric. You are a skeptical reviewer; probe the short/silent side hardest. End with PROCEED or FIX <ids>.
+codex
+[reasoned] **PROCEED for the one-token change.** It removes the demonstrated phase-only collapse. The supplied test results support it; I have not independently reproduced them. This is a single-lens review of the packet.
+
+1. **Boundary arithmetic.** [reasoned] Let assignment occur at phase `φ ∈ [0,1)` after an integer tick, with `SECONDS = k`. The deadline is `k + N`, so remaining time is `N − φ`. Thus:
+   - `+1`: `(0,1]` seconds.
+   - `+2`: `(1,2]` seconds.
+
+   No phase alone reduces the new initial budget below a 30–100 ms startup. This assumes the ordinary clock progression described in the packet. It does **not** guarantee success under arbitrary scheduling delays, or give later candidates a fresh second: the budget remains shared.
+
+2. **Bounds and loop invariants.** [reasoned] Widening the deadline preserves the loop’s described polling and kill mechanism. Probe allowance increases by one second; the separate worker allowance remains unchanged, giving approximately four seconds combined. Polling, scheduling, and cleanup add overhead, so this arithmetic is not a strict elapsed-time ceiling. Any abandoned process whose cleanup waits for probe expiration can remain outstanding approximately one second longer. Whether that satisfies a separately specified orphan bound cannot be independently established because its definition and implementation are absent from the packet. Nothing supplied demonstrates a violation.
+
+3. **Worker watchdog.** [reasoned] Leaving `DEADLINE=2` unchanged is correct for this fix: it already has the same `(1,2]` floor being introduced for probes. It does not have the near-zero boundary collapse. Whether one second is sufficient for every legitimate worker operation is a separate contract question, with no supplied evidence warranting expansion here.
+
+4. **Regressions beyond the suites.** [reasoned] A wedged probe can occupy resources and delay return approximately one second longer. Under overlapping launches, that can increase concurrent outstanding probes. A slow candidate can also now qualify and become the selected interpreter where previously it timed out. These follow directly from accepting a wider startup window; neither is inherently a defect under the stated contract.
+
+5. **Short/silent failure side.** [reasoned] Silent loss remains possible when an earlier candidate consumes the shared budget, a probe is heavily descheduled, or completion coincides with the kill check. These are existing timeout behaviors. The change eliminates the demonstrated failure caused solely by assignment phase; zero drops in 1,500 supplied launches does not establish universal losslessness.
+
+**Low-severity documentation findings**
+
+- **D1 — Header, “dropped ~1–2% of hook launches.”** [reasoned] This conflates synthetic timing results with observed hook losses. The supplied live breadcrumb soak found **1/1,500**; the synthetic tests measured different populations. **Fix:** state those results separately.
+- **D2 — Budget comment, “probe phase is <2s.”** [reasoned] The deadline allowance is `(1,2]`, and observed termination can include polling and scheduling overhead. **Fix:** say “nominal probe allowance is at most 2s, plus polling/scheduling/cleanup overhead.”
+
+Neither documentation finding blocks the executable fix.
+
+PROCEED
+tokens used
+11,991
+[reasoned] **PROCEED for the one-token change.** It removes the demonstrated phase-only collapse. The supplied test results support it; I have not independently reproduced them. This is a single-lens review of the packet.
+
+1. **Boundary arithmetic.** [reasoned] Let assignment occur at phase `φ ∈ [0,1)` after an integer tick, with `SECONDS = k`. The deadline is `k + N`, so remaining time is `N − φ`. Thus:
+   - `+1`: `(0,1]` seconds.
+   - `+2`: `(1,2]` seconds.
+
+   No phase alone reduces the new initial budget below a 30–100 ms startup. This assumes the ordinary clock progression described in the packet. It does **not** guarantee success under arbitrary scheduling delays, or give later candidates a fresh second: the budget remains shared.
+
+2. **Bounds and loop invariants.** [reasoned] Widening the deadline preserves the loop’s described polling and kill mechanism. Probe allowance increases by one second; the separate worker allowance remains unchanged, giving approximately four seconds combined. Polling, scheduling, and cleanup add overhead, so this arithmetic is not a strict elapsed-time ceiling. Any abandoned process whose cleanup waits for probe expiration can remain outstanding approximately one second longer. Whether that satisfies a separately specified orphan bound cannot be independently established because its definition and implementation are absent from the packet. Nothing supplied demonstrates a violation.
+
+3. **Worker watchdog.** [reasoned] Leaving `DEADLINE=2` unchanged is correct for this fix: it already has the same `(1,2]` floor being introduced for probes. It does not have the near-zero boundary collapse. Whether one second is sufficient for every legitimate worker operation is a separate contract question, with no supplied evidence warranting expansion here.
+
+4. **Regressions beyond the suites.** [reasoned] A wedged probe can occupy resources and delay return approximately one second longer. Under overlapping launches, that can increase concurrent outstanding probes. A slow candidate can also now qualify and become the selected interpreter where previously it timed out. These follow directly from accepting a wider startup window; neither is inherently a defect under the stated contract.
+
+5. **Short/silent failure side.** [reasoned] Silent loss remains possible when an earlier candidate consumes the shared budget, a probe is heavily descheduled, or completion coincides with the kill check. These are existing timeout behaviors. The change eliminates the demonstrated failure caused solely by assignment phase; zero drops in 1,500 supplied launches does not establish universal losslessness.
+
+**Low-severity documentation findings**
+
+- **D1 — Header, “dropped ~1–2% of hook launches.”** [reasoned] This conflates synthetic timing results with observed hook losses. The supplied live breadcrumb soak found **1/1,500**; the synthetic tests measured different populations. **Fix:** state those results separately.
+- **D2 — Budget comment, “probe phase is <2s.”** [reasoned] The deadline allowance is `(1,2]`, and observed termination can include polling and scheduling overhead. **Fix:** say “nominal probe allowance is at most 2s, plus polling/scheduling/cleanup overhead.”
+
+Neither documentation finding blocks the executable fix.
+
+PROCEED

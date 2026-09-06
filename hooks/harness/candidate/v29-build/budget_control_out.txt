@@ -1,0 +1,3 @@
+candidate/v29-build/budget_control.sh: line 12: 51219 Killed: 9               ( /bin/sleep "$STARTUP"; exit 37 ) < /dev/null > /dev/null 2>&1
+N_ADD=+1 trials=150 startup=0.05s  KILLED(dropped)=5  reached-37=145
+N_ADD=+2 trials=150 startup=0.05s  KILLED(dropped)=0  reached-37=150

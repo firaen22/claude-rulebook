@@ -1,0 +1,88 @@
+I'll start by reading the review brief and the review skill so the rubric and the one-line hook change are in front of me.The brief is self-contained, but I’ll also inspect the hook source and surrounding files so the short/silent event-loss path can be checked against real code, not just the comment.The brief inlines the diff; I’ll still search for the hook and any candidate scripts so the probe-loop arithmetic can be checked against real control flow.The packet is only the brief (no hook source on disk). Review is against the inlined v28→v30 diff, the stated loop contract, and the arithmetic of bash 3.2 `SECONDS`.
+
+## Verdict
+
+`+2` closes the reproduced boundary collapse. Duration after `_pend=$(( SECONDS + N ))` with a `SECONDS >= _pend` kill-at-tick is **(N−1, N]** wall seconds. The silent-drop path that produced `D_pid_INT` required a floor near 0; that floor is gone. C3 grows ~3s→~4s and stays under the 10s ceiling. Worker `DEADLINE=2` already had this floor and is correctly out of scope.
+
+## Rubric
+
+### 1. Does `+2` eliminate the collapse?
+
+**Yes, for any python startup ≲ 1s.** [reasoned arithmetic] [verified: packet numbers]
+
+bash 3.2 `SECONDS` is `time_t` / `tv_sec` math: it changes only at integer ticks. Let `φ ∈ [0, 1)` be the fraction of the current tick already elapsed at assignment. Elapsed wall time until `SECONDS` first equals `S+N` is:
+
+```
+Δ = N − φ  ∈  (N−1, N]
+```
+
+| N | window | unlucky phase `φ → 1⁻` | lucky `φ = 0` |
+|---|--------|------------------------|---------------|
+| 1 | (0, 1] | **→ 0⁺** (the bug) | 1s |
+| 2 | (1, 2] | **→ 1⁺** | 2s |
+
+The v29 hit matches N=1: `secs=1 pend=1` at 16 ms, i.e. `φ > 1 − 0.016`. Pure spin ~1.5% `<20 ms` is `P(φ > 0.98)` under a uniform phase, same model.
+
+With N=2 the infimum is 1s, not 0. A 30–100 ms probe cannot be clipped by tick phase: 100 ms < 1 s with ~10× margin. The poll (`/bin/sleep 0.05`) and kill/reap only **lengthen** observed wait, they never shorten `Δ`.
+
+Residual short edge that still floors below startup: **startup > 1 s** (EDR/exec wrap, NFS `python3`, CPU starvation through two epoch boundaries). That is not boundary collapse; N=1 failed it always. Clock **step** forward by ≥2 s can still expire immediately — same class as N=1 with a 1 s step, not introduced here.
+
+### 2. C-bound / watchdog / orphans / unchanged loop
+
+**No invariant break that re-opens silent loss.** [reasoned] [verified: pidhang 10/10, contract 57/57]
+
+- **C3:** probe worst tick is 2 s, plus ≤1 poll (0.05 s) plus kill/reap. Worker is a **fresh** `SECONDS + 2` after that. Sum ~4 s plus untimed setup, still under 10 s. Comment’s “< 2 s” is slightly tight (`≤ 2 s + slop`); the ceiling still holds.
+- **Worker independence:** separate variable, separate assignment, after probe. Widening `_pend` does not feed the worker timer.
+- **Unchanged loop body:** timeout is `SECONDS`, not an iteration cap, so a wider window cannot be clipped by a leftover “~20 × 0.05 s” counter (the rejected alternative). More `/bin/sleep` forks are one-at-a-time foreground waits, not a proc-table leak.
+- **Shared budget vs later candidates:** a hang still spends the whole window, then remaining is ~0 and later candidates starve. That was already true at N=1 (`budget-spent-before-spawn`). N=2 only helps the short side: slow **honest** fail/success of candidate 1 (e.g. 200 ms) leaves (0.8, 1.8] s instead of (0, 0.8] s, and no longer loses the 16 ms first-tick case before spawn.
+- **Orphans:** pidhang still clean 10/10. SIGKILL (`rc137` in the v29 trace) does not leave a TERM-ignoring child. Orphans that *do* exist live ~1 s longer; that is the priced long side, not a new VOID.
+
+### 3. Leave worker `DEADLINE=2` unchanged?
+
+**Correct for this fix.** [reasoned] [verified: packet — no VOID on worker]
+
+Worker is already `SECONDS + 2`, so its floor is already `> 1 s`. The bug class that needed a change was **N=1 → infimum 0**. Including the worker would be scope creep: same arithmetic family, different operational bug, no `D_pid_INT` evidence.
+
+Note (not a this-patch defect): a worker whose real work exceeds 1 s is still phase-clipped ~when `φ > 2 − T_worker`. Packet says that never produced a VOID.
+
+### 4. Regressions green suites would miss
+
+Suites that can miss silent loss:
+
+- **Contract/pidhang** exercise hung **worker** and pid leak, not “unlucky Unix-second + slow first probe.” They would stay green even if N were still 1.
+- **1500-launch soak** is meaningful here because the **same** harness caught 1/1500 at 16 ms on v29; it is not a fixed-phase burst that never samples `φ → 1`. 0/1500 on v30 is confirmatory, not the proof. Proof is `Δ ∈ (1, 2]` plus the replica loop `+1 → 5/150`, `+2 → 0/150`.
+- **Positive control uses a 0.05 s fake startup** vs a 1 s floor — does not stress a 0.9 s exec. It *does* reject the original 3.3% kill rate (`0.967^150 ≈ 0.6%` chance of 0/150 if that rate remained).
+- **Stacked worst case** (full probe window hang, then full worker window) is ~4 s. If a host PreCompact cap lived in (3, 10) s it would now SIGKILL the whole hook and drop the event. Packet states a 10 s ceiling; not seen in `run_all.sh`.
+- **Pathological exec > 1 s** (CrowdStrike-class inject, first-run CLT stub, dead NFS) still silent-drops. N=1 was strictly worse. One-host soak will not see it.
+
+None of these are introduced by the one-token change.
+
+### 5. Cost asymmetry / short side
+
+Too short: silent drop, rc 0, no file — the priced-cheap but user-visible VOID.  
+Too long: wedged probe holds PreCompact ~1 s extra; C3 4 s ≪ 10 s.
+
+`+2` is the smallest integer that makes `inf Δ = 1 s >` measured startup. `+3` would buy defense against 1–2 s exec stalls at another 1 s of hang latency; it is not required to close the reproduced 16 ms collapse. Rejecting a poll-iteration counter is right: a short `sleep` (EINTR) would burn ticks with no wall time and **re-introduce** the clip. Rejecting `date`/`perl` per tick is right: that is the fork surface rounds 9–27 removed.
+
+## Findings (severity-ranked)
+
+No blocking defect on the one-token change.
+
+**S1 — suggestion — worker watchdog floor is 1 s, not 2 s**  
+- **Location:** worker `SECONDS + DEADLINE` with `DEADLINE=2` (unchanged; not in the v30 line).  
+- **Mechanism:** same `Δ = N − φ ∈ (1, 2]`. Guaranteed runtime is `>1 s`, not 2 s. Harmless if worker ≪ 1 s; same silent-kill class if worker ever exceeds 1 s at unlucky `φ`. No VOID attributed here.  
+- **Fix:** leave v30 as-is. If a future VOID traces to worker-kill, bump that deadline to `+ 3` (or document the 1 s floor). Do not fold it into this patch.
+
+**S2 — suggestion — 1 s floor vs exec that exceeds 1 s**  
+- **Location:** `_pend=$(( SECONDS + 2 ))` (v30 probe assignment).  
+- **Mechanism:** any probe whose fork+fd-close+`python>=3.7` path is **> 1 s** can still lose `SECONDS >= _pend` before exit 37, rc 0, no observed file. Suites on a quiet host with 30–100 ms python will not catch EDR/NFS/starvation. This is load-dependent loss the contract already priced, not the 16 ms collapse.  
+- **Fix:** optional `+ 3` → window (2, 3], C3 ~5 s, still under 10 s. Not required for `D_pid_INT`.
+
+**N1 — nit — C3 prose vs slop**  
+- **Location:** v30 comment “probe phase is < 2s (SECONDS+2)”.  
+- **Mechanism:** tick expiry is ≤ 2 s; notice/kill/reap add up to one 0.05 s poll plus SIGKILL latency. Bound is still ~4 s + setup ≪ 10 s.  
+- **Fix:** word as “≤ 2 s + poll slop” if the comment is kept; no executable change.
+
+Rejected alternatives (poll-iteration counter; per-tick `date`/`perl`) — agree. [reasoned]
+
+PROCEED

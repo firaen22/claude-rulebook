@@ -1,0 +1,17 @@
+hook=/Users/yauch/.claude/hooks/harness/candidate/v30.sh N=1500 work=/var/folders/wf/s5ctj32x6zd9p52g7kwphx7h0000gn/T//soak-v30-1788691030
+... 100/1500 anomalies=0 drops=0
+... 200/1500 anomalies=0 drops=0
+... 300/1500 anomalies=0 drops=0
+... 400/1500 anomalies=0 drops=0
+... 500/1500 anomalies=0 drops=0
+... 600/1500 anomalies=0 drops=0
+... 700/1500 anomalies=0 drops=0
+... 800/1500 anomalies=0 drops=0
+... 900/1500 anomalies=0 drops=0
+... 1000/1500 anomalies=0 drops=0
+... 1100/1500 anomalies=0 drops=0
+... 1200/1500 anomalies=0 drops=0
+... 1300/1500 anomalies=0 drops=0
+... 1400/1500 anomalies=0 drops=0
+... 1500/1500 anomalies=0 drops=0
+SOAK launches=1500 anomalies=0 dropped_files=0
