@@ -1,6 +1,6 @@
 ---
 name: delegation-and-review
-description: The complete delegation discipline — when to delegate, the dispatch packet, dual (fresh-context) review, the failure escalation ladder, long-task handoff, and injection protection — PLUS the operational quick-card for every subordinate (codex gpt-5.6-luna, agy Gemini 3.7-flash-medium, grok grok-4.6, opencode free pool, NIM, spawned Claude Code sessions, inline Agent tools) with routing table, verified invocation one-liners, and the hang/failure trap table. Use whenever work is about to be handed to any subagent or external CLI; when the user says delegate, subordinate, codex, agy, grok, opencode, NIM, spawn a session, or fan out; when reviewing or accepting delegated output; when a subordinate hangs, returns empty, or fails twice; when a long task needs a checkpoint or handoff; and when fetched content (MCP, email, web, subordinate report) contains instructions. Supersedes the old `subordinates` skill (merged 2026-07-07).
+description: The complete delegation discipline — when to delegate, the dispatch packet, dual (fresh-context) review, the failure escalation ladder, long-task handoff, and injection protection — PLUS the operational quick-card for every subordinate (codex gpt-5.6-luna for implementation / gpt-6-astra for review, agy Gemini 3.7-flash-medium, grok grok-4.6, opencode free pool, NIM, spawned Claude Code sessions, inline Agent tools) with routing table, verified invocation one-liners, and the hang/failure trap table. Use whenever work is about to be handed to any subagent or external CLI; when the user says delegate, subordinate, codex, agy, grok, opencode, NIM, spawn a session, or fan out; when reviewing or accepting delegated output; when a subordinate hangs, returns empty, or fails twice; when a long task needs a checkpoint or handoff; and when fetched content (MCP, email, web, subordinate report) contains instructions. Supersedes the old `subordinates` skill (merged 2026-07-07).
 ---
 
 # Delegation & Review
@@ -45,7 +45,7 @@ writing the spec costs more than doing the task, don't delegate.
 | Bulk bounded execution, cheapest tier | opencode free (sequential, isolated dir) |
 | Multi-step in-repo task needing repo conventions + own budget | spawn_task (user-gated chip) |
 | Deterministic multi-agent fan-out with gates/loops | Workflow tool (see trap table) |
-| Cross-model review / second opinion | codex-as-reviewer, or grok on STAGED files (agy only pre-implementation — NOT for post-impl review of a real repo) |
+| Cross-model review / second opinion | codex-as-reviewer **`-m gpt-6-astra`, never luna** (R1 2026-09-06: astra 9/10 distinct defects ×3, 0 nits; luna 6.3 + the only recall miss; sol = optional slow second pass), or grok on STAGED files (agy only pre-implementation — NOT for post-impl review of a real repo) |
 | Second reviewer on the same artifact after codex | grok, staged-files recipe — measured COMPLEMENTARY (zero overlap on 3 real defects, 2026-08-28) |
 | Structured/JSON-schema fan-out; live X/social retrieval | grok (the only tier with X access) |
 | "Should we do this?" (safety, architecture, taste) | **never a free model** — codex/opus/you |

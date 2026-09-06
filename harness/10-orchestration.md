@@ -15,7 +15,8 @@ instead of trusting this file if anything errors.**
 - `agent-skills:code-reviewer` / `security-auditor` / `test-engineer` — review roles.
 - `claude-code-guide` — questions about Claude Code/API itself.
 
-**External CLIs (Bash) — there are FIVE, not three:** `codex` (`gpt-5.6-luna`), `agy`
+**External CLIs (Bash) — there are FIVE, not three:** `codex` (`gpt-5.6-luna`; review and
+unstated-scale work: `gpt-6-astra`, live 2026-09-06 — routing map §3 has the numbers), `agy`
 (Gemini `3.7-flash-medium`; review pin `3.6-flash-high`), `grok` (`~/.grok/bin/grok`,
 `grok-4.6`), `opencode` (free pool), and NIM (a model backend, not an agent — direct
 curl, or via opencode when file edits are needed). Playbooks in

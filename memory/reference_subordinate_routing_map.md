@@ -12,14 +12,13 @@ Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 [[workflow-codex-subordinate]] [[workflow-agy-subordinate]] [[workflow-grok-subordinate]]
 [[workflow-opencode-subordinate]] [[reference-nim-via-opencode]]
 
-> 📌 **VERSION STAMP — re-verified 2026-09-05 by running each binary:**
-> `grok 1.0.13 (5e9a58528b76)` · `codex-cli 0.153.4` · `opencode 1.18.29` · `agy 1.1.26`.
+> 📌 **VERSION STAMP — re-verified 2026-09-06 by running each binary:**
+> `grok 1.0.13 (5e9a58528b76)` · `codex-cli 0.153.4` · `opencode 1.18.29` · `agy 1.1.27`.
 > Every rc / ceiling / bug-status claim in this file and the linked playbooks is
-> **VERSION-BOUND**. codex moved 0.151.0→0.153.4, opencode 1.18.25→1.18.29, and agy
-> 1.1.22→1.1.26 since the last stamp (all self-updates from routine update sweeps, not
-> targeted at anything in this file) — grok held steady. codex's ~30KB inline-review
-> ceiling (§2a) remains UNVERIFIED on 0.153.4 — a stamp is a reading, not a guarantee.
-> **Re-run `--version` before trusting a number.**
+> **VERSION-BOUND**. Only agy moved since the last stamp (1.1.26→1.1.27, opportunistic
+> self-update, not targeted at anything in this file) — codex/opencode/grok held steady.
+> codex's ~30KB inline-review ceiling (§2a) remains UNVERIFIED on 0.153.4 — a stamp is a
+> reading, not a guarantee. **Re-run `--version` before trusting a number.**
 
 ## 0. Two rules that override every row below
 
@@ -149,8 +148,15 @@ bad answer became 0 bytes).
 
 ## 3. Per-tool one-liners
 
-- **codex** `gpt-5.6-luna` — the only judgment tier. Whole 5.6 family saturates every hard
-  axis, so pick on cost not capability; lowest run-to-run variance (1 run is representative).
+- **codex** `gpt-5.6-luna` (implementation default) / **`gpt-6-astra`** (review; and
+  implementation where scale/depth/precision could matter and can't be spec'd up front) —
+  the only judgment tier. 5.5/5.6/astra all saturate H1/H2/H3 (36/36 + 27/27, 2026-09-05/06),
+  so for ordinary coding pick on cost not capability — BUT astra SEPARATES on two measured
+  axes (2026-09-06, N=3, [[finding-codex-56-family-2026-07-22]] Tests 6–7): unstated-scale
+  edges (E4 astra 9/9 vs luna 4/9 — luna's `sumTo(1e9)` loop is silently wrong) and review
+  coverage (R1 astra 9/10 ×3, 0 nits; sol 8/10 + 2–3 nits, ~2× slower; luna 6.3, only recall
+  miss). Family cost-ordering drifts (sol "most expensive" → cheapest in 6 weeks), token≠money,
+  astra unpriced. Lowest run-to-run variance (1 run is representative).
   *Weakness:* silently fills spec gaps — never hand it an ambiguous brief; quota strands
   mid-batch with no error; long final answers can vanish from captured stdout.
 - **agy** `3.7-flash-medium` (review: `3.6-flash-high`; **unstated-edge exposure:
