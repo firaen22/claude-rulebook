@@ -5,6 +5,13 @@
 # output goes to $WORK/<instrument>.log. Exit 1 if any instrument fails.
 # --pidhang adds the slow H1 differential (several min): the v26 positive control,
 # which must still leak, versus the candidate under test, which must not.
+#
+# BLIND SPOT (re-run policy): this grades SYNTHETIC state, so it can only see a
+# VOID where a file was expected and none appeared. The live D_pid_INT-class VOID
+# is SILENT (exit 0, no file at all) and invisible here by construction. A green
+# run is necessary, not sufficient -- pair it with harness/reconcile_pairs.py
+# --since <recent> against the live observed/ dir. See README "re-run policy" and
+# the passive-VOID-detection section.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # --pidhang is a FLAG, accepted in any position. It used to be read only at $3,
