@@ -14,6 +14,18 @@ Cross-model reviewed across three dates, four rounds — codex (luna/sol) and gr
 throughout, plus gemini 3.6 on the first 2026-09-06 round. Current results,
 re-run 2026-09-06: 57/57 contract cases, gap 6/6, grpsig2 5/5 x2, pidhang
 discriminated, `run_all --pidhang` rc 0.
+- 2026-09-06 (later, installed hook `51bf9e4`, code = v28): three `run_all` passes.
+  Two were 57/57; one graded `D_pid_INT` FAIL `VOID signal never landed (alive=None)`:
+  the hook exited 0 at 0.026s with NO observed file, before the 0.35s signal —
+  i.e. it took a pre-worker exit-0 path (line 604 OBS_CODE check, line 752 no
+  interpreter, or a trap). 1 in ~400 hook launches that day; 30 isolated
+  `D_pid_INT` repeats + 60 boundary-timed launches did not reproduce it. The
+  "whole-second `SECONDS` budget collapses near a wall-clock boundary" theory
+  was TESTED and REJECTED (bash 3.2 here does not tick at the boundary; 0/45
+  primitive probes expired). Mechanism UNIDENTIFIED — the hook's exit-0 paths are
+  silent by design, so the harness cannot tell a hook-side drop from a VOID.
+  A single `D_pid_*` VOID in an otherwise-green run is a re-run, not a regression;
+  a repeat in the same run, or any case other than a `sig_*` kind, is a finding.
 - 2026-09-01/02 — the review this tree was curated from; mutants M14/M16/M17
   fail as intended. Trail: `reviews/2026-09-01-cross-model-harness-review.md`.
 - 2026-09-05 — the `HOME=` orphan clause does not reach platform binaries;
