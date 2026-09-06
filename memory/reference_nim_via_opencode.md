@@ -1,11 +1,41 @@
 ---
 name: reference-nim-via-opencode
-description: "How NVIDIA NIM is wired as a subordinate (model backend behind opencode, not a standalone agent CLI) + benchmarked model picks, IDs, and the catalog-lies/probe gotcha. Catalog 82 ids as of 08-29 (was 95 on 08-25); nimroute.py has 3 live-routed ids now hard-410 (llama-3.1-70b-instruct, nemotron-3-nano-30b-a3b, inkling) — NOT YET PATCHED"
+description: "How NVIDIA NIM is wired as a subordinate (model backend behind opencode, not a standalone agent CLI) + benchmarked model picks, IDs, and the catalog-lies/probe gotcha. Catalog 81 ids as of 09-06 (was 82 on 08-29, 95 on 08-25); nimroute.py STILL routes to 4 live-referenced ids now hard-410 (llama-3.1-70b-instruct, nemotron-3-nano-30b-a3b, inkling, gpt-oss-120b) — UNPATCHED 8+ days running"
 metadata: 
   node_type: memory
   type: reference
   originSessionId: 9d9ceaff-475d-47a4-871b-5bc9ce1b2498
 ---
+
+## REFRESH 2026-09-06 — catalog 82→81, gpt-oss-120b JOINS the dead-but-still-routed list
+
+Re-ran the same cross-check (fresh `/v1/models` pull, diff against every id
+`nimroute.py` actually references, direct-curl PONG every mismatch — not a re-read
+of prior prose). The 3 ids flagged dead on 08-29 (`meta/llama-3.1-70b-instruct`,
+`nvidia/nemotron-3-nano-30b-a3b`, `thinkingmachines/inkling`) are **still** actively
+referenced in `nimroute.py` at lines 101, 109, 110 — **unpatched 8 days later**, not
+a new detection, a confirmed-stale routing script. New this pass:
+`openai/gpt-oss-120b` (line 96, previously catalog-listed and unconfirmed) is now
+also hard-410 — confirmed by direct probe, not inferred from the catalog diff alone.
+
+| Model | nimroute.py line | Result |
+|---|---|---|
+| `meta/llama-3.1-70b-instruct` | 101 | 410 (unpatched since 08-29) |
+| `nvidia/nemotron-3-nano-30b-a3b` | 109 | 410 (unpatched since 08-29) |
+| `thinkingmachines/inkling` | 110 | 410 (unpatched since 08-25, oldest of the four) |
+| `openai/gpt-oss-120b` | 96 | **410 — newly dead this pass** |
+
+Still catalog-listed and not independently re-probed this pass: `minimaxai/minimax-m3`,
+`mistralai/mistral-nemotron`, `nvidia/nemotron-3-super-120b-a12b`,
+`nvidia/nemotron-3-ultra-550b-a55b`, `poolside/laguna-xs-2.1`.
+`nvidia/nemotron-nano-3-30b-a3b` (swapped-segment cousin) not re-checked this pass;
+as of 08-29 it was catalog-listed but 404 (catalog-lies) — no reason to assume that
+changed, but not reconfirmed.
+
+**`nimroute.py` now has 4 of its referenced ids hard-dead, not 3, and the fix is
+still not applied.** This is a live routing script silently degrading every call
+that hits any of these 4 ids. Flagging again, still not fixing without a scoped
+go-ahead (R3 — this session was asked to "refresh the list," not patch the router).
 
 ## REFRESH 2026-08-29 — catalog 95→82, and nimroute.py IS ACTIVELY ROUTING TO 3 DEAD IDS
 
