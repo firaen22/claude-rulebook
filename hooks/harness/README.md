@@ -31,6 +31,13 @@ discriminated, `run_all --pidhang` rc 0.
   <20 ms, the watchdog kills the first probe, no interpreter → silent exit 0, event
   lost. Until a fixed hook (v30) is installed: a single `D_pid_*`/any VOID with the
   0.0x s signature in an otherwise-green run is this defect, not a harness flake.
+  This re-run policy only covers a VOID `run_all` can SEE — a synthetic case where
+  a file was expected and none appeared. The live-dir version of this defect is
+  SILENT (exit 0, no file at all), so `run_all` and every directory watcher are
+  blind to it by construction; `harness/reconcile_pairs.py` is the out-of-band
+  complement that surfaces it from the observed/ pairing (see the passive-VOID
+  section below). A green `run_all` is necessary, not sufficient — pair it with a
+  `reconcile_pairs.py --since <recent>` check before trusting an install.
 - 2026-09-01/02 — the review this tree was curated from; mutants M14/M16/M17
   fail as intended. Trail: `reviews/2026-09-01-cross-model-harness-review.md`.
 - 2026-09-05 — the `HOME=` orphan clause does not reach platform binaries;
