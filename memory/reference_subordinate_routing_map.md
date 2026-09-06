@@ -160,8 +160,9 @@ bad answer became 0 bytes).
   and review coverage (R1 astra 9/10 ×3, 0 nits; sol 8/10 + 2–3 nits, ~2× slower; luna 5/8/6
   avg 6.3, only recall miss). Family cost-ordering drifts (sol "most expensive" → cheapest in 6 weeks), token≠money,
   astra unpriced. Both astra rules are PROVISIONAL (N=3, one subject/task family; E4 and R1
-  ran at `medium` — pass it). Lowest run-to-run variance on IMPLEMENTATION (1 run is
-  representative there); in the review role luna scored 5/8/6 — not representative.
+  ran at `medium` — pass it). Run-to-run variance was low on H1/H2/H3 (every cell identical across
+  3 trials, four models) — that does NOT make one run representative elsewhere: luna varied
+  4/6·5/6·4/6 on E4 (recursive flatten failed 2/3) and 5/8/6 on R1. Replicate outside H1–H3.
   *Weakness:* silently fills spec gaps — never hand it an ambiguous brief; quota strands
   mid-batch with no error; long final answers can vanish from captured stdout.
 - **agy** `3.7-flash-medium` (review: `3.6-flash-high`; **unstated-edge exposure:

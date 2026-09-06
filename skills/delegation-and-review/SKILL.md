@@ -45,7 +45,7 @@ writing the spec costs more than doing the task, don't delegate.
 | Bulk bounded execution, cheapest tier | opencode free (sequential, isolated dir) |
 | Multi-step in-repo task needing repo conventions + own budget | spawn_task (user-gated chip) |
 | Deterministic multi-agent fan-out with gates/loops | Workflow tool (see trap table) |
-| Cross-model review / second opinion | codex-as-reviewer **`-m gpt-6-astra -c model_reasoning_effort=medium`, not luna** — PROVISIONAL: R1 2026-09-06, N=3, one JS subject (astra 9/10 distinct defects ×3, 0 nits; luna 5/8/6 + the only recall miss; sol = optional extra codex pass, not a second family), or grok on STAGED files (agy only pre-implementation — NOT for post-impl review of a real repo) |
+| Cross-model review / second opinion | codex-as-reviewer — for **post-impl review of SMALL code with unstated hazards (the R1 shape)** use **`-m gpt-6-astra -c model_reasoning_effort=medium`, not luna** — PROVISIONAL: R1 2026-09-06, N=3, one JS subject (astra 9/10 distinct defects ×3, 0 nits; luna 5/8/6 + the only recall miss; sol = optional extra codex pass, not a second family); spec review, rules-file review, security review and large real-repo diffs keep their existing routes (codex model unmeasured there), or grok on STAGED files (agy only pre-implementation — NOT for post-impl review of a real repo) |
 | Second reviewer on the same artifact after codex | grok, staged-files recipe — measured COMPLEMENTARY (zero overlap on 3 real defects, 2026-08-28) |
 | Structured/JSON-schema fan-out; live X/social retrieval | grok (the only tier with X access) |
 | "Should we do this?" (safety, architecture, taste) | **never a free model** — codex/opus/you |
