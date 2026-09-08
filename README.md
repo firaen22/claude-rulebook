@@ -36,7 +36,7 @@ The core rules it carries, in one line each:
 | [`harness/`](harness/) | **Source of truth for doctrine.** Numbered by situation: `10-orchestration`, `20-judgment-rubrics`, `30-delegation-templates`, `40-maintenance` (permissions + growth limits), `50-letter-to-future-sessions`. `00-DIAGNOSIS` is frozen history. |
 | [`skills/`](skills/) | Skill caches — doctrine compiled into loadable form. On any conflict with `harness/`, the harness wins (R8). |
 | [`memory/`](memory/) | Global reference and workflow files: subordinate playbooks (codex, agy, grok, opencode, spawned sessions), routing map, tool gotchas. |
-| [`hooks/`](hooks/README.md) | The executable side — commit gates, a credential-destruction gate, compaction observability. Has its own README; read it before registering anything. |
+| [`hooks/`](hooks/README.md) | The executable side — commit gates, a credential-destruction gate, compaction observability, and the mutation-validated verification harnesses under [`hooks/harness/`](hooks/harness/README.md) (contract suites, passive VOID reconciliation, an experiment pre-registration floor gate). Has its own README; read it before registering anything. |
 | [`lib/`](lib/) | Shared helpers. Only `grok_preflight.py` is versioned. |
 | [`settings.example.json`](settings.example.json) | Hook registration template. The real `settings.json` is machine-specific and deliberately untracked. |
 
