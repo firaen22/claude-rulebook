@@ -17,8 +17,12 @@ FLOOR_RE = re.compile(r"[1-9][0-9]*\Z", re.ASCII)
 
 
 def safe(text):
-    """Untrusted manifest text for stdout: never emit a lone surrogate."""
-    return text.encode("utf-8", "backslashreplace").decode("utf-8")
+    """Untrusted manifest text for stdout: escape surrogates and control chars."""
+    escaped = text.encode("utf-8", "backslashreplace").decode("utf-8")
+    # Escape control characters: C0 (0x00-0x1f) and DEL (0x7f)
+    return escaped.translate({
+        i: "\\x%02x" % i for i in range(0x20)
+    }).replace("\x7f", "\\x7f")
 
 
 def checked_string(value, label):
@@ -28,14 +32,33 @@ def checked_string(value, label):
         value.encode("utf-8")
     except UnicodeEncodeError:
         raise ValueError("%s contains a lone surrogate" % label)
+    if any(ord(char) < 0x20 or ord(char) == 0x7f for char in value):
+        raise ValueError("%s contains a control character" % label)
     return value
+
+
+def _reject_duplicate_keys(pairs):
+    """object_pairs_hook: a repeated key makes the pre-registration ambiguous."""
+    seen = {}
+    for key, value in pairs:
+        if key in seen:
+            raise ValueError("duplicate key %s" % safe(key))
+        seen[key] = value
+    return seen
+
+
+def _reject_json_constants(s):
+    """parse_constant callback: reject NaN, Infinity, -Infinity."""
+    raise ValueError("JSON does not permit literal %s" % s)
 
 
 def load_manifest(path):
     try:
         with open(path, "rb") as fh:
-            manifest = json.loads(fh.read().decode("utf-8"))
-    except (OSError, UnicodeError, json.JSONDecodeError, RecursionError) as exc:
+            manifest = json.loads(fh.read().decode("utf-8"),
+                                   object_pairs_hook=_reject_duplicate_keys,
+                                   parse_constant=_reject_json_constants)
+    except (OSError, UnicodeError, ValueError, RecursionError) as exc:
         raise ValueError("cannot read or parse manifest: %s" % exc)
     if not isinstance(manifest, dict):
         raise ValueError("outer JSON is not an object")
@@ -82,7 +105,7 @@ def load_manifest(path):
     distinct_pairs = {(min(left, right), max(left, right))
                       for left, right in raw_pairs}
     partners = {}
-    for left, right in distinct_pairs:
+    for left, right in sorted(distinct_pairs):
         if left in partners and partners[left] != right:
             raise ValueError("%s has conflicting pair partners" % safe(left))
         if right in partners and partners[right] != left:

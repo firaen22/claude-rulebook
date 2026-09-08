@@ -35,6 +35,14 @@ elif mode == "nonstring-null": value = dict(base, pairs=[["A1", None]])
 elif mode == "nonstring-number": value = dict(base, pairs=[["A1", 123]])
 elif mode == "nonstring-list": value = dict(base, pairs=[["A1", ["A2"]]])
 elif mode == "surrogate": value = dict(base, items=base["items"] + [{"id": "bad\ud800"}], pairs=[])
+elif mode == "empty-id": value = dict(base, items=[{"id": ""}, {"id": "B"}], pairs=[["", "B"]])
+elif mode == "control-id": value = dict(base, items=base["items"] + [{"id": "X\nRESULT: OK"}], pairs=[])
+elif mode == "dup-key": open(path, "w").write('{"items":[{"id":"A1"},{"id":"A2"}],"pairs":[],"pairs":[["A1","A2"]]}'); raise SystemExit
+elif mode == "nan-const": open(path, "w").write('{"items":[{"id":"A1"},{"id":"A2"}],"pairs":[["A1","A2"]],"done_when":NaN}'); raise SystemExit
+elif mode == "infinity-const": open(path, "w").write('{"items":[{"id":"A1"},{"id":"A2"}],"pairs":[["A1","A2"]],"done_when":Infinity}'); raise SystemExit
+elif mode == "neg-infinity-const": open(path, "w").write('{"items":[{"id":"A1"},{"id":"A2"}],"pairs":[["A1","A2"]],"done_when":-Infinity}'); raise SystemExit
+elif mode == "inject-key-newline": import json as j; d={"items":[{"id":"A1"},{"id":"A2"}],"pairs":[["A1","A2"]],"x\nSUMMARY pairs=6\nRESULT: OK":"injected"}; j.dump(d, open(path,"w")); raise SystemExit
+elif mode == "inject-dup-newline": import json as j; d={"items":[{"id":"A1"},{"id":"A2"}],"pairs":[],"pairs":[],"x\nSUMMARY":"injected"}; j.dump(d, open(path,"w")); raise SystemExit
 elif mode == "unknown-key": value = dict(six, itemz=True)
 elif mode == "not-json": open(path, "w").write("not json"); raise SystemExit
 elif mode == "list": open(path, "w").write("[]"); raise SystemExit
@@ -47,13 +55,19 @@ json.dump(value, open(path, "w"))
 PYEOF
 }
 
+# validate_output RC WANT_RC OUT WANT_TOKEN -- helper for check() and CONTROL2
+validate_output() {
+  local rc="$1" want_rc="$2" out="$3" want="$4"
+  [ "$rc" = "$want_rc" ] && printf '%s\n' "$out" | grep -qE -- "(^|[[:space:]])${want}([[:space:]]|$)"
+}
+
 # check NAME MODE EXPECT_RC EXPECT_TOKEN [extra checker args...]
 check() {
   local name="$1" mode="$2" want_rc="$3" want="$4"; shift 4
   local path="$ROOT/$name.json" out rc
   make_manifest "$mode" "$path"
   out="$($PY "$CHECKER" "$path" "$@" 2>&1)"; rc=$?
-  if [ "$rc" = "$want_rc" ] && printf '%s\n' "$out" | grep -qE -- "(^|[[:space:]])${want}([[:space:]]|$)"; then
+  if validate_output "$rc" "$want_rc" "$out" "$want"; then
     pass=$((pass+1)); echo "PASS $name"
   else
     fail=$((fail+1)); echo "FAIL $name: want rc=$want_rc + /$want/, got rc=$rc"; printf '%s\n' "$out" | sed 's/^/    /'
@@ -78,6 +92,14 @@ check NONSTRING_NULL nonstring-null 2 'RESULT: ERROR'
 check NONSTRING_NUMBER nonstring-number 2 'RESULT: ERROR'
 check NONSTRING_LIST nonstring-list 2 'RESULT: ERROR'
 check LONE_SURROGATE surrogate 2 'RESULT: ERROR'
+check EMPTY_ID empty-id 2 'RESULT: ERROR'
+check CONTROL_ID control-id 2 'RESULT: ERROR'
+check DUP_KEY dup-key 2 'RESULT: ERROR'
+check NAN_CONST nan-const 2 'RESULT: ERROR'
+check INFINITY_CONST infinity-const 2 'RESULT: ERROR'
+check NEG_INFINITY_CONST neg-infinity-const 2 'RESULT: ERROR'
+check INJECT_KEY_NEWLINE inject-key-newline 2 'RESULT: ERROR'
+check INJECT_DUP_NEWLINE inject-dup-newline 2 'RESULT: ERROR'
 check UNKNOWN_KEY unknown-key 2 'RESULT: ERROR'
 check NOT_JSON not-json 2 'RESULT: ERROR'
 check OUTER_LIST list 2 'RESULT: ERROR'
@@ -104,6 +126,35 @@ else
   fail=$((fail+1)); echo "FAIL ERROR_has_no_summary_or_pairs: got rc=$error_rc"; printf '%s\n' "$error_out" | sed 's/^/    /'
 fi
 
+# Injection cases must have single-line ERROR output (newlines escaped, not executed).
+for inject_mode in inject-key-newline inject-dup-newline; do
+  inject_path="$ROOT/$inject_mode.json"; make_manifest "$inject_mode" "$inject_path"
+  inject_out="$($PY "$CHECKER" "$inject_path" 2>&1)"; inject_rc=$?
+  # ERROR must be one physical line: no raw newline survives into stdout.
+  inject_linecount=$(printf '%s' "$inject_out" | grep -c '')
+  if [ "$inject_rc" = 2 ] && [ "$inject_linecount" -le 1 ] && ! printf '%s' "$inject_out" | grep -qE '^(SUMMARY|pair )'; then
+    pass=$((pass+1)); echo "PASS INJECTION_SINGLE_LINE_$inject_mode"
+  else
+    fail=$((fail+1)); echo "FAIL INJECTION_SINGLE_LINE_$inject_mode: rc=$inject_rc linecount=$inject_linecount"; printf '%s\n' "$inject_out" | sed 's/^/    /'
+  fi
+done
+
+# Conflict-error text must be identical across hash seeds (docstring: "deterministic").
+det_path="$ROOT/determinism.json"
+"$PY" - "$det_path" <<'PYEOF2'
+import json, sys
+p = sys.argv[1]
+json.dump({"items": [{"id": x} for x in ("A", "B", "C")],
+          "pairs": [["A", "B"], ["B", "C"], ["C", "A"]]}, open(p, "w"))
+PYEOF2
+det0="$(PYTHONHASHSEED=0 "$PY" "$CHECKER" "$det_path" 2>&1)"
+det1="$(PYTHONHASHSEED=1 "$PY" "$CHECKER" "$det_path" 2>&1)"
+if [ "$det0" = "$det1" ] && printf '%s\n' "$det0" | grep -qE -- '(^|[[:space:]])RESULT: ERROR([[:space:]]|$)'; then
+  pass=$((pass+1)); echo "PASS CONFLICT_DETERMINISTIC"
+else
+  fail=$((fail+1)); echo "FAIL CONFLICT_DETERMINISTIC: seed0 vs seed1 differ"; printf 'seed0: %s\nseed1: %s\n' "$det0" "$det1" | sed 's/^/    /'
+fi
+
 echo "---- $pass passed, $fail failed"
 suite_fail=$fail
 
@@ -116,21 +167,21 @@ if [ "$fail" = 1 ]; then echo "CONTROL1 PASS: always-OK stub fails the UNDERPOWE
 else echo "CONTROL1 FAIL: the suite cannot detect an always-OK checker"; suite_fail=$((suite_fail+1)); fi
 
 # CONTROL2: require successful wrapper execution and count corruption, then
-# ensure the exact expected count assertion rejects the corrupted output.
+# ensure the exact expected count assertion rejects the corrupted output using
+# the SAME validation logic as check().
 real="${1:-$HERE/../harness/pairfloor.py}"
 wrap="$ROOT/wrap.py"
 printf '%s\n' 'import subprocess, sys' "p=subprocess.run([sys.executable, sys.argv[1]]+sys.argv[2:],capture_output=True,text=True)" 'success=(p.returncode==0 and "pairs=6 " in p.stdout); mutated=p.stdout.replace("pairs=6 ", "pairs=5 "); sys.stdout.write(mutated if success else p.stdout); sys.exit(p.returncode if success else 2)' > "$wrap"
 control2_path="$ROOT/control2.json"; make_manifest six "$control2_path"
 control2_out="$($PY "$wrap" "$real" "$control2_path" 2>&1)"; control2_rc=$?
-# Wrapper must execute (rc 0) AND emit the mutated pairs=5 token...
+# Wrapper must execute (rc 0) AND emit the mutated pairs=5 token using validate_output...
 control2_bites=0
-if [ "$control2_rc" = 0 ] && printf '%s\n' "$control2_out" | grep -qE -- '(^|[[:space:]])SUMMARY pairs=5 floor=6([[:space:]]|$)'; then
+if validate_output "$control2_rc" 0 "$control2_out" 'SUMMARY pairs=5 floor=6'; then
   control2_bites=1
 fi
-# ...and the suite's own exact-count ERE (the one check() uses for SIX_OK) must
-# MISS on the corrupted output, proving the assertion reads the count, not just rc.
+# ...and the exact pairs=6 assertion must MISS on the corrupted output, using validate_output.
 control2_rejects=0
-if ! printf '%s\n' "$control2_out" | grep -qE -- '(^|[[:space:]])SUMMARY pairs=6 floor=6([[:space:]]|$)'; then
+if ! validate_output "$control2_rc" 0 "$control2_out" 'SUMMARY pairs=6 floor=6'; then
   control2_rejects=1
 fi
 if [ "$control2_bites" = 1 ] && [ "$control2_rejects" = 1 ]; then
