@@ -1,13 +1,44 @@
 ---
 name: reference-nim-via-opencode
-description: "How NVIDIA NIM is wired as a subordinate (model backend behind opencode, not a standalone agent CLI) + benchmarked model picks, IDs, and the catalog-lies/probe gotcha. Catalog 81 ids as of 09-06 (was 82 on 08-29, 95 on 08-25); nimroute.py STILL routes to 4 live-referenced ids now hard-410 (llama-3.1-70b-instruct, nemotron-3-nano-30b-a3b, inkling, gpt-oss-120b) — UNPATCHED 8+ days running"
+description: "How NVIDIA NIM is wired as a subordinate (model backend behind opencode, not a standalone agent CLI) + benchmarked model picks, IDs, and the catalog-lies/probe gotcha. Catalog 81 ids as of 09-08 (was 81 on 09-06, 82 on 08-29, 95 on 08-25); nimroute.py PATCHED 09-08 — the 4 dead ids (gpt-oss-120b, llama-3.1-70b-instruct, nemotron-3-nano-30b-a3b, inkling) removed from PARITY, list reordered fastest-first"
 metadata: 
   node_type: memory
   type: reference
   originSessionId: 9d9ceaff-475d-47a4-871b-5bc9ce1b2498
 ---
 
+## PATCHED 2026-09-08 — nimroute.py PARITY list cleaned, all 4 dead ids removed
+
+Fresh re-probe before patching (R0): pulled `/v1/models` live (81 ids, same count as
+09-06), confirmed all 4 flagged ids are still NOT LISTED (`gpt-oss-120b`,
+`llama-3.1-70b-instruct`, `nemotron-3-nano-30b-a3b`, `inkling`), and separately
+direct-probed `nvidia/nemotron-nano-3-30b-a3b` (the swapped-segment cousin) — still
+catalog-LISTED but returns HTTP 404 on call, so catalog-lies persists and there is
+still no live replacement for the nano-30b routing slot.
+
+Edited `nimroute.py`'s `PARITY` list directly (user explicitly asked to "mark those
+in use and abandoned, then reorder the model list" — this is the go-ahead R3 was
+withholding on across the three prior refresh passes): removed the 4 dead entries,
+added a dated removal comment above `PARITY` naming all 4 and the catalog-lies
+non-replacement, and reordered the remaining 5 (`mistral-nemotron`,
+`minimax-m3`, `nemotron-3-ultra-550b-a55b`, `nemotron-3-super-120b-a12b`,
+`laguna-xs-2.1`) by the file's own PONG timings — no new bench, just reordering
+already-measured entries. Only material move: `minimax-m3` (0.3s PONG) placed
+ahead of `nemotron-3-ultra-550b-a55b` (1.0s PONG + 75s cold start); other
+relative positions unchanged. This swap was made during the cross-model review
+pass, so it postdates the pre-review draft of this note. `FAST = PARITY[0]` still resolves to
+`mistral-nemotron`, unaffected. `MODEL_MAP` (parsing/dp → nemotron-3-ultra-550b-a55b,
+string_unicode/nullish → mistral-nemotron) untouched — neither entry was dead.
+Syntax-validated with `ast.parse` + a full `exec` after the edit; no import errors.
+
+The remaining 5 were re-confirmed catalog-LISTED on 09-08 but NOT re-probed for
+live-callability in this pass (listed ≠ guaranteed callable, per the catalog-lies
+gotcha above) — treat that as the next open question if a call starts failing.
+
 ## REFRESH 2026-09-06 — catalog 82→81, gpt-oss-120b JOINS the dead-but-still-routed list
+
+> ✅ **2026-09-08 confirmation:** `opencode run -m nvidia/google/gemma-4-31b-it` completed a PURE-TEXT-ANALYSIS review dispatch (firebase-admin.ts, 5 criteria, tagged findings) cleanly after `nvidia/openai/gpt-oss-120b` returned the 410 EOL body (`reached its end of life on 2026-09-03T08:00:00Z`). gemma is the working drop-in for the review-preamble recipe; its findings still need the usual reproduce-before-trust pass (1 of 3 was an unreachable-path claim).
+
 
 Re-ran the same cross-check (fresh `/v1/models` pull, diff against every id
 `nimroute.py` actually references, direct-curl PONG every mismatch — not a re-read
@@ -23,7 +54,7 @@ also hard-410 — confirmed by direct probe, not inferred from the catalog diff 
 | `meta/llama-3.1-70b-instruct` | 101 | 410 (unpatched since 08-29) |
 | `nvidia/nemotron-3-nano-30b-a3b` | 109 | 410 (unpatched since 08-29) |
 | `thinkingmachines/inkling` | 110 | 410 (unpatched since 08-25, oldest of the four) |
-| `openai/gpt-oss-120b` | 96 | **410 — newly dead this pass** |
+| `openai/gpt-oss-120b` | 96 | **410 — newly dead this pass; same-day re-check found it fully DELISTED from the catalog too, not just 410-on-call. Total count held at 81, so something else took its slot — not diffed.** |
 
 Still catalog-listed and not independently re-probed this pass: `minimaxai/minimax-m3`,
 `mistralai/mistral-nemotron`, `nvidia/nemotron-3-super-120b-a12b`,
