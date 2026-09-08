@@ -74,7 +74,7 @@ clobbered file, or abandoned spinning process is expensive.
   M16/M17 were added by the 2026-09-01/02 cross-model review, see `reviews/`;
   M18 detached `/bin/sleep` 2026-09-05; M19 stdin stall, M20/M21 stdout-then-
   ftruncate, M22 chdir-away fd-1 holder 2026-09-06 — see the dated trails).
-- `scripts/` — runners (`run_full.sh`, `run_grpsig2.sh`, …), builders/patches,
+- `scripts/` — runners (`run_all.sh`, `run_grpsig2.sh`, …), builders/patches,
   standalone repros (`repro_h1*.py`, `setsid_f2_repro.py`), v22→v27 diff.
 - `dispatch/` — subordinate dispatch packets (sol/grok/agy/nim/opencode/luna).
 - `review/` — per-reviewer packets, verdicts, and raw logs; `review/v27/TASK.md`
