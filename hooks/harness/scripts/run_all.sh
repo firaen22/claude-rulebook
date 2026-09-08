@@ -87,5 +87,17 @@ run contract python3 harness/contract.py "$CAND" "$LABEL" "$WORK/contract"
 run gap      python3 harness/gap.py "$WORK/gap" "$CAND"
 run grpsig2  python3 harness/grpsig2.py "$WORK/grpsig2" "$CAND"
 if [ "$PIDHANG" = 1 ]; then run pidhang python3 harness/pidhang.py "$CAND"; fi
+cachefresh_log="$WORK/cachefresh.log"
+python3 "$ROOT/cache_gate/check_caches.py" --all >"$cachefresh_log" 2>&1
+cachefresh_rc=$?
+if [ "$cachefresh_rc" -eq 0 ]; then
+  # Surface a non-normal built_via even on PASS (fable S4): a WARN buried in the log
+  # nobody opens is decorative -- count it into the one-line summary.
+  cf_warn=$(grep -c '^WARN' "$cachefresh_log" 2>/dev/null)
+  echo "cachefresh  PASS (${cf_warn:-0} WARN)"
+else
+  echo "cachefresh  FAIL rc=$cachefresh_rc"
+  bad=1
+fi
 echo "logs: $WORK"
 exit $bad

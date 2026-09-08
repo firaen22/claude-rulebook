@@ -1,0 +1,67 @@
+#!/bin/sh
+# Pre-commit cache-freshness gate for the ~/.claude harness repo.
+#
+# INSTALL (git ignores a non-executable hook SILENTLY, so verify the mode):
+#   ln -sf ../../hooks/harness/cache_gate/pre-commit.sample .git/hooks/pre-commit
+#   test -x .git/hooks/pre-commit || echo "INSTALL FAILED: hook not executable"
+# This file is committed mode 100755 so the symlink target is executable.
+#
+# It checks the STAGED INDEX, not the working tree (fable S5 / astra F1). Earlier this
+# hashed the worktree and tried to force worktree==index with an unstaged-changes guard;
+# that guard was blind to untracked new locks and to the manifest+implementation (both
+# outside its pathspec), and it blocked unrelated partial commits (an unstaged
+# harness/LESSONS.md edit). Exporting the index with `git checkout-index` and running the
+# gate THERE checks exactly what is being committed: worktree noise is ignored, a staged
+# drifted source is caught, and a forgotten (untracked) lock makes the export's checker
+# error 2 because the lock is absent from the commit (fable S9). ROOT-from-file-location
+# (cachelib) makes the exported tree self-contained -- the checker checks the export.
+
+# Fail CLOSED if we cannot locate the repo (fable N5): a pre-commit hook always runs
+# inside a repo, so a failed rev-parse/cd is an anomaly, not a reason to wave the commit
+# through. PYTHONDONTWRITEBYTECODE stops the export's python from littering pyc caches
+# (fable N6) since $tmp is discarded every commit.
+export PYTHONDONTWRITEBYTECODE=1
+root=$(git rev-parse --show-toplevel) || { echo "cache gate: not in a git repo"; exit 1; }
+cd "$root" || { echo "cache gate: cannot cd to repo root"; exit 1; }
+
+tmp=$(mktemp -d) || { echo "cache gate: mktemp failed"; exit 1; }
+trap 'rm -rf "$tmp"' EXIT
+# Materialize the staged tree (index), not the worktree. -a = all index entries;
+# --ignore-skip-worktree-bits so a `git update-index --skip-worktree` entry is STILL
+# exported (astra R3-1: an ungated cache marked skip-worktree was silently omitted from
+# the export and slipped a false-green commit past the gate).
+if ! git checkout-index --ignore-skip-worktree-bits -a -f --prefix="$tmp/"; then
+    echo "cache gate: git checkout-index failed"
+    exit 1
+fi
+
+gate="$tmp/hooks/harness/cache_gate/check_caches.py"
+if [ ! -f "$gate" ]; then
+    # The gate itself is not in the commit's tree -> cannot verify freshness. Fail closed.
+    echo "cache gate: check_caches.py missing from the staged tree ($gate)"
+    exit 1
+fi
+
+output=$(python3 "$gate" --all 2>&1)
+rc=$?
+if [ "$rc" -ne 0 ]; then
+    printf '%s\n' "$output"
+    echo "git commit blocked: cache gate rc=$rc (re-sync the cache, then: python3 hooks/harness/cache_gate/build_cache.py --cache <name>)"
+    exit 1
+fi
+# Surface WARN lines even on a passing commit (fable S4): a non-normal built_via must
+# not be swallowed just because the exit code is 0.
+printf '%s\n' "$output" | grep '^WARN' || true
+# Re-init detection (fable N2): the honest `--allow-unchanged-body` override WARNs on every
+# check, but deleting the lock and rebuilding yields a SILENT `fresh-init` -- the quiet
+# bypass of the refusal. A fresh-init lock whose path ALREADY exists in HEAD is a re-init,
+# not a genuinely new cache, so make it equally visible. (Runs on the staged export.)
+for lk in "$tmp"/skills/*/.cachelock.json; do
+    [ -f "$lk" ] || continue
+    grep -q '"built_via": "fresh-init"' "$lk" || continue
+    rel=${lk#"$tmp"/}
+    if git cat-file -e "HEAD:$rel" 2>/dev/null; then
+        echo "WARN $rel: lock re-initialized (fresh-init) but a prior lock exists in HEAD -- audit the re-sync"
+    fi
+done
+exit 0

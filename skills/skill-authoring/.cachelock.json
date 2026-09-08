@@ -1,0 +1,10 @@
+{
+  "body_sha": "0433e30da96aee4f46bf2ba2746f1b41bcd2f42dd62a8e608c8f3630311d8c2b",
+  "built_via": "normal",
+  "cache": "skill-authoring",
+  "sources": {
+    "harness/00-DIAGNOSIS.md": "04ed3a969d91b02fc8d99e7d41df4a2be37179382ce3600773fb325ceb1e689c",
+    "harness/40-maintenance.md": "62a311b78f3dff1368d73f15f68dcd003621bb194a6ba9708a5c0af345b1003f",
+    "harness/50-letter-to-future-sessions.md": "03c4eb4f164afbf932e354ba42f537dcefe34bf36407f41d8b891f2a062718a1"
+  }
+}
