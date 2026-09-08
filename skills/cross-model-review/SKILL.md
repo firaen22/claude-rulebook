@@ -44,7 +44,13 @@ Everything here is a rule about *how to choose*, never *what to choose*.
   (usually this session's own model; work drafted by a subagent or another
   CLI carries that model's family too, and work you materially edited carries
   BOTH — count every contributing family as an author-family and require a
-  reviewer outside all of them). 3+ providers → pick a diverse pair (or N);
+  reviewer outside all of them). Transitive on the REVIEWER side too: any
+  family that materially contributed JUDGMENT to a reviewer's verdict counts
+  as a contributing family for that lens — a lens that quietly consulted
+  another family is mixed-family, and a pair sharing a family this way is not
+  cross-family (deterministic helpers add no family; the re-delegation's own
+  conduct + accounting are delegation-and-review §4, this clause owns only the
+  family propagation). 3+ providers → pick a diverse pair (or N);
   refuse a same-family pair. Cannot assemble ≥2 families → §6 fallback.
 - **Offer a choice on an axis only when discovery yields >1 working option**
   (never pose a one-answer question), applied uniformly: *flagship* — skip if
@@ -85,6 +91,17 @@ once carried another session's uncommitted edits into a packet as the author's).
 - **Nothing secret leaves your machine.** The packet goes to a third-party
   model: no tokens, keys, `.env`, PII, or private customer data; minimize, and
   honor repo/org policy on sending code out.
+- **Packet-only is a mode, not a property of every harness.** "The reviewer
+  sees only what you inline" + the no-secret/minimize duties above describe a
+  packet-only reviewer; those content duties govern ALL model-bound content in
+  every mode — in a live run, the files, tool, and command results streamed to
+  the reviewer included. Transport never triggers live-capability, and live
+  mode never waives the duty. A harness that lets the reviewer ACT — read
+  files, run commands/tools, or reach the network through its OWN actions
+  (beyond the model-serving transport every external review rides) — runs a
+  live execution principal: delegation-and-review §4's reviewer-principal
+  confinement applies, and that run is never described with packet-only
+  assumptions ("can't see your repo", packet-bounded egress).
 - neg: a packet that says "review the repo" and assumes the reviewer sees your
   working tree — it reviews nothing, or hallucinates.
 
