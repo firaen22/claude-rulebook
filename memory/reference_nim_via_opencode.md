@@ -31,9 +31,22 @@ pass, so it postdates the pre-review draft of this note. `FAST = PARITY[0]` stil
 string_unicode/nullish → mistral-nemotron) untouched — neither entry was dead.
 Syntax-validated with `ast.parse` + a full `exec` after the edit; no import errors.
 
-The remaining 5 were re-confirmed catalog-LISTED on 09-08 but NOT re-probed for
-live-callability in this pass (listed ≠ guaranteed callable, per the catalog-lies
-gotcha above) — treat that as the next open question if a call starts failing.
+**Live-callability probe 2026-09-08 (post-patch) — all 5 confirmed LIVE.** Direct
+SSE `PONG` calls to `integrate.api.nvidia.com/v1/chat/completions`, run alongside a
+known-invalid control to give the errors signal (control returned HTTP 404
+`404 page not found`; the 4 removed ids return HTTP 410 "Gone" — neither signature
+appeared on any survivor):
+
+| id | result |
+|---|---|
+| `mistralai/mistral-nemotron` (FAST) | ✅ callable — ~54s cold start then reply (matches its documented cold-start note) |
+| `minimaxai/minimax-m3` | ✅ callable — 7.3s |
+| `nvidia/nemotron-3-super-120b-a12b` | ✅ callable — 2.8s (503-overloaded on first hit, OK on retry) |
+| `poolside/laguna-xs-2.1` | ✅ callable — 3.2s |
+| `nvidia/nemotron-3-ultra-550b-a55b` | ⚠️ HTTP 503 "Service temporarily overloaded" on 3 attempts — **transient load, NOT dead** (distinct in kind from control 404 / removed-id 410); matches its inline "intermittent, NOT dead; chain fallback absorbs it" note. parsing/dp primary, so an unattended single-shot call bypassing the chain still needs its own retry. |
+
+So listed AND callable for 4/5 this pass; ultra live-but-busy. No further removals
+warranted. Re-probe only if a call starts erroring with 404/410, not 503.
 
 ## REFRESH 2026-09-06 — catalog 82→81, gpt-oss-120b JOINS the dead-but-still-routed list
 
