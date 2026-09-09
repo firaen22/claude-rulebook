@@ -20,6 +20,33 @@ TABLE_HEADER = "| File | May edit autonomously? | Rule |"
 TABLE_SEPARATOR = re.compile(r"^\|\s*:?-{3,}:?\s*\|")
 TICKS = re.compile(r"`([^`]+)`")
 VERDICT_LINE = "**Edit permission (authoritative copy in §1):**"
+# The registry (41) is DRIVEN FROM §1: §1 is the authority, and the registry mirrors a verdict
+# for a SUBSET of §1 objects as provenance (measured 2026-09-09: 18 verdicts for 22 §1 objects;
+# some §1 objects carry a narrative registry section with no verdict, and some none at all). So a
+# registry verdict is recognised by ONE unambiguous rule: a line at column 0 that starts with the
+# exact canonical VERDICT_LINE. Every OTHER line is prose and is IGNORED -- never an error. This
+# replaced four rounds of leaky per-line Markdown detection (declaration prefix/fingerprint,
+# ATX/Setext heading, list/fence heuristics), each of which kept mis-classifying block structure
+# and either false-RED'ing legitimate prose (a sentence mentioning edit permission, a quoted
+# parenthetical, an indented example, an NBSP delimiter) or, in mixed/nested fences, hiding a
+# contradiction (codex+grok rounds 1-4, all reproduced 2026-09-09). A malformed/non-canonical
+# verdict declaration is not a governance hole here: §1 still governs the object, coverage still
+# requires its §1 row, and any CANONICAL verdict that DOES appear is still matched against §1.
+# A fenced-code OPEN: >=3 backticks or tildes at COLUMN 0 + optional info string; the fence closes
+# only on a later COLUMN-0 line of the SAME character, length >= the opener's, followed by spaces/
+# tabs only (CommonMark closer whitespace is space|tab, NOT any-whitespace -- an NBSP after the
+# ticks is content, not a close: codex#1 2026-09-09). Column-0 ONLY is deliberate and fail-SAFE:
+# the sole thing we must not miscount is a column-0 canonical verdict that is really fenced-code
+# content, and a column-0 line can be code content ONLY inside a top-level (column-0) fence -- a
+# list-nested or indented fence's content is itself indented (a column-0 line breaks out of the
+# list). Recognising only column-0 fences can therefore only ever SURFACE more column-0 lines
+# (matched against §1), never HIDE one, so it cannot fail-open; it retired the list-fence /
+# indent desync that swallowed a real contradiction and false-RED'd legit list examples
+# (grok+codex round 5, all reproduced 2026-09-09). Tracking char+length -- not a naive toggle --
+# keeps a fenced EXAMPLE of the canonical verdict line from counting as live, and an unclosed
+# fence from hiding later verdicts (guarded after the loop).
+FENCE_OPEN = re.compile(r"^(`{3,}|~{3,})(.*)$")
+FENCE_CLOSE = re.compile(r"^(`{3,}|~{3,})[ \t]*$")
 STRIKE = re.compile(r"~~(.*?)~~")
 
 EXTERNAL_SNAPSHOT = os.path.expanduser("~/.local/share/opus-pack/skill_snapshot.py")
@@ -76,7 +103,11 @@ def _is_dir_key(key, row_text, token):
 
 def _parse_permission_table(path):
     text = _read_text(path, "40-maintenance.md")
-    lines = text.splitlines()
+    # Split on newline ONLY. _read_text opened in text mode (universal newlines), so CRLF/CR are
+    # already \n; str.splitlines() would ALSO break on \f, \v, \x1c-\x1e, \x85, U+2028, U+2029 --
+    # none of which Markdown treats as a line ending -- letting an embedded separator truncate a
+    # value or manufacture a column-0 line (codex#2, reproduced 2026-09-09).
+    lines = text.split("\n")
     try:
         header = next(i for i, line in enumerate(lines) if line.strip() == TABLE_HEADER)
     except StopIteration:
@@ -113,7 +144,12 @@ def _parse_permission_table(path):
             "line": line_number,
             "keys": keys,
             "classes": classes,
-            "dir_keys": {
+            # A CLASS row (Project/Memory) carries no per-path dir_keys: a stray dir tick in
+            # its col1 (e.g. "Memory files (`harness/`)") must not become a directory key,
+            # or the registry-side lookup `key in row["dir_keys"]` would let a "## `harness/`"
+            # section bind to the class row despite no directory permission row (codex,
+            # reproduced 2026-09-09). Class rows are class-scoped only (mirrors _row_matches).
+            "dir_keys": set() if classes else {
                 _relative_key(token, keys[0] if keys else None)
                 for token in TICKS.findall(col1)
                 if _is_dir_key(_relative_key(token, keys[0] if keys else None), col1, token)
@@ -141,7 +177,22 @@ def _parse_registry(path):
     text = _read_text(path, "41-file-registry.md")
     sections = []
     current = None
-    for line_number, line in enumerate(text.splitlines(), 1):
+    fence = None  # (char, length) of the open code fence, or None outside any fence
+    # Newline-only split (see _parse_permission_table): str.splitlines() would break on \f/\v/
+    # U+2028 etc., truncating a canonical value or manufacturing a column-0 verdict (codex#2).
+    for line_number, line in enumerate(text.split("\n"), 1):
+        if fence is None:
+            opener = FENCE_OPEN.match(line)
+            # A backtick fence's info string may not contain a backtick -- that makes it inline
+            # code ("```x```"), not a fence opener; tilde fences carry no such limit.
+            if opener and not (opener.group(1)[0] == "`" and "`" in opener.group(2)):
+                fence = (opener.group(1)[0], len(opener.group(1)))
+                continue
+        else:
+            closer = FENCE_CLOSE.match(line)
+            if closer and closer.group(1)[0] == fence[0] and len(closer.group(1)) >= fence[1]:
+                fence = None
+            continue
         if line.startswith("## "):
             if current:
                 sections.append(current)
@@ -160,24 +211,33 @@ def _parse_registry(path):
             if "Memory files" in primary:
                 classes.append(MEMORY_CLASS)
             current = {"line": line_number, "heading": heading, "keys": keys, "classes": classes, "verdicts": []}
-        elif current and "edit permission" in line.lower():
-            # Detect any form of verdict line (indented, list marker, blockquote, variant
-            # casings) and REQUIRE the canonical form (fable). A non-canonical form fails
-            # closed, not silent-skip. lstrip first: indentation is allowed (a paragraph
-            # in Markdown). But list marker "- **Edit...**", blockquote "> **Edit...**",
-            # colon-outside-bold "**Edit...**:", no-bold "Edit permission..." all FAIL.
-            stripped = line.lstrip()
-            if not stripped.startswith(VERDICT_LINE):
+        elif line.startswith(VERDICT_LINE):
+            # A CANONICAL verdict: a column-0 line beginning with the exact VERDICT_LINE. Per the
+            # VERDICT_LINE note this is the ONLY recognised verdict form -- every other line is
+            # prose and IGNORED (no false-RED on a sentence, quote, list item, or indented
+            # example). Fenced examples of the verdict format are already skipped by the fence
+            # tracking above. A canonical verdict before the first '## ' has no object to bind to.
+            if current is None:
                 raise GateError(
-                    f"41-file-registry.md:{line_number}: verdict line is non-canonical "
-                    f'(must be "{VERDICT_LINE} <text>", not a list, blockquote, or variant)'
+                    f"41-file-registry.md:{line_number}: canonical verdict line before any "
+                    f"'## ' section (no object to attribute it to)"
                 )
-            current["verdicts"].append((line_number, _normalize_verdict(stripped[len(VERDICT_LINE) :])))
+            current["verdicts"].append((line_number, _normalize_verdict(line[len(VERDICT_LINE) :])))
     if current:
         sections.append(current)
+    # An unclosed fence would swallow every later line -- including a real canonical verdict -- so
+    # a contradiction after it could escape unmatched. Fail CLOSED (grok, reproduced 2026-09-09).
+    if fence is not None:
+        raise GateError("41-file-registry.md: unclosed fenced code block (would hide later verdicts)")
     for section in sections:
         if len(section["verdicts"]) > 1:
             raise GateError(f"41-file-registry.md:{section['line']}: section has multiple verdict lines")
+    # A gutted or truncated registry (no verdict-bearing section at all) must fail CLOSED,
+    # not silently pass: with zero verdict sections the registry->§1 verdict cross-check
+    # never runs, so an emptied 41 exits 0 with the whole provenance layer gone (codex,
+    # reproduced 2026-09-09). The live registry always carries governed verdict sections.
+    if not any(section["verdicts"] for section in sections):
+        raise GateError("41-file-registry.md: no verdict sections found (registry is empty or gutted)")
     return sections
 
 
@@ -197,8 +257,15 @@ def _regular_file(path, label):
 
 
 def _add_if_file(paths, path, label):
+    # _regular_file RAISES on a missing path (os.stat) and returns False for an EXISTING
+    # non-regular one (a directory/fifo named CLAUDE.md, a skill's SKILL.md, or a hook).
+    # The old silent skip on False dropped that governed path from the inventory with no
+    # error -- the same disappearance class as G3, but on these fixed named paths (grok +
+    # codex, reproduced 2026-09-09). Every path routed here is REQUIRED, so fail CLOSED.
     if _regular_file(path, label):
         paths.add(_relative_file(path))
+    else:
+        raise GateError(f"non-regular governed path: {label} ({path})")
 
 
 def _walk_bundle(paths, root):
@@ -233,6 +300,12 @@ def _inventory():
             raise GateError(f"unexpected symlink in a governed dir: {entry.path}")
         if entry.is_file(follow_symlinks=False):
             paths.add(_relative_file(entry.path))
+        else:
+            # A non-regular '*.md' entry -- e.g. a DIRECTORY named foo.md -- is neither a
+            # symlink nor a file, so it would be silently skipped and drop a governed path
+            # from the inventory (grok, reproduced 2026-09-09). Fail CLOSED, matching
+            # _walk_bundle and density's open()-on-a-directory GateError.
+            raise GateError(f"non-regular '*.md' entry in a governed dir: {entry.path}")
 
     _add_if_file(paths, os.path.join(root, "CLAUDE.md"), "global CLAUDE.md")
     for relpath in (
@@ -297,12 +370,23 @@ def _inventory():
             raise GateError(f"unexpected symlink in a governed dir: {entry.path}")
         if entry.is_file(follow_symlinks=False):
             paths.add(_relative_file(entry.path))
+        else:
+            # A non-regular '*.md' entry -- e.g. a DIRECTORY named foo.md -- is neither a
+            # symlink nor a file, so it would be silently skipped and drop a governed path
+            # from the inventory (grok, reproduced 2026-09-09). Fail CLOSED, matching
+            # _walk_bundle and density's open()-on-a-directory GateError.
+            raise GateError(f"non-regular '*.md' entry in a governed dir: {entry.path}")
     return sorted(paths)
 
 
 def _row_matches(row, relpath):
-    if MEMORY_CLASS in row["classes"] and relpath.startswith("memory/") and relpath.endswith(".md"):
-        return True
+    if MEMORY_CLASS in row["classes"]:
+        # A Memory class row covers EXACTLY memory/*.md and nothing else. It must not fall
+        # through to keys/dir_keys: a stray dir tick in the Memory row's col1 (e.g.
+        # "Memory files (`harness/`)") otherwise puts `harness/` in dir_keys and the row
+        # then "covers" harness/*.md, masking a deleted §1 row for a harness file (grok,
+        # reproduced 2026-09-09). Mirror PROJECT_CLASS: a class row is class-scoped only.
+        return relpath.startswith("memory/") and relpath.endswith(".md")
     if PROJECT_CLASS in row["classes"]:
         return False
     for key in row["keys"]:
