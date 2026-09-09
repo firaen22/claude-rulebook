@@ -109,5 +109,15 @@ else
   echo "catalog     FAIL rc=$catalog_rc"
   bad=1
 fi
+density_log="$WORK/density.log"
+python3 "$ROOT/cache_gate/check_density.py" --all >"$density_log" 2>&1
+density_rc=$?
+if [ "$density_rc" -eq 0 ]; then
+  echo "density     PASS"
+else
+  # 1 = a §4 density twin violated (prose >13 w/l or a row >150 fields); 2 = gate error.
+  echo "density     FAIL rc=$density_rc"
+  bad=1
+fi
 echo "logs: $WORK"
 exit $bad

@@ -65,6 +65,21 @@ if [ "$catrc" -ne 0 ]; then
     exit 1
 fi
 
+# P1a density gate: §4's two density twins (prose <=13 w/l, table row <=150 fields), on the
+# SAME staged export. Missing from the staged tree -> cannot verify -> fail closed.
+densgate="$tmp/hooks/harness/cache_gate/check_density.py"
+if [ ! -f "$densgate" ]; then
+    echo "cache gate: check_density.py missing from the staged tree ($densgate)"
+    exit 1
+fi
+densout=$(python3 "$densgate" --all 2>&1)
+densrc=$?
+if [ "$densrc" -ne 0 ]; then
+    printf '%s\n' "$densout"
+    echo "git commit blocked: density gate rc=$densrc (a §4 density twin is over threshold; move history to an evidence file — see 40-maintenance.md §4)"
+    exit 1
+fi
+
 # Surface WARN lines even on a passing commit (fable S4): a non-normal built_via must
 # not be swallowed just because the exit code is 0.
 printf '%s\n' "$output" | grep '^WARN' || true
