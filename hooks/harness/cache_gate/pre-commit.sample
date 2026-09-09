@@ -49,6 +49,22 @@ if [ "$rc" -ne 0 ]; then
     echo "git commit blocked: cache gate rc=$rc (re-sync the cache, then: python3 hooks/harness/cache_gate/build_cache.py --cache <name>)"
     exit 1
 fi
+
+# P1a catalog gate: §1<->41 governance completeness + verdict-parity, on the SAME staged
+# export. Missing from the staged tree -> cannot verify -> fail closed (same as above).
+catgate="$tmp/hooks/harness/cache_gate/check_catalog.py"
+if [ ! -f "$catgate" ]; then
+    echo "cache gate: check_catalog.py missing from the staged tree ($catgate)"
+    exit 1
+fi
+catout=$(python3 "$catgate" --all 2>&1)
+catrc=$?
+if [ "$catrc" -ne 0 ]; then
+    printf '%s\n' "$catout"
+    echo "git commit blocked: catalog gate rc=$catrc (add the missing §1 row / fix the 41<->§1 verdict; see 40-maintenance.md §1)"
+    exit 1
+fi
+
 # Surface WARN lines even on a passing commit (fable S4): a non-normal built_via must
 # not be swallowed just because the exit code is 0.
 printf '%s\n' "$output" | grep '^WARN' || true

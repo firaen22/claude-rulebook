@@ -99,5 +99,15 @@ else
   echo "cachefresh  FAIL rc=$cachefresh_rc"
   bad=1
 fi
+catalog_log="$WORK/catalog.log"
+python3 "$ROOT/cache_gate/check_catalog.py" --all >"$catalog_log" 2>&1
+catalog_rc=$?
+if [ "$catalog_rc" -eq 0 ]; then
+  echo "catalog     PASS"
+else
+  # 2 = §1<->41 completeness/verdict-parity error (no middle state). Fail CLOSED.
+  echo "catalog     FAIL rc=$catalog_rc"
+  bad=1
+fi
 echo "logs: $WORK"
 exit $bad
