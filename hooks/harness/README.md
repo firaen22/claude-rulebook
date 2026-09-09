@@ -66,18 +66,20 @@ clobbered file, or abandoned spinning process is expensive.
   with ready-handshake + double-sampled survivors; replaces the racy
   `grpsig.py`, kept for comparison), `gap.py` (launcher startup-window stop
   signals), `exectext.py`, `refcheck.py`.
-- `candidate/` — hook versions v22 (previously live) … v28 (installed
-  2026-09-01, md5 4472d36b) … v30 (the current install: v28 + the probe-budget
-  `SECONDS+1`→`+2` fix, md5 4fca6c35, installed 2026-09-06 by `faa2c8c`). v29 is
-  the breadcrumb instrument that found the probe-budget defect, not an install
-  candidate.
+- `candidate/` — hook versions v26 (pidhang positive CONTROL), v28 (installed
+  2026-09-01, md5 4472d36b), v30 (the current install: v28 + the probe-budget
+  `SECONDS+1`→`+2` fix, md5 4fca6c35, installed 2026-09-06 by `faa2c8c`), v29 (the
+  breadcrumb instrument that found the probe-budget defect, not an install
+  candidate). Obsolete versions v22-installed, v23–v25, v27 moved to `archive/candidate/`
+  (gate-invisible; no live code depends on them).
 - `mutants/` — M1–M22 seeded-defect hooks used to mutation-validate the
   harness (all 10 original harness defects showed as false GREENS before fix;
   M16/M17 were added by the 2026-09-01/02 cross-model review, see `reviews/`;
   M18 detached `/bin/sleep` 2026-09-05; M19 stdin stall, M20/M21 stdout-then-
   ftruncate, M22 chdir-away fd-1 holder 2026-09-06 — see the dated trails).
 - `scripts/` — runners (`run_all.sh`, `run_grpsig2.sh`, …), builders/patches,
-  standalone repros (`repro_h1*.py`, `setsid_f2_repro.py`), v22→v27 diff.
+  standalone repros (`repro_h1*.py`, `setsid_f2_repro.py`) — note: these import
+  harness-frozen2/3 which are not deployed, so they are kept as history only.
 - `dispatch/` — subordinate dispatch packets (sol/grok/agy/nim/opencode/luna).
 - `review/` — per-reviewer packets, verdicts, and raw logs; `review/v27/TASK.md`
   is the fullest statement of contract, history, and known limits.

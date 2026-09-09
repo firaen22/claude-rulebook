@@ -74,10 +74,10 @@ def trials(hook, tag, n=10):
     return orphaned_runs, landed
 
 if __name__=="__main__":
-    cand="candidate"
+    cand="archive/candidate"
     print("H1 multi-trial (H01 hang + pid-directed SIGTERM during hang):")
     o22,l22=trials(os.path.join(cand,"v22-installed.sh"),"v22")
-    o26,l26=trials(os.path.join(cand,"v26.sh"),"v26")
+    o26,l26=trials(os.path.join("candidate","v26.sh"),"v26")
     o27,l27=trials(os.path.join(cand,"v27.sh"),"v27")
     print()
     print("v22: orphaned in %d landed runs -> %s"%(o22,"LEAKS (H1 present)" if o22>0 else "clean"))
