@@ -98,7 +98,7 @@ topic files. ONE line is deliberately left over, in claude-code-technique: its
 title+link prefix alone is 156 chars, so no hook content can reach the cap.
 The earlier note here said "~170 over 150, four indexes"; both halves were wrong
 — it counted four of the seventeen indexes, and it measured with macOS `awk`,
-which counts BYTES (see §4). Measure with python `len`.
+which counts BYTES (see §4); the corrected count used python `len`.
 
 The migration surfaced three index lines asserting facts their link targets did
 not carry. Each was resolved from evidence rather than by making one side match
@@ -637,6 +637,18 @@ Permissions row in `40-maintenance.md` §1 (trimmed to the standing constraints
 2026-08-29 when a correction pushed it to 171 fields, over §4's ~150 cap; the history
 below is what moved). Fixture-tested 5/5 before install.
 
+IDENTITY (moved from §1 2026-09-09; the row had gone stale reading "v22, md5
+`d1f0a874`", scratchpad harness `round23/harness` `run.sh sturdy` — all three stale).
+The pre-v22 hook appended to a single `observed.jsonl` (still on disk; the hook itself
+calls it legacy); v22 landed 2026-09-01, and it has since hardened v23→v30 — now writes
+one file per event and never deletes. Installed code = `candidate/v30.sh`, byte-identical
+(md5 `4fca6c35`; git `faa2c8c`, 2026-09-06) — v28 plus a one-token probe-budget fix
+(`SECONDS+1`→`+2`). Current identity, the full v22→v30 version history, and the contract
++ mutation gate (M1–M22) live at `~/.claude/hooks/harness/` (`README.md`; runner
+`scripts/run_all.sh <candidate> <label>`), curated 2026-09-01 from the retired round-23
+session scratchpad. The **Corrected 2026-09-01** row note recorded that this registry's
+parent row had described the pre-v22 hook until that 2026-09-01 correction.
+
 WHY IT EXISTS: a v3 recovery-hook design was REJECTED by four reviewers for assuming
 three unmeasured runtime facts. This hook only observes them:
   Q-A does `session_id` survive a compact?
@@ -659,7 +671,7 @@ sentence had propagated to three live files before anyone read the data against 
 
 STATUS: not done. Observed so far — manual PreCompact, and SessionStart startup /
 compact / resume. Still unobserved: `clear`, `fork`, and any `auto` PreCompact.
-Retire the hook once those are logged, not before (both round-8 reviewers: unobserved
+Both round-8 reviewers advised retiring only once those are logged (unobserved
 event types are a PERISHABLE opportunity; a file edit is available any time).
 
 WRITER REWRITTEN 2026-08-29 (third review, codex `gpt-5.6-sol` at max effort). The
