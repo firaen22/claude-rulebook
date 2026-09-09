@@ -250,6 +250,18 @@ stop and escalate with the trail — never loop "until all PROCEED" unbounded.
   model naming itself inside the review text (a family label at best). If you
   cannot confirm the intended flagship ran, record an unconfirmed-identity gap
   — do not claim a flagship cross-family pair.
+- Narrower case, qualifying the bullet above: when the reviewer is an in-harness
+  SUBAGENT reached via a model-override (not a provider CLI that echoes an inline
+  route-report), the REQUESTED slug rides the harness's task-completion for free
+  and is NOT by itself identity evidence. Look instead for a harness-persisted
+  subagent transcript that records the per-turn API-reported served model:
+  identity is confirmed when that served id matches the requested flagship (the
+  field is response-derived, so a silent fallback to the orchestrator shows a
+  DIFFERENT model there — it does not merely echo the slug). This is a POST-HOC
+  check — if that transcript is unavailable, or its served id disagrees with the
+  requested flagship, treat it as the "cannot confirm the intended flagship ran"
+  case above and record the unconfirmed-identity gap. (The concrete transcript
+  location is machine-specific — keep it in the operator's own notes, not here.)
 - High-effort runs take minutes → run backgrounded with a wall-clock cap
   (default ~10 minutes; the user can raise it); on timeout, kill and record
   a gap.

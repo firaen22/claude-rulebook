@@ -87,6 +87,60 @@ clobbered file, or abandoned spinning process is expensive.
   is the fullest statement of contract, history, and known limits), and `reviews/`
   (cross-model review records + `reconcile_pairs` packets).
 
+## Gate scope — what the governance gates inventory (and what they don't)
+
+Three fail-closed gates in the suite police governance consistency. Knowing exactly
+what each walks turns "is this change gate-visible?" into a lookup instead of a
+source read. Verified against `cache_gate/check_catalog.py`, `check_density.py`,
+and `check_caches.py` 2026-09-09.
+
+**`check_catalog`** (builds a governed-file inventory from the filesystem, then
+checks the §1 permission table and the `41` registry against it) walks:
+- `~/.claude/harness/*.md` — the **Layer-A doctrine** files (`.md` only, one glob
+  level; non-`.md` ignored, a symlinked `.md` is a hard error, not a silent skip)
+- global `~/.claude/CLAUDE.md`
+- 4 named hooks: `gate-before-commit.sh`, `parse-commit-command.py`,
+  `gate-credential-destruction.py`, `observe-compaction-events.sh`
+- `hooks/harness/cache_gate/` — the whole bundle, recursively
+- the 7 pack skills' `SKILL.md`, a **hardcoded set** (cross-model-review,
+  delegation-and-review, ground-truth-gates, operational-rigor, security-architect,
+  skill-authoring, skill-vetting) — **not a `skills/*` glob**: an 8th skill dir is
+  catalog-invisible until the set is edited. Each needs a §1 row
+- `~/.claude/memory/*.md` — every `.md`, glob-absorbed under the "Memory files"
+  class row: a **new memory file needs no new §1/registry entry**
+- one named external object: `~/.local/share/opus-pack/skill_snapshot.py` — must
+  carry a §1 row (a missing one, or one matching multiple rows, is a hard error;
+  it sits outside ROOT so its readability is not checked)
+
+**`check_density`** measures ONLY `~/.claude/CLAUDE.md` + every
+`~/.claude/harness/*.md` (Layer-A doctrine). It does not touch `memory/` at all.
+
+**`check_caches`** governs the **distilled caches** — the 3 skills that carry a
+`Cache over …` marker (delegation-and-review, operational-rigor, skill-authoring),
+each **listed** in `cache_manifest.json` (which names the cache's SKILL.md + its
+harness source paths) with the actual body and source SHA **pins living in that
+cache's own `.cachelock.json`** (`check_caches` reads `lock["body_sha"]` and
+`lock["sources"]`, not the manifest). The body pin covers each cache's `SKILL.md`
+**only** — its `references/**/*.md` are NOT cache-gated here (a stale reference file
+vs its harness source is out of this gate's scope). It also scans **every** `skills/*/SKILL.md`
+for that marker: a new skill that distills harness files but has no manifest row
+turns the suite RED. So the two skill sets differ — **governed = 7** (need a §1 row),
+**cachelocked = 3** (also need a manifest row + a `.cachelock.json` re-sync **and a
+matching entry in `check_catalog`'s hardcoded skill set — a manifest key outside that
+set is itself a hard error**); the other 4 governed skills carry no cachelock, and
+memory files are never cachelocked. These counts are the current manifest state, not
+a fixed ceiling — the marker scan is what lets the set grow safely.
+
+**Note the two different `harness` roots.** `~/.claude/harness/` is Layer-A doctrine
+(what `check_catalog` and `check_density` measure). This subtree — `hooks/harness/` —
+is Layer-B gates+evidence, and **only its `cache_gate/` bundle is governed**. No gate
+touches anything else here: not this `README.md`, not `harness/` (the live runners),
+`mutants/`, `candidate/`, `scripts/`, or `archive/` (which now holds the Round-2
+`review/`, `dispatch/`, `reviews/` evidence). That is precisely why the P3′ evidence
+archive was gate-invisible — source dirs AND the `archive/` destination sit outside
+every gate's inventory, so a move triggers no false-RED and pulls nothing new into
+governance.
+
 ## Why v28 was the installed version 2026-09-01 → 2026-09-06 (superseded by v30)
 The install decision, not a current measurement — the harness has gained
 detection twice since (M18 cwd attribution 09-05, M19–M22 stdin/stdout 09-06),
