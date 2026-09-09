@@ -1,5 +1,7 @@
 #!/bin/bash -p
-# PHASE 0 — MEASUREMENT ONLY. v22, one file per event. NOT INSTALLED.
+# PHASE 0 — MEASUREMENT ONLY. v22, one file per event. INSTALLED 2026-09-01: registered
+# 7 times in settings.json — PreCompact (manual, auto) + SessionStart (startup, resume,
+# clear, compact, fork) — each as `/bin/bash --noprofile --norc -p <path> <matcher>`.
 #
 # v30 = v28 (the installable, breadcrumb-free base) + ONE fix: the probe budget
 # `_pend=$(( SECONDS + 1 ))` becomes `+ 2`, closing the boundary-phase collapse
