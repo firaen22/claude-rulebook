@@ -19,15 +19,10 @@ you may edit, **§1 wins** — this is the evidence layer, not the rules layer.
 
 **Edit permission (authoritative copy in §1):** NO (frozen)
 
-Historical document. Never edit. If a diagnosis becomes stale, note that in LESSONS.md,
-don't rewrite history.
-
 ## `~/.claude/CLAUDE.md` (global)
 
 **Edit permission (authoritative copy in §1):** ASK USER first
 
-Highest blast radius — every session loads it. Exception, allowed autonomously: fixing a
-factually broken pointer (file moved/renamed) — fix it, tell the user in the same turn.
 **Rules killed as redundant with a global R-rule — re-test them if that R-rule is
 narrowed or removed:** R3 (surgical changes) is why "stage by explicit pathspec, never
 `git add -A`, over pre-existing dirty state" earns NO local line — probed 2026-07-28
@@ -43,41 +38,25 @@ this kill as "redundant at session tier, untested at haiku".
 
 **Edit permission (authoritative copy in §1):** ASK USER first
 
-Same rule as global.
-
 ## `10-orchestration.md`
 
 **Edit permission (authoritative copy in §1):** YES for §0 facts
-
-Update tool/model availability when VERIFIED changed (a probe failed / harness offers
-different models). Routing-table strategy changes: ASK USER.
 
 ## `20-judgment-rubrics.md`
 
 **Edit permission (authoritative copy in §1):** NO thresholds; YES examples
 
-Numeric thresholds (retry cap 2, ~3× scope, 20% spot-check) changed only with user
-sign-off. ADDING a good/bad example from a real session: autonomous, append-only.
-
 ## `30-delegation-templates.md`
 
 **Edit permission (authoritative copy in §1):** YES, append-only
-
-Add a template or a field; never delete the "report failure honestly" or edge-case
-lines. Structural rewrite: ASK USER.
 
 ## `50-letter-to-future-sessions.md`
 
 **Edit permission (authoritative copy in §1):** Handoff section only
 
-§Handoff is a live scratch area — update freely. The letter body is frozen like the
-diagnosis.
-
 ## `~/.claude/harness/LESSONS.md`
 
 **Edit permission (authoritative copy in §1):** YES — this is YOUR file
-
-See §3. Create it on first lesson.
 
 **Compression ledger (sizes are at trigger, before the move).** 2026-07-12: 179
 lines / 8 entries, 6 moved — named no destinations. 2026-08-25: 243 / 19, all 19
@@ -112,8 +91,6 @@ through the 08-29 compression.
 ## Memory files (`.../memory/*.md`)
 
 **Edit permission (authoritative copy in §1):** YES
-
-Existing memory rules apply (update-in-place, no duplicates, delete wrong ones).
 
 Index-line length: the legacy debt was MIGRATED 2026-09-02 — 228 of 279 entries
 across all 17 project indexes trimmed to ≤150 CHARACTERS, detail moved into the
@@ -257,8 +234,6 @@ removed word traced to a surviving copy, zero missing. Ships `unprobed`.
 
 **Edit permission (authoritative copy in §1):** YES
 
-CACHE over the ground-truth-harness-pattern doc (claude-code-technique project). Any
-edit to `scripts/` re-runs the pass AND fail probes before claiming run-verified.
 `references/anonymization-map.md` (extracted 2026-07-14) holds the PII same-shape
 stand-in table. Re-extracted 2026-07-21 → 229 lines (new
 `references/worked-examples.md`; fake-pass-patterns.md +3 sections; scripts/
