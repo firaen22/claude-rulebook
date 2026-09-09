@@ -24,6 +24,19 @@ import math
 import sys
 import unicodedata
 
+# safe() is loaded from the sibling prereg_io.py BY EXPLICIT PATH, never by
+# module name. A bare `from prereg_io import safe` would, if this file ever went
+# missing, bind a namesake `prereg_io` from elsewhere on sys.path and silently
+# restore the escaping drift this extraction removed (astra P2 review, reproduced
+# 2026-09-09). An absent sibling here raises FileNotFoundError -- fail-loud.
+import importlib.util as _ilu
+import os as _os
+_prereg_spec = _ilu.spec_from_file_location(
+    "prereg_io", _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "prereg_io.py"))
+_prereg = _ilu.module_from_spec(_prereg_spec)
+_prereg_spec.loader.exec_module(_prereg)
+safe = _prereg.safe
+
 
 STOPWORDS = {
     "the", "a", "an", "of", "to", "and", "or", "is", "it", "that",
@@ -32,11 +45,6 @@ STOPWORDS = {
     "new", "be", "are", "was", "were", "from", "into", "when", "after",
     "before", "itself", "their", "there", "all", "any", "can", "has",
 }
-
-
-def safe(text):
-    """Untrusted manifest text for stdout: never emit a lone surrogate."""
-    return text.encode("utf-8", "backslashreplace").decode("utf-8")
 
 
 def normalize(text, allowlist):
