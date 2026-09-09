@@ -19,15 +19,10 @@ you may edit, **§1 wins** — this is the evidence layer, not the rules layer.
 
 **Edit permission (authoritative copy in §1):** NO (frozen)
 
-Historical document. Never edit. If a diagnosis becomes stale, note that in LESSONS.md,
-don't rewrite history.
-
 ## `~/.claude/CLAUDE.md` (global)
 
 **Edit permission (authoritative copy in §1):** ASK USER first
 
-Highest blast radius — every session loads it. Exception, allowed autonomously: fixing a
-factually broken pointer (file moved/renamed) — fix it, tell the user in the same turn.
 **Rules killed as redundant with a global R-rule — re-test them if that R-rule is
 narrowed or removed:** R3 (surgical changes) is why "stage by explicit pathspec, never
 `git add -A`, over pre-existing dirty state" earns NO local line — probed 2026-07-28
@@ -43,41 +38,25 @@ this kill as "redundant at session tier, untested at haiku".
 
 **Edit permission (authoritative copy in §1):** ASK USER first
 
-Same rule as global.
-
 ## `10-orchestration.md`
 
 **Edit permission (authoritative copy in §1):** YES for §0 facts
-
-Update tool/model availability when VERIFIED changed (a probe failed / harness offers
-different models). Routing-table strategy changes: ASK USER.
 
 ## `20-judgment-rubrics.md`
 
 **Edit permission (authoritative copy in §1):** NO thresholds; YES examples
 
-Numeric thresholds (retry cap 2, ~3× scope, 20% spot-check) changed only with user
-sign-off. ADDING a good/bad example from a real session: autonomous, append-only.
-
 ## `30-delegation-templates.md`
 
 **Edit permission (authoritative copy in §1):** YES, append-only
-
-Add a template or a field; never delete the "report failure honestly" or edge-case
-lines. Structural rewrite: ASK USER.
 
 ## `50-letter-to-future-sessions.md`
 
 **Edit permission (authoritative copy in §1):** Handoff section only
 
-§Handoff is a live scratch area — update freely. The letter body is frozen like the
-diagnosis.
-
 ## `~/.claude/harness/LESSONS.md`
 
 **Edit permission (authoritative copy in §1):** YES — this is YOUR file
-
-See §3. Create it on first lesson.
 
 **Compression ledger (sizes are at trigger, before the move).** 2026-07-12: 179
 lines / 8 entries, 6 moved — named no destinations. 2026-08-25: 243 / 19, all 19
@@ -113,15 +92,13 @@ through the 08-29 compression.
 
 **Edit permission (authoritative copy in §1):** YES
 
-Existing memory rules apply (update-in-place, no duplicates, delete wrong ones).
-
 Index-line length: the legacy debt was MIGRATED 2026-09-02 — 228 of 279 entries
 across all 17 project indexes trimmed to ≤150 CHARACTERS, detail moved into the
 topic files. ONE line is deliberately left over, in claude-code-technique: its
 title+link prefix alone is 156 chars, so no hook content can reach the cap.
 The earlier note here said "~170 over 150, four indexes"; both halves were wrong
 — it counted four of the seventeen indexes, and it measured with macOS `awk`,
-which counts BYTES (see §4). Measure with python `len`.
+which counts BYTES (see §4); the corrected count used python `len`.
 
 The migration surfaced three index lines asserting facts their link targets did
 not carry. Each was resolved from evidence rather than by making one side match
@@ -257,8 +234,6 @@ removed word traced to a surviving copy, zero missing. Ships `unprobed`.
 
 **Edit permission (authoritative copy in §1):** YES
 
-CACHE over the ground-truth-harness-pattern doc (claude-code-technique project). Any
-edit to `scripts/` re-runs the pass AND fail probes before claiming run-verified.
 `references/anonymization-map.md` (extracted 2026-07-14) holds the PII same-shape
 stand-in table. Re-extracted 2026-07-21 → 229 lines (new
 `references/worked-examples.md`; fake-pass-patterns.md +3 sections; scripts/
@@ -662,6 +637,18 @@ Permissions row in `40-maintenance.md` §1 (trimmed to the standing constraints
 2026-08-29 when a correction pushed it to 171 fields, over §4's ~150 cap; the history
 below is what moved). Fixture-tested 5/5 before install.
 
+IDENTITY (moved from §1 2026-09-09; the row had gone stale reading "v22, md5
+`d1f0a874`", scratchpad harness `round23/harness` `run.sh sturdy` — all three stale).
+The pre-v22 hook appended to a single `observed.jsonl` (still on disk; the hook itself
+calls it legacy); v22 landed 2026-09-01, and it has since hardened v23→v30 — now writes
+one file per event and never deletes. Installed code = `candidate/v30.sh`, byte-identical
+(md5 `4fca6c35`; git `faa2c8c`, 2026-09-06) — v28 plus a one-token probe-budget fix
+(`SECONDS+1`→`+2`). Current identity, the full v22→v30 version history, and the contract
++ mutation gate (M1–M22) live at `~/.claude/hooks/harness/` (`README.md`; runner
+`scripts/run_all.sh <candidate> <label>`), curated 2026-09-01 from the retired round-23
+session scratchpad. The **Corrected 2026-09-01** row note recorded that this registry's
+parent row had described the pre-v22 hook until that 2026-09-01 correction.
+
 WHY IT EXISTS: a v3 recovery-hook design was REJECTED by four reviewers for assuming
 three unmeasured runtime facts. This hook only observes them:
   Q-A does `session_id` survive a compact?
@@ -684,7 +671,7 @@ sentence had propagated to three live files before anyone read the data against 
 
 STATUS: not done. Observed so far — manual PreCompact, and SessionStart startup /
 compact / resume. Still unobserved: `clear`, `fork`, and any `auto` PreCompact.
-Retire the hook once those are logged, not before (both round-8 reviewers: unobserved
+Both round-8 reviewers advised retiring only once those are logged (unobserved
 event types are a PERISHABLE opportunity; a file edit is available any time).
 
 WRITER REWRITTEN 2026-08-29 (third review, codex `gpt-5.6-sol` at max effort). The

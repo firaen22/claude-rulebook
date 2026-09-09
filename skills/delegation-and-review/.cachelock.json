@@ -1,0 +1,9 @@
+{
+  "body_sha": "026d0a0b21a3597579f5cddea5a9a103ab9dfd646a89df8835abdc10639d3e25",
+  "built_via": "normal",
+  "cache": "delegation-and-review",
+  "sources": {
+    "harness/10-orchestration.md": "a1b9074364c444449ec973eacb142c3e888e7ac7eacdd0d6ee0006d9c5cce0b5",
+    "harness/30-delegation-templates.md": "b9040323aeb1583ec95bb946300fc5f2ef943a4f50d2285273b9c02bfeb66a9d"
+  }
+}

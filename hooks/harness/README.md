@@ -2,7 +2,7 @@
 
 Reliability harness and version history for the macOS Claude Code
 PreCompact/SessionStart observability hook shipped as
-[`../observe-compaction-events.sh`](../observe-compaction-events.sh) (== `candidate/v28.sh`
+[`../observe-compaction-events.sh`](../observe-compaction-events.sh) (== `candidate/v30.sh`
 plus a header comment) and installed at `~/.claude/hooks/observe-compaction-events.sh`
 (invoked as `/bin/bash --noprofile --norc -p <path> <matcher>` on bash 3.2.57).
 
@@ -29,8 +29,8 @@ discriminated, `run_all --pidhang` rc 0.
   `_pend=$((SECONDS+1))` then expired 6/400 (~1.5%). MECHANISM: the probe budget
   is a whole-second `SECONDS+1`, uniformly (0,1] s, so ~1–2% of launches get
   <20 ms, the watchdog kills the first probe, no interpreter → silent exit 0, event
-  lost. Until a fixed hook (v30) is installed: a single `D_pid_*`/any VOID with the
-  0.0x s signature in an otherwise-green run is this defect, not a harness flake.
+  lost. Before v30 was installed (2026-09-06, `faa2c8c`): a single `D_pid_*`/any VOID with the
+  0.0x s signature in an otherwise-green run was this defect, not a harness flake.
   This re-run policy only covers a VOID `run_all` can SEE — a synthetic case where
   a file was expected and none appeared. The live-dir version of this defect is
   SILENT (exit 0, no file at all), so `run_all` and every directory watcher are
@@ -66,21 +66,23 @@ clobbered file, or abandoned spinning process is expensive.
   with ready-handshake + double-sampled survivors; replaces the racy
   `grpsig.py`, kept for comparison), `gap.py` (launcher startup-window stop
   signals), `exectext.py`, `refcheck.py`.
-- `candidate/` — hook versions v22 (previously live) … v28 (INSTALLED live
-  2026-09-01, md5 4472d36b, verified identical to
-  `~/.claude/hooks/observe-compaction-events.sh` at repo creation).
+- `candidate/` — hook versions v22 (previously live) … v28 (installed
+  2026-09-01, md5 4472d36b) … v30 (the current install: v28 + the probe-budget
+  `SECONDS+1`→`+2` fix, md5 4fca6c35, installed 2026-09-06 by `faa2c8c`). v29 is
+  the breadcrumb instrument that found the probe-budget defect, not an install
+  candidate.
 - `mutants/` — M1–M22 seeded-defect hooks used to mutation-validate the
   harness (all 10 original harness defects showed as false GREENS before fix;
   M16/M17 were added by the 2026-09-01/02 cross-model review, see `reviews/`;
   M18 detached `/bin/sleep` 2026-09-05; M19 stdin stall, M20/M21 stdout-then-
   ftruncate, M22 chdir-away fd-1 holder 2026-09-06 — see the dated trails).
-- `scripts/` — runners (`run_full.sh`, `run_grpsig2.sh`, …), builders/patches,
+- `scripts/` — runners (`run_all.sh`, `run_grpsig2.sh`, …), builders/patches,
   standalone repros (`repro_h1*.py`, `setsid_f2_repro.py`), v22→v27 diff.
 - `dispatch/` — subordinate dispatch packets (sol/grok/agy/nim/opencode/luna).
 - `review/` — per-reviewer packets, verdicts, and raw logs; `review/v27/TASK.md`
   is the fullest statement of contract, history, and known limits.
 
-## Why v28 is the installed version (decided 2026-09-01)
+## Why v28 was the installed version 2026-09-01 → 2026-09-06 (superseded by v30)
 The install decision, not a current measurement — the harness has gained
 detection twice since (M18 cwd attribution 09-05, M19–M22 stdin/stdout 09-06),
 so read the header's re-run line for where v28 stands today.

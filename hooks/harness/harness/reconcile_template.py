@@ -48,6 +48,19 @@ import os
 import re
 import sys
 
+# safe() is loaded from the sibling prereg_io.py BY EXPLICIT PATH, never by
+# module name. A bare `from prereg_io import safe` would, if this file ever went
+# missing, bind a namesake `prereg_io` from elsewhere on sys.path and silently
+# restore the escaping drift this extraction removed (astra P2 review, reproduced
+# 2026-09-09). An absent sibling here raises FileNotFoundError -- fail-loud.
+import importlib.util as _ilu
+import os as _os
+_prereg_spec = _ilu.spec_from_file_location(
+    "prereg_io", _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "prereg_io.py"))
+_prereg = _ilu.module_from_spec(_prereg_spec)
+_prereg_spec.loader.exec_module(_prereg)
+safe = _prereg.safe
+
 NS = 1_000_000_000
 BEFORE, AFTER, OTHER, ANOMALY = "BEFORE", "AFTER", "OTHER", "ANOMALY"
 
@@ -72,12 +85,6 @@ class Item:
         # id is coerced to str: the docstring invites non-string ids (a log
         # offset) but the engine prints and joins it, which needs a str.
         self.id, self.ts, self.kind, self.detail = str(id), ts, kind, detail
-
-
-def safe(text):
-    """Untrusted text (ids from records) for stdout: a stray lone surrogate must
-    never turn a report into a traceback."""
-    return text.encode("utf-8", "backslashreplace").decode("utf-8")
 
 
 class Adapter:

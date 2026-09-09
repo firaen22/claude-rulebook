@@ -1,0 +1,11 @@
+{
+  "caches": {
+    "delegation-and-review": {"skill": "skills/delegation-and-review/SKILL.md",
+      "sources": ["harness/10-orchestration.md", "harness/30-delegation-templates.md"]},
+    "operational-rigor": {"skill": "skills/operational-rigor/SKILL.md",
+      "sources": ["CLAUDE.md", "harness/20-judgment-rubrics.md"]},
+    "skill-authoring": {"skill": "skills/skill-authoring/SKILL.md",
+      "sources": ["harness/00-DIAGNOSIS.md", "harness/40-maintenance.md", "harness/50-letter-to-future-sessions.md"]}
+  },
+  "_scope": "This manifest gates caches of LOCAL harness sources only. delegation-and-review also POINTS to the memory/workflow_*.md playbooks + reference_subordinate_routing_map.md, but by its own precedence the card does NOT cache them (the per-CLI playbook wins on invocation detail; 'always open the playbook'), so those are intentionally not freshness-gated here. cross-model-review and the opus-pack ports mirror UPSTREAM, not a local harness file, so they carry no 'Cache over' line and stay exempt (check_caches bootstrap enforces: any skill WITH a 'Cache over' line must appear above)."
+}

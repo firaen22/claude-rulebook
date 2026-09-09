@@ -74,6 +74,19 @@ import os
 import re
 import sys
 
+# safe() is loaded from the sibling prereg_io.py BY EXPLICIT PATH, never by
+# module name. A bare `from prereg_io import safe` would, if this file ever went
+# missing, bind a namesake `prereg_io` from elsewhere on sys.path and silently
+# restore the escaping drift this extraction removed (astra P2 review, reproduced
+# 2026-09-09). An absent sibling here raises FileNotFoundError -- fail-loud.
+import importlib.util as _ilu
+import os as _os
+_prereg_spec = _ilu.spec_from_file_location(
+    "prereg_io", _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "prereg_io.py"))
+_prereg = _ilu.module_from_spec(_prereg_spec)
+_prereg_spec.loader.exec_module(_prereg)
+safe = _prereg.safe
+
 # fullmatch + ASCII digit classes: `$` would accept a trailing newline (codex r2 F5)
 NAME_RE = re.compile(r"([0-9]+)-([0-9]+)\.(complete\.json|partial\.json|error\.txt|dropped\.txt)")
 ANOMALY_SUFFIXES = ("partial.json", "error.txt", "dropped.txt")
@@ -81,12 +94,6 @@ KNOWN_SS_SOURCES = ("startup", "resume", "clear", "compact", "fork")
 LOAD_ERRORS = (ValueError, json.JSONDecodeError, UnicodeDecodeError, OSError, RecursionError)
 DEFAULT_DIR = os.path.expanduser("~/.claude/session-state/observed")
 NS = 1_000_000_000
-
-
-def safe(text):
-    """Untrusted text (filenames, ids) for stdout: never let a stray surrogate
-    turn a report into a traceback."""
-    return text.encode("utf-8", "backslashreplace").decode("utf-8")
 
 
 def parse_since(text):

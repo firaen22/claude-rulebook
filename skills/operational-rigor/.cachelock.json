@@ -1,0 +1,9 @@
+{
+  "body_sha": "1e561e80d9017583b77214d116c8f9f878ffe8bb48fdd187c89ebd19c3bbee94",
+  "built_via": "fresh-init",
+  "cache": "operational-rigor",
+  "sources": {
+    "CLAUDE.md": "1452da9273ba3687219d69417b2c5c0fd277be92d0ea1585bec09e3ff92cc928",
+    "harness/20-judgment-rubrics.md": "2953b33d1d923346cff9159f902916129266347c77083b673f95594aa659457a"
+  }
+}
