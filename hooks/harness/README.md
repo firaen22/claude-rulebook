@@ -39,13 +39,13 @@ discriminated, `run_all --pidhang` rc 0.
   section below). A green `run_all` is necessary, not sufficient — pair it with a
   `reconcile_pairs.py --since <recent>` check before trusting an install.
 - 2026-09-01/02 — the review this tree was curated from; mutants M14/M16/M17
-  fail as intended. Trail: `reviews/2026-09-01-cross-model-harness-review.md`.
+  fail as intended. Trail: `archive/reviews/2026-09-01-cross-model-harness-review.md`.
 - 2026-09-05 — the `HOME=` orphan clause does not reach platform binaries;
   fixed by cwd attribution, then re-reviewed (M18).
-  Trail: `reviews/2026-09-05-orphan-detection-cwd.md`.
+  Trail: `archive/reviews/2026-09-05-orphan-detection-cwd.md`.
 - 2026-09-06 — the last two documented holes closed: A06 could not enforce
   `WALL_CEIL`, and C2 was graded from a file the hook could `ftruncate`
-  (M19–M22). Trail: `reviews/2026-09-06-stdout-tap-stdin-pump.md`.
+  (M19–M22). Trail: `archive/reviews/2026-09-06-stdout-tap-stdin-pump.md`.
 
 **Read the dated sections, not this summary, before trusting any single number** —
 each round restates what its predecessor got wrong.
@@ -74,15 +74,18 @@ clobbered file, or abandoned spinning process is expensive.
   (gate-invisible; no live code depends on them).
 - `mutants/` — M1–M22 seeded-defect hooks used to mutation-validate the
   harness (all 10 original harness defects showed as false GREENS before fix;
-  M16/M17 were added by the 2026-09-01/02 cross-model review, see `reviews/`;
+  M16/M17 were added by the 2026-09-01/02 cross-model review, see `archive/reviews/`;
   M18 detached `/bin/sleep` 2026-09-05; M19 stdin stall, M20/M21 stdout-then-
   ftruncate, M22 chdir-away fd-1 holder 2026-09-06 — see the dated trails).
 - `scripts/` — runners (`run_all.sh`, `run_grpsig2.sh`, …), builders/patches,
   standalone repros (`repro_h1*.py`, `setsid_f2_repro.py`) — note: these import
   harness-frozen2/3 which are not deployed, so they are kept as history only.
-- `dispatch/` — subordinate dispatch packets (sol/grok/agy/nim/opencode/luna).
-- `review/` — per-reviewer packets, verdicts, and raw logs; `review/v27/TASK.md`
-  is the fullest statement of contract, history, and known limits.
+- `archive/` — obsolete runners and inert text evidence, gate-invisible (no live
+  code depends on them); see `archive/README.md`. Holds `candidate/` (v22-installed,
+  v23–v25, v27), `dispatch/` (subordinate dispatch packets: sol/grok/agy/nim/opencode/luna),
+  `review/` (per-reviewer packets, verdicts, raw logs — `archive/review/v27/TASK.md`
+  is the fullest statement of contract, history, and known limits), and `reviews/`
+  (cross-model review records + `reconcile_pairs` packets).
 
 ## Why v28 was the installed version 2026-09-01 → 2026-09-06 (superseded by v30)
 The install decision, not a current measurement — the harness has gained
@@ -108,16 +111,16 @@ cwd's top level — arbitrary absolute paths need OS-level fs isolation.
 The two rounds that changed what the harness can DETECT have their own files.
 Both are verbatim; nothing was summarised away. Read them before trusting any
 claim about detection reach:
-- [`reviews/2026-09-05-orphan-detection-cwd.md`](reviews/2026-09-05-orphan-detection-cwd.md)
+- [`archive/reviews/2026-09-05-orphan-detection-cwd.md`](archive/reviews/2026-09-05-orphan-detection-cwd.md)
   — the `HOME=` clause is inert for platform binaries, fixed by `cwd_pids`
   attribution; the exclusive-workdir lock; rounds 2 and 3 (M18). Ends with the
   standing "unknown is never clean" rule and the residuals that still evade
   every clause.
-- [`reviews/2026-09-06-stdout-tap-stdin-pump.md`](reviews/2026-09-06-stdout-tap-stdin-pump.md)
+- [`archive/reviews/2026-09-06-stdout-tap-stdin-pump.md`](archive/reviews/2026-09-06-stdout-tap-stdin-pump.md)
   — A06's blocking stdin write (M19), C2 graded from a truncatable file
   (M20/M21), and `StdoutTap`'s EOF requirement turning the chdir-away residual
   into a detection (M22).
-- [`reviews/2026-09-01-cross-model-harness-review.md`](reviews/2026-09-01-cross-model-harness-review.md)
+- [`archive/reviews/2026-09-01-cross-model-harness-review.md`](archive/reviews/2026-09-01-cross-model-harness-review.md)
   — the round this tree was curated from (M14/M16/M17).
 
 **Two residuals stated here because they bound every number above:** a
@@ -202,14 +205,14 @@ want, e.g. `python3 harness/reconcile_pairs.py --since 2026-09-06T00:00:00Z`.
 Deliberately NOT folded into `run_all.sh`, which grades synthetic state — a
 live-dir check would go permanently red on any historical anomaly.
 
-History: the first version (packet `reviews/PACKET_reconcile_pairs_2026-09-06.md`)
+History: the first version (packet `archive/reviews/PACKET_reconcile_pairs_2026-09-06.md`)
 paired on `session_id` + time window only. Cross-model review the same day
 (codex gpt-6-astra FIX F1–F7, fresh Fable FIX F-1..F-4, both reproduced here)
 showed a cancelled PreCompact inside the window would be claimed by the next
 compaction's SessionStart and turn a real VOID into `CLEAN`; Fable found the
 `prompt_id` identity that closes it. Round 2 on the identity version (packet
-`reviews/PACKET_reconcile_pairs_v2_2026-09-06.md`; codex FIX F1–F6, Fable
-`reviews/FABLE_reconcile_pairs_r2_2026-09-06.md` FIX F-A F-B — no code defect,
+`archive/reviews/PACKET_reconcile_pairs_v2_2026-09-06.md`; codex FIX F1–F6, Fable
+`archive/reviews/FABLE_reconcile_pairs_r2_2026-09-06.md` FIX F-A F-B — no code defect,
 two suite branches no fixture could fail): all reproduced and fixed — `--since`
 dropped SSC context so a pre-cutoff duplicate could hide a dup ANOMALY (F1) and
 a wholly pre-cutoff duplicate still reported (F2); a lone surrogate in an id
