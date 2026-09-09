@@ -259,18 +259,22 @@ def _inventory():
     # P1b cache-freshness coupling: if a new cache is added to the manifest (distilled by
     # bootstrap_ungated), it must be registered in check_catalog's hardcoded skill list,
     # else P1b_gate will catch ungoverned .cachelock.json files but check_catalog won't
-    # govern the SKILL.md. Extract manifest cache names (some have prefix, some don't) and
-    # verify every one is either in the hardcoded list or has an exemption recorded.
+    # govern the SKILL.md. Extract manifest cache names and verify every one is in the
+    # hardcoded list (exact membership -- see the fail-open note on the loop below).
     try:
         manifest = cachelib.load_manifest()
     except Exception as exc:
         raise GateError(f"cannot load cache manifest: {exc}")
-    # Normalize manifest keys: "skill-authoring" → "skill-authoring", "delegation-and-review" → "delegation-and-review"
-    # (the manifest uses both forms; check if each is in the hardcoded set, accounting for either form)
+    # Each manifest cache key must EXACTLY name a hardcoded skill dir (whose SKILL.md the
+    # loop above actually inventories). A prefix-stripped match was a fail-open: a key like
+    # `skill-cross-model-review` strips to the hardcoded `cross-model-review` and passes, yet
+    # cachelib binds it to the DISTINCT `skills/skill-cross-model-review/SKILL.md`, which the
+    # hardcoded loop never stats -> an ungoverned SKILL.md slips through (grok+codex, reproduced
+    # 2026-09-09). Exact membership only: the live manifest's keys all match a hardcoded name
+    # verbatim, so the strip only ever manufactured false coverage.
     uncovered = []
     for cache_key in manifest.keys():
-        # Try exact match and prefix-stripped match
-        if cache_key not in hardcoded_skills and cache_key.replace("skill-", "", 1) not in hardcoded_skills:
+        if cache_key not in hardcoded_skills:
             uncovered.append(cache_key)
     if uncovered:
         raise GateError(

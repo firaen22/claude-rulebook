@@ -64,14 +64,17 @@ def check_file(relpath):
 
     prose = [ln for ln in lines if ln.split() and not ln.lstrip().startswith("|")]
     words = sum(len(ln.split()) for ln in prose)
-    ratio = round(words / max(len(prose), 1), 1)
+    exact_ratio = words / max(len(prose), 1)
+    ratio = round(exact_ratio, 1)  # display only
 
     row_nfs = [len(ln.split()) for ln in lines if ln.lstrip().startswith("|")]
     max_nf = max(row_nfs) if row_nfs else 0
 
     violations = []
-    if ratio > PROSE_MAX:
-        violations.append(f"DENSITY {relpath}: prose {ratio} w/l > {PROSE_MAX}")
+    # Compare the UNROUNDED ratio: round-then-compare was a fail-open, admitting 13.04
+    # (rounds to 13.0, not > 13.0) despite exceeding the ceiling (grok+codex, reproduced 2026-09-09).
+    if exact_ratio > PROSE_MAX:
+        violations.append(f"DENSITY {relpath}: prose {exact_ratio:.2f} w/l > {PROSE_MAX}")
     if max_nf > ROW_MAX:
         violations.append(f"DENSITY {relpath}: row {max_nf} fields > {ROW_MAX}")
     return len(lines), ratio, max_nf, violations
