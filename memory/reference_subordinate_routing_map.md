@@ -12,13 +12,18 @@ Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 [[workflow-codex-subordinate]] [[workflow-agy-subordinate]] [[workflow-grok-subordinate]]
 [[workflow-opencode-subordinate]] [[reference-nim-via-opencode]]
 
-> 📌 **VERSION STAMP — re-verified 2026-09-06 by running each binary:**
-> `grok 1.0.13 (5e9a58528b76)` · `codex-cli 0.153.4` · `opencode 1.18.29` · `agy 1.1.27`.
+> 📌 **VERSION STAMP — re-verified 2026-09-10 by running each binary:**
+> `grok 1.0.24 (68e414c661e3)` · `codex-cli 0.153.4` · `opencode 1.18.30` · `agy 1.1.28`.
 > Every rc / ceiling / bug-status claim in this file and the linked playbooks is
-> **VERSION-BOUND**. Only agy moved since the last stamp (1.1.26→1.1.27, opportunistic
-> self-update, not targeted at anything in this file) — codex/opencode/grok held steady.
-> codex's ~30KB inline-review ceiling (§2a) remains UNVERIFIED on 0.153.4 — a stamp is a
-> reading, not a guarantee. **Re-run `--version` before trusting a number.**
+> **VERSION-BOUND**. grok jumped a full minor version since the last stamp (1.0.13→1.0.24,
+> opportunistic self-update, not targeted at anything here); opencode and agy each moved
+> one patch (1.18.29→1.18.30, 1.1.27→1.1.28, both opportunistic self-updates) — codex held
+> steady. Every grok rc/edge/schema claim below (R-A's 0/16 edge result, the staged-files
+> review recipe, X-tools, R-B empty-return behavior) was measured on 1.0.13 and is
+> **UNVERIFIED on 1.0.24** until re-run — treat grok findings from this point forward as
+> provisional pending a re-bench. codex's ~30KB inline-review ceiling (§2a) remains
+> UNVERIFIED on 0.153.4 — a stamp is a reading, not a guarantee.
+> **Re-run `--version` before trusting a number.**
 
 ## 0. Two rules that override every row below
 
@@ -132,7 +137,7 @@ the failure does NOT look like a packet problem — it looks like the model bein
 
 | Reviewer | Shape that WORKS | What the wrong shape looks like |
 |---|---|---|
-| **grok** (v1.0.13) | **STAGE the files in `--cwd`**, tell it to read them; findings on stdout | inlined target ⇒ schema-valid `findings: []` (43 reasoning tokens on 15k input), or 0 bytes, or 259 bytes of narration. 3/3 (2026-08-28) |
+| **grok** (measured on v1.0.13, now UNVERIFIED on 1.0.24) | **STAGE the files in `--cwd`**, tell it to read them; findings on stdout | inlined target ⇒ schema-valid `findings: []` (43 reasoning tokens on 15k input), or 0 bytes, or 259 bytes of narration. 3/3 (2026-08-28) |
 | **codex** | **INLINE the files** into the prompt (`nl -ba`) so it makes ZERO tool calls | staged files ⇒ it reads them all, announces the report, then the long final answer **vanishes from stdout and `-o` is never written**. 1/1 (2026-08-28, this map's own review) |
 
 So the same review dispatched to both needs two differently-built packets. Keep each
