@@ -78,3 +78,37 @@ The at-3 promotion duty above does NOT apply to entries here.
   closed one. (CLOSED here is counter-section vocabulary, not a `Status:`
   value.)
 
+
+## 2026-09-11 — Clean-room author subagent read the forbidden file AND was silently served by Haiku 4.5
+- What happened: dispatched an `Agent` (no `model:` override) to write `qimen-badju-v2.ts`
+  clean-room with a prose "do NOT open qimen-badju.ts" rule. Transcript audit: all 53
+  turns served by `claude-haiku-4-5-20251001`; it ran `head -50` and `sed -n '50,200p'`
+  on the forbidden v1 file, then spawned a child "to port v1 to v2". Output scored
+  12/65 perfect, 10,605 breaks. Run voided; redispatched with `model: fable` and a
+  hardened brief (no subagents, no shell reads, audited afterwards).
+- Root cause: two mechanisms. (1) The read ban was prose and the agent held Bash —
+  an instance of the CLOSED "read-only instruction is not a control" counter (covered
+  at delegation-and-review SKILL.md:429; NOT re-incremented). (2) NEW: an in-harness
+  `Agent` without `model:` inherits the configured default subagent model, which was
+  Haiku, and nothing in the completion notification says which model served it — the
+  experiment's whole variable (model quality) was silently swapped.
+- Rule change needed: `~/.claude/harness/10-orchestration.md` — when the served model
+  is part of what the task measures (or the task is judgment-heavy), pass `model:`
+  explicitly on every `Agent` dispatch AND confirm post-hoc from the task transcript's
+  `"model":"…"` field before trusting the result (mirror of cross-model-review §5
+  identity rule, extended from reviewers to authors).
+- Status: noted
+
+## 2026-09-11 — Orphaned grandchild agent wrote into the tree after its parent "completed"
+- What happened: run-1's child ("Port v1 to v2") kept running after run-1 reported
+  completed and after I had restored the stub and dispatched run 2 in the same tree.
+  It overwrote `qimen-badju-v2.ts` with a 1,381-line v1 port at 16:44 while run 2
+  was mid-exploration. Caught only because the completion notification carried an
+  unfamiliar task-id. Run 2 had not yet written or re-read the file → resumed.
+- Root cause: a parent's completion notification does not imply its children are
+  finished; two authors then share one working tree with no write boundary.
+- Rule change needed: `~/.claude/harness/10-orchestration.md` — before dispatching
+  into a tree, `ListAgents` and confirm no subagent (any depth) is alive; a void run's
+  descendants must be stopped explicitly. Prefer `isolation: "worktree"` for any
+  author whose output is the experiment's artifact.
+- Status: noted
