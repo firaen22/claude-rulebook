@@ -12,18 +12,18 @@ Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 [[workflow-codex-subordinate]] [[workflow-agy-subordinate]] [[workflow-grok-subordinate]]
 [[workflow-opencode-subordinate]] [[reference-nim-via-opencode]]
 
-> 📌 **VERSION STAMP — re-verified 2026-09-10 by running each binary:**
-> `grok 1.0.24 (68e414c661e3)` · `codex-cli 0.153.4` · `opencode 1.18.30` · `agy 1.1.28`.
+> 📌 **VERSION STAMP — re-verified 2026-09-11 by running each binary:**
+> `grok 1.0.24 (68e414c661e3)` · `codex-cli 0.153.4` · `opencode 1.18.30` · `agy 1.2.1`.
 > Every rc / ceiling / bug-status claim in this file and the linked playbooks is
-> **VERSION-BOUND**. grok jumped a full minor version since the last stamp (1.0.13→1.0.24,
-> opportunistic self-update, not targeted at anything here); opencode and agy each moved
-> one patch (1.18.29→1.18.30, 1.1.27→1.1.28, both opportunistic self-updates) — codex held
-> steady. Every grok rc/edge/schema claim below (R-A's 0/16 edge result, the staged-files
-> review recipe, X-tools, R-B empty-return behavior) was measured on 1.0.13 and is
-> **UNVERIFIED on 1.0.24** until re-run — treat grok findings from this point forward as
-> provisional pending a re-bench. codex's ~30KB inline-review ceiling (§2a) remains
-> UNVERIFIED on 0.153.4 — a stamp is a reading, not a guarantee.
-> **Re-run `--version` before trusting a number.**
+> **VERSION-BOUND**. agy jumped a full minor version since the last stamp (1.1.28→1.2.1,
+> opportunistic self-update, not targeted at anything here) — codex/opencode/grok held
+> steady. Every agy rc/pin/edge claim below (the 3.6-flash-medium / 3.7-flash pins, K1 edge
+> results, empty-return-is-permission-deny finding) was measured through 1.1.x and is
+> **UNVERIFIED on 1.2.1** until re-run — treat agy findings from this point forward as
+> provisional pending a re-bench. Every grok rc/edge/schema claim below was measured on
+> 1.0.13 and remains **UNVERIFIED on 1.0.24** (unchanged from the last stamp). codex's
+> ~30KB inline-review ceiling (§2a) remains UNVERIFIED on 0.153.4 — a stamp is a reading,
+> not a guarantee. **Re-run `--version` before trusting a number.**
 
 ## 0. Two rules that override every row below
 
