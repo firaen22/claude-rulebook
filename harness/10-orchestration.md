@@ -7,7 +7,12 @@ instead of trusting this file if anything errors.**
 ## §0 — What is actually available (verify, don't assume)
 
 **Internal (Agent tool):** `model` parameter accepts `sonnet`, `opus`, `haiku`, and
-(availability varies by session/plan) `fable`. Agent types that matter:
+(availability varies by session/plan) `fable`. **Omitting `model:` is not neutral,
+and the served tier is not a nameable default:** measured 2026-09-11 an omitted
+`model:` served `haiku` — NOT §2's `sonnet`, NOT the orchestrator's model — and the
+subagent `.meta.json` then had no `model` key. When identity is load-bearing (§5),
+pass `model:` ON THIS CALL and read the served id back (§5); omitting is not a default.
+Agent types that matter:
 - `Explore` — read-only search/scan. Cheapest way to answer "where is X / what does
   the codebase do about Y". Cannot edit.
 - `general-purpose` — multi-step tasks with full tools, including edits.
@@ -96,7 +101,8 @@ WINS; fix this table in the same turn.** Its rows that this table's "second-opin
 row predates: agy is NOT the pick for post-implementation review of a real repo, and
 grok on the staged-files recipe is a measured third lens complementary to codex.
 
-Default model when unsure: `sonnet`. Drop to `haiku` only for tasks where a wrong
+Default when unsure: pass `model: sonnet` explicitly — omitting `model:` does NOT
+serve `sonnet` (§0). Drop to `haiku` only for tasks where a wrong
 answer is cheap and obvious (you'll instantly see it's wrong). Raise to `opus` for
 ambiguity, cross-cutting judgment, or when sonnet has already failed once (§4).
 
@@ -150,6 +156,23 @@ Fill-in templates per task type: `30-delegation-templates.md`.
   shows an unchecked criterion) is a REJECT of the review: close the gap yourself
   or re-dispatch to a DIFFERENT reviewer one tier up. If the same reviewer type
   self-contradicts twice, log it in `~/.claude/harness/LESSONS.md`.
+- **Confirm the served model when identity is load-bearing.** Two triggers, both
+  needing explicit `model:` at dispatch: (1) the served model is the measured
+  variable; (2) a judgment-heavy result trusted as that tier's output. Confirm
+  post-hoc on the agent that WROTE the artifact — including any `spawnDepth ≥ 2`
+  background descendant (an unexpected task-id notification flags one, §7): served =
+  `message.model` on ALL its `assistant` turns (any turn that doesn't map → disagree),
+  requested = its `.meta.json` `model` (absent when omitted). Compare TIERS, not raw
+  strings — map served id to slug (`haiku` ↔ `claude-haiku-4-5-20251001` = match).
+  Identity is UNVERIFIED in any of: transcript missing; requested `model` absent
+  (omitted, so no `.meta.json` `model` key — the incident's own case); served id
+  unmappable to a slug; or the writer can't be established as the SOLE writer of the
+  path (§7 isolation / one-writer not enforced at dispatch). On UNVERIFIED, do not
+  trust the output as the requested model and do not substitute the parent's tier.
+  UNVERIFIED, or tiers that map but disagree → wrong/unconfirmed output: (1) VOID the
+  run; (2) per §7, quarantine the voided tree and re-dispatch — explicit `model:` on
+  the artifact-writing call — to a fresh, non-overlapping path, never the contaminated
+  one. Transcript location is machine-specific — ask the operator.
 
 ## §6 — Escalation and de-escalation
 
@@ -196,3 +219,18 @@ manufacture taste.
   (recipe: `~/.claude/memory/workflow_opencode_subordinate.md`).
 - Never launch a second wave before accepting/rejecting the first — unaccepted work
   compounds errors.
+- **A parent Agent's "completed" does not mean its children finished.** A background
+  grandchild (`spawnDepth ≥ 2`, `requestShape: background`) can keep writing after the
+  parent reports done (measured 2026-09-11: a haiku grandchild overwrote the artifact
+  mid-second-run). You do NOT automatically receive a grandchild's task-id — the
+  parent's code spawns it; it surfaces only as an unfamiliar id in a later
+  notification — and no listing closes the gap (`ListAgents` returns peer sessions
+  only; treat no listing as descendant coverage). So PREVENT, don't detect: any
+  background author whose output IS the artifact gets its own tree
+  (`isolation: "worktree"` or a fresh path — mandatory), one writer per path, and its
+  §3 dispatch package must instruct it NOT to spawn background children that write the
+  shared artifact. `TaskStop({task_id})` and await that id's terminal output for every
+  task-id you actually hold; a stop request is not termination, and a worktree does not
+  kill an orphan already writing. After a voided run, quarantine its tree and
+  re-dispatch to a fresh, non-overlapping path; a replacement completing elsewhere does
+  NOT establish the quarantined tree is safe — an orphan can still be writing it.

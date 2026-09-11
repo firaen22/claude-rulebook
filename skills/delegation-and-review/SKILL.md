@@ -70,6 +70,23 @@ voting/multi-sample infra**; one reviewer with expected-before-actual matches a
   cheapest capable model)" in the description. ❌ leaving the model field
   blank "to keep the call short."
 
+- **On the Agent tool specifically, an omitted `model:` is not the
+  orchestrator's tier or the routing table's stated default — it measured
+  `haiku`** (2026-09-11: an unset `model:` silently served haiku and voided a
+  model-tier experiment). When the served identity is load-bearing (it's the
+  measured variable, or a judgment-heavy result gets trusted as that tier's
+  output), pass `model:` explicitly on the call AND confirm post-hoc on the
+  agent that actually wrote the artifact — including any `spawnDepth ≥ 2`
+  background descendant, not just the top-level dispatch: served id is
+  `message.model` on ALL its transcript `assistant` turns, requested is its
+  `.meta.json` `model` field (absent when omitted); compare TIERS via a
+  slug↔id map, not raw string equality. Transcript missing, requested `model`
+  absent, an unmappable served id, or the writer not established as the SOLE
+  writer of its path → identity UNVERIFIED, never substitute the parent's
+  tier. UNVERIFIED or disagreeing → VOID the run, then quarantine and
+  re-dispatch to a fresh path (§8) rather than the contaminated one. Full
+  rule: `~/.claude/harness/10-orchestration.md` §0/§5.
+
 - **A lineup listing is a routing claim, not callability** — a listed model has
   failed hard on first real invocation across two independent tools. Before
   routing real work to a newly-listed model, send one trivial prompt through
@@ -542,6 +559,19 @@ needs per-instance `XDG_DATA_HOME` + copied auth.json — verified 3-way only
 Parallel NIM direct-curl
 batch (40 req/min per key via `nimroute.py`; per-model roles):
 `~/.claude/memory/reference_nim_via_opencode.md` + `references/invocations-and-traps.md`.
+**A parent Agent's "completed" does not mean its children finished** — a
+background grandchild (`spawnDepth ≥ 2`, `requestShape: background`) can keep
+writing after the parent reports done (2026-09-11: one overwrote an artifact
+mid-second-run). You do NOT automatically receive a grandchild's task-id and
+no listing tool enumerates Agent-tool descendants (`ListAgents` is peer
+sessions only) — so PREVENT rather than detect: any background author whose
+output IS the artifact gets a mandatory own tree (`isolation: 'worktree'` or
+a fresh path), one writer per path, told explicitly not to spawn background
+children writing the shared artifact. `TaskStop({task_id})` every task-id you
+actually hold and await its terminal output before reusing a path; a voided
+run's tree stays quarantined — re-dispatch to a fresh path, never it (a
+replacement finishing elsewhere does not prove the old tree is safe). Full
+rule: `~/.claude/harness/10-orchestration.md` §7.
 
 ## 9 · Invocations & traps — open the reference before ANY CLI dispatch
 
