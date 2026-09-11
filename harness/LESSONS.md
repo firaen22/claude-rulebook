@@ -97,7 +97,11 @@ The at-3 promotion duty above does NOT apply to entries here.
   explicitly on every `Agent` dispatch AND confirm post-hoc from the task transcript's
   `"model":"…"` field before trusting the result (mirror of cross-model-review §5
   identity rule, extended from reviewers to authors).
-- Status: noted
+- Status: applied — `10-orchestration.md` §0/§2/§5 (commit `00a9b38`, 2026-09-11), as
+  A1 (§0/§2, explicit `model:` when load-bearing) + A2 (§5, post-hoc served-vs-requested
+  tier confirmation, incl. `spawnDepth ≥ 2` descendants; VOID + quarantine on unverified
+  or disagreeing identity). Cross-family reviewed (codex + grok, 3 rounds) plus a
+  same-family Fable pass.
 
 ## 2026-09-11 — Orphaned grandchild agent wrote into the tree after its parent "completed"
 - What happened: run-1's child ("Port v1 to v2") kept running after run-1 reported
@@ -111,4 +115,12 @@ The at-3 promotion duty above does NOT apply to entries here.
   into a tree, `ListAgents` and confirm no subagent (any depth) is alive; a void run's
   descendants must be stopped explicitly. Prefer `isolation: "worktree"` for any
   author whose output is the experiment's artifact.
-- Status: noted
+- Status: applied — `10-orchestration.md` §7 (commit `00a9b38`, 2026-09-11) as rule B,
+  but NOT as originally prescribed: cross-family review (3 rounds, codex + grok)
+  reproduced that `ListAgents` returns peer sessions only (cannot see in-session
+  Agent-tool descendants) and that a dispatcher never automatically holds a
+  grandchild's task-id — so the pre-dispatch-check design above cannot work. Landed
+  instead as PREVENTION: mandatory `isolation: "worktree"`/fresh path for any
+  background author whose output IS the artifact, one writer per path, forbidden from
+  spawning background children that write it; a voided run's tree stays quarantined
+  (a replacement finishing elsewhere does not release it).
