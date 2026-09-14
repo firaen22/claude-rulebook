@@ -7,7 +7,12 @@ instead of trusting this file if anything errors.**
 ## §0 — What is actually available (verify, don't assume)
 
 **Internal (Agent tool):** `model` parameter accepts `sonnet`, `opus`, `haiku`, and
-(availability varies by session/plan) `fable`. Agent types that matter:
+(availability varies by session/plan) `fable`. **Omitting `model:` is not neutral,
+and the served tier is not a nameable default:** measured 2026-09-11 an omitted
+`model:` served `haiku` — NOT §2's `sonnet`, NOT the orchestrator's model — and the
+subagent `.meta.json` then had no `model` key. When identity is load-bearing (§5),
+pass `model:` ON THIS CALL and read the served id back (§5); omitting is not a default.
+Agent types that matter:
 - `Explore` — read-only search/scan. Cheapest way to answer "where is X / what does
   the codebase do about Y". Cannot edit.
 - `general-purpose` — multi-step tasks with full tools, including edits.
@@ -15,31 +20,20 @@ instead of trusting this file if anything errors.**
 - `agent-skills:code-reviewer` / `security-auditor` / `test-engineer` — review roles.
 - `claude-code-guide` — questions about Claude Code/API itself.
 
-**External CLIs (Bash) — there are FIVE, not three:** `codex` (`gpt-5.6-luna`; two PROVISIONAL
-within-codex exceptions → `gpt-6-astra` at `medium`: small-code review with unstated
-hazards (R1) and implementation whose scale/depth bound can't be stated (E4), both
-N=3 on 2026-09-06 — routing map §3 has the numbers and scope), `agy`
-(Gemini `3.7-flash-medium`; review pin `3.6-flash-high`), `grok` (`~/.grok/bin/grok`,
-`grok-4.6`), `opencode` (free pool), and NIM (a model backend, not an agent — direct
-curl, or via opencode when file edits are needed). Playbooks in
-`~/.claude/memory/workflow_*.md` + `reference_nim_via_opencode.md` are the source of
-truth for invocation syntax and known traps. Three that bite before you read them:
-**grok ingests `~/.claude` by default** — isolate HOME or it is not an independent
-review lens; **opencode's `$PWD` is not its cwd** — set `env["PWD"]` AND `--dir`;
-**an empty return is never "no findings"** — agy returns empty rc=0 ~17% at ~8KB
-(always retry, ≤3×), grok can return a schema-VALID empty review that passes every
-guard (tell: `usage.reasoning_tokens` vs input size), and opencode's first real-
-generation zero-byte means reroute, not retry.
-Two more, measured 2026-09-02: **Bash cwd is reset to the project dir after every
-call** — `cd` does not carry; use absolute paths or `git -C <abs>` in each call.
-**A subagent's CLAUDE.md + skill list is the parent's LAST system-prompt rebuild**
-(`/compact` refreshes it), not session start — a before/after subagent experiment
-records which rebuild each arm inherited.
-Re-verify a CLI still works with a 5-second probe before batch-dispatching:
-`codex exec -m gpt-5.6-luna --skip-git-repo-check -s read-only "PONG"` (always pass
-`-m` — the bare config default is NOT the measured model) ·
-`~/.grok/bin/grok -p PONG --disable-web-search --no-subagents` ·
-`agy -p PONG --model gemini-3.7-flash-medium` (bare `agy -p` is NOT the pinned model).
+**External CLIs (Bash) — FIVE, not three:** `codex`, `agy`, `grok`, `opencode`, and
+NIM (a model backend, not an agent — direct curl, or via opencode when edits are
+needed). Their slugs, review pins, the (PROVISIONAL) within-codex `gpt-6-astra`
+exceptions, the traps that bite before you read them (grok ingests `~/.claude` unless
+HOME is isolated; opencode's `$PWD` is not its cwd; an empty return is never "no
+findings"), and the 5-second re-verify probe for each CLI live in
+`~/.claude/memory/workflow_*.md` + `reference_subordinate_routing_map.md`
+(+ `reference_nim_via_opencode.md`; the map WINS over §2 on executor choice) — open
+the relevant one and run its probe before batch-dispatching. Two harness-execution
+facts not in those files (measured 2026-09-02): **Bash cwd resets
+to the project dir after every call** — `cd` does not carry; use absolute paths or
+`git -C <abs>`. **A subagent's CLAUDE.md + skill list is the parent's LAST
+system-prompt rebuild** (`/compact` refreshes it), not session start — a before/after
+subagent experiment records which rebuild each arm inherited.
 
 If this file's tool list disagrees with what the harness offers you, the harness
 wins — then update this file per `40-maintenance.md`.
@@ -96,7 +90,8 @@ WINS; fix this table in the same turn.** Its rows that this table's "second-opin
 row predates: agy is NOT the pick for post-implementation review of a real repo, and
 grok on the staged-files recipe is a measured third lens complementary to codex.
 
-Default model when unsure: `sonnet`. Drop to `haiku` only for tasks where a wrong
+Default when unsure: pass `model: sonnet` explicitly — omitting `model:` does NOT
+serve `sonnet` (§0). Drop to `haiku` only for tasks where a wrong
 answer is cheap and obvious (you'll instantly see it's wrong). Raise to `opus` for
 ambiguity, cross-cutting judgment, or when sonnet has already failed once (§4).
 
@@ -150,6 +145,23 @@ Fill-in templates per task type: `30-delegation-templates.md`.
   shows an unchecked criterion) is a REJECT of the review: close the gap yourself
   or re-dispatch to a DIFFERENT reviewer one tier up. If the same reviewer type
   self-contradicts twice, log it in `~/.claude/harness/LESSONS.md`.
+- **Confirm the served model when identity is load-bearing.** Two triggers, both
+  needing explicit `model:` at dispatch: (1) the served model is the measured
+  variable; (2) a judgment-heavy result trusted as that tier's output. Confirm
+  post-hoc on the agent that WROTE the artifact — including any `spawnDepth ≥ 2`
+  background descendant (an unexpected task-id notification flags one, §7): served =
+  `message.model` on ALL its `assistant` turns (any turn that doesn't map → disagree),
+  requested = its `.meta.json` `model` (absent when omitted). Compare TIERS, not raw
+  strings — map served id to slug (`haiku` ↔ `claude-haiku-4-5-20251001` = match).
+  Identity is UNVERIFIED in any of: transcript missing; requested `model` absent
+  (omitted, so no `.meta.json` `model` key — the incident's own case); served id
+  unmappable to a slug; or the writer can't be established as the SOLE writer of the
+  path (§7 isolation / one-writer not enforced at dispatch). On UNVERIFIED, do not
+  trust the output as the requested model and do not substitute the parent's tier.
+  UNVERIFIED, or tiers that map but disagree → wrong/unconfirmed output: (1) VOID the
+  run; (2) per §7, quarantine the voided tree and re-dispatch — explicit `model:` on
+  the artifact-writing call — to a fresh, non-overlapping path, never the contaminated
+  one. Transcript location is machine-specific — ask the operator.
 
 ## §6 — Escalation and de-escalation
 
@@ -196,3 +208,18 @@ manufacture taste.
   (recipe: `~/.claude/memory/workflow_opencode_subordinate.md`).
 - Never launch a second wave before accepting/rejecting the first — unaccepted work
   compounds errors.
+- **A parent Agent's "completed" does not mean its children finished.** A background
+  grandchild (`spawnDepth ≥ 2`, `requestShape: background`) can keep writing after the
+  parent reports done (measured 2026-09-11: a haiku grandchild overwrote the artifact
+  mid-second-run). You do NOT automatically receive a grandchild's task-id — the
+  parent's code spawns it; it surfaces only as an unfamiliar id in a later
+  notification — and no listing closes the gap (`ListAgents` returns peer sessions
+  only; treat no listing as descendant coverage). So PREVENT, don't detect: any
+  background author whose output IS the artifact gets its own tree
+  (`isolation: "worktree"` or a fresh path — mandatory), one writer per path, and its
+  §3 dispatch package must instruct it NOT to spawn background children that write the
+  shared artifact. `TaskStop({task_id})` and await that id's terminal output for every
+  task-id you actually hold; a stop request is not termination, and a worktree does not
+  kill an orphan already writing. After a voided run, quarantine its tree and
+  re-dispatch to a fresh, non-overlapping path; a replacement completing elsewhere does
+  NOT establish the quarantined tree is safe — an orphan can still be writing it.
