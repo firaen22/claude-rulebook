@@ -89,7 +89,8 @@ def _keys_from_text(text):
     if not tokens:
         return []
     first = _relative_key(tokens[0])
-    return [_relative_key(token, first) for token in tokens]
+    # Return first key as-is (already resolved); resolve remaining keys anchored to first.
+    return [first] + [_relative_key(token, first) for token in tokens[1:]]
 
 
 def _is_dir_key(key, row_text, token):
@@ -108,25 +109,69 @@ def _parse_permission_table(path):
     # none of which Markdown treats as a line ending -- letting an embedded separator truncate a
     # value or manufacture a column-0 line (codex#2, reproduced 2026-09-09).
     lines = text.split("\n")
-    try:
-        header = next(i for i, line in enumerate(lines) if line.strip() == TABLE_HEADER)
-    except StopIteration:
+
+    # Track fences (0-3 leading spaces) to exclude fenced examples from table header search (codex B1-TABLE-SOURCE).
+    fence = None  # (char, length) of open fence, or None
+    header = None
+    for i, line in enumerate(lines):
+        if fence is None:
+            # Check for fence open: 0-3 leading spaces, then ``` or ~~~
+            match = re.match(r"^[ ]{0,3}(`{3,}|~{3,})(.*)$", line)
+            if match and not (match.group(1)[0] == "`" and "`" in match.group(2)):
+                fence = (match.group(1)[0], len(match.group(1)))
+                continue
+            # Search for table header only outside fences (codex B1-TABLE-SOURCE).
+            if line.strip() == TABLE_HEADER:
+                header = i
+                break
+        else:
+            # Check for fence close: 0-3 leading spaces, then same char, same or longer length, spaces/tabs only.
+            match = re.match(r"^[ ]{0,3}(" + re.escape(fence[0]) + r"{" + str(fence[1]) + r",})[ \t]*$", line)
+            if match:
+                fence = None
+
+    if header is None:
         raise GateError("40-maintenance.md: §1 permission table header is missing")
-    if header + 1 >= len(lines) or not TABLE_SEPARATOR.match(lines[header + 1]):
+    if header + 1 >= len(lines):
+        raise GateError("40-maintenance.md: §1 table separator is missing or malformed")
+    # Validate separator row: should have exactly 3 delimiter cells (| --- | --- | --- |).
+    sep_line = lines[header + 1]
+    sep_fields = sep_line.split("|")
+    if (len(sep_fields) < 5 or not all(re.match(r"^\s*:?-{3,}:?\s*$", sep_fields[i].strip())
+                                        for i in [1, 2, 3])):
         raise GateError("40-maintenance.md: §1 table separator is missing or malformed")
 
     rows = []
+    # Track fences while reading table rows to skip indented table continuations outside fences (B1-TABLE-STOP).
+    fence = None
     for line_number, line in enumerate(lines[header + 2 :], header + 3):
-        if not line.startswith("|"):
+        # Check fence state.
+        if fence is None:
+            match = re.match(r"^[ ]{0,3}(`{3,}|~{3,})(.*)$", line)
+            if match and not (match.group(1)[0] == "`" and "`" in match.group(2)):
+                fence = (match.group(1)[0], len(match.group(1)))
+                break  # Exit table on fence open.
+        else:
+            match = re.match(r"^[ ]{0,3}(" + re.escape(fence[0]) + r"{" + str(fence[1]) + r",})[ \t]*$", line)
+            if match:
+                fence = None
+            break  # Exit table on any non-data line while tracking fences.
+
+        # A valid table row starts with optional spaces, then |. Indented rows (0-3 spaces) are valid (B1-TABLE-STOP).
+        if not re.match(r"^[ ]{0,3}\|", line):
             break
-        fields = line.split("|")
-        # A well-formed row is `| File | verdict | Rule |` -> ['', c1, c2, c3, ''] (len>=5).
-        # `| c1 | c2 |` (len 4) is missing the Rule cell; an empty fields[3] is the same
-        # defect written with a stray delimiter (astra: malformed rows passed on len>=4).
-        if (len(fields) < 5 or not fields[1].strip() or not fields[2].strip()
-                or not fields[3].strip()):
-            raise GateError(f"40-maintenance.md:{line_number}: malformed §1 data row")
+        # Strip leading indentation to extract the row (0-3 spaces consumed by CommonMark indent).
+        stripped = line.lstrip()
+        fields = stripped.split("|")
+        # A well-formed row is `| File | verdict | Rule |` -> ['', c1, c2, c3, ...] (len>=5).
+        # Validate: leading | produces empty fields[0]; need at least 3 data cells.
+        if len(fields) < 5 or not fields[0] == "":
+            raise GateError(f"40-maintenance.md:{line_number}: malformed §1 data row (bad format)")
+        # Check the three required cells are present and non-empty.
+        if not fields[1].strip() or not fields[2].strip() or not fields[3].strip():
+            raise GateError(f"40-maintenance.md:{line_number}: malformed §1 data row (missing or empty required cells)")
         col1 = fields[1].strip()
+        col3 = fields[3].strip()
         classes = []
         if "Project `CLAUDE.md` files" in col1:
             classes.append(PROJECT_CLASS)
@@ -135,7 +180,7 @@ def _parse_permission_table(path):
         keys = [] if classes else _keys_from_text(col1)
         if not classes and not keys:
             raise GateError(f"40-maintenance.md:{line_number}: §1 row has no backticked key")
-        verdict = _normalize_verdict(fields[2])
+        verdict = _normalize_verdict(fields[2].strip())
         # `** **` strips to empty (astra: a verdict that is only markup passed the
         # non-empty check on the raw cell but normalizes to nothing).
         if not verdict:
@@ -153,7 +198,7 @@ def _parse_permission_table(path):
                 _relative_key(token, keys[0] if keys else None)
                 for token in TICKS.findall(col1)
                 if _is_dir_key(_relative_key(token, keys[0] if keys else None), col1, token)
-            },
+            } if keys else set(),
             "verdict": verdict,
             "text": col1,
         })
@@ -182,21 +227,25 @@ def _parse_registry(path):
     # U+2028 etc., truncating a canonical value or manufacturing a column-0 verdict (codex#2).
     for line_number, line in enumerate(text.split("\n"), 1):
         if fence is None:
-            opener = FENCE_OPEN.match(line)
+            # Check for fence open: 0-3 leading spaces (B1-FENCE).
+            opener = re.match(r"^[ ]{0,3}(`{3,}|~{3,})(.*)$", line)
             # A backtick fence's info string may not contain a backtick -- that makes it inline
             # code ("```x```"), not a fence opener; tilde fences carry no such limit.
             if opener and not (opener.group(1)[0] == "`" and "`" in opener.group(2)):
                 fence = (opener.group(1)[0], len(opener.group(1)))
                 continue
         else:
-            closer = FENCE_CLOSE.match(line)
-            if closer and closer.group(1)[0] == fence[0] and len(closer.group(1)) >= fence[1]:
+            # Check for fence close: 0-3 leading spaces, matching char, >= length, spaces/tabs only.
+            closer = re.match(r"^[ ]{0,3}(" + re.escape(fence[0]) + r"{" + str(fence[1]) + r",})[ \t]*$", line)
+            if closer:
                 fence = None
             continue
-        if line.startswith("## "):
+        # Check for ATX heading: 0-3 leading spaces, then ## (B1-FENCE, catalog-heading-bind).
+        atx_match = re.match(r"^[ ]{0,3}(#{1,6})[ \t]+(.*)$", line)
+        if atx_match and atx_match.group(1) == "##":
             if current:
                 sections.append(current)
-            heading = line[3:].strip()
+            heading = atx_match.group(2).strip()
             active = STRIKE.sub("", heading)
             # A 41 heading names its object(s) before the first "(...)"; the parenthetical
             # carries context refs -- a `settings.json` registration, a specific
@@ -381,10 +430,13 @@ def _inventory():
 
 def _row_matches(row, relpath):
     if MEMORY_CLASS in row["classes"]:
-        # A Memory class row covers EXACTLY memory/*.md and nothing else. It must not fall
-        # through to keys/dir_keys: a stray dir tick in the Memory row's col1 (e.g.
-        # "Memory files (`harness/`)") otherwise puts `harness/` in dir_keys and the row
-        # then "covers" harness/*.md, masking a deleted §1 row for a harness file (grok,
+        # A Memory class row covers EXACTLY memory/*.md (except those with explicit rows).
+        # The routing map has an explicit row, so don't let the class row also claim it.
+        if relpath == "memory/reference_subordinate_routing_map.md":
+            return False
+        # Don't fall through to keys/dir_keys: a stray dir tick in the Memory row's col1
+        # (e.g. "Memory files (`harness/`)") otherwise puts `harness/` in dir_keys and the
+        # row then "covers" harness/*.md, masking a deleted §1 row for a harness file (grok,
         # reproduced 2026-09-09). Mirror PROJECT_CLASS: a class row is class-scoped only.
         return relpath.startswith("memory/") and relpath.endswith(".md")
     if PROJECT_CLASS in row["classes"]:
@@ -439,7 +491,7 @@ def main():
         matches = [row for row in rows if _row_matches(row, relpath)]
         if len(matches) == 0:
             errors.append(f"{relpath}: governed but has no §1 row")
-        elif len(matches) > 1 and not (len(matches) == 2 and any(MEMORY_CLASS in row["classes"] for row in matches)):
+        elif len(matches) > 1:
             lines = ", ".join(str(row["line"]) for row in matches)
             errors.append(f"{relpath}: matches multiple §1 rows (lines {lines})")
 
@@ -461,10 +513,12 @@ def main():
             # EVERY declared heading key must resolve to a §1 row. A heading naming two
             # objects (`X` + `Y`) where only X is registered must NOT pass through X alone
             # (astra: the old any()-match validated the whole section via one known key).
+            # Use the same coverage predicate as inventory (_row_matches) to avoid false-RED
+            # when a heading key is covered by a directory row (DIR-MATCH).
             unregistered = []
             matched_by_line = {}
             for key in section["keys"]:
-                key_rows = [row for row in rows if key in row["keys"] or key in row["dir_keys"]]
+                key_rows = [row for row in rows if _row_matches(row, key)]
                 if not key_rows:
                     unregistered.append(key)
                 for row in key_rows:
@@ -484,12 +538,13 @@ def main():
             errors.append(f"41-file-registry.md:{section['line']}: verdict section matches multiple §1 rows (lines {lines})")
             continue
         row = matches[0]
-        actual = section["verdicts"][0][1]
-        if actual != row["verdict"]:
-            errors.append(
-                f"41-file-registry.md:{section['verdicts'][0][0]}: verdict mismatch for {section['heading']!r}: "
-                f"registry={actual!r}, §1={row['verdict']!r} (40-maintenance.md:{row['line']})"
-            )
+        # Check ALL verdicts in the section (not just the first) against the matched §1 row (VERDICT-TAIL).
+        for verdict_line, actual in section["verdicts"]:
+            if actual != row["verdict"]:
+                errors.append(
+                    f"41-file-registry.md:{verdict_line}: verdict mismatch for {section['heading']!r}: "
+                    f"registry={actual!r}, §1={row['verdict']!r} (40-maintenance.md:{row['line']})"
+                )
 
     for error in errors:
         print(f"ERROR: {error}", file=sys.stderr)
