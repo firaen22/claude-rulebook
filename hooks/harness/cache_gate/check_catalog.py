@@ -66,6 +66,23 @@ def _normalize_verdict(value):
     return re.sub(r"\s+", " ", value.replace("**", "")).strip()
 
 
+def _split_row(line):
+    """Split one GFM table line into stripped cells.
+
+    The leading and trailing pipe are OPTIONAL in GFM, so strip at most one of each
+    before splitting (the old parser REQUIRED a leading pipe and silently truncated the
+    table at the first pipeless row, reproduced 2026-09-14). An unescaped interior '|'
+    over-splits a cell; callers that only read the first N cells inherit GFM's
+    "extra cells are ignored" rule.
+    """
+    stripped = line.strip()
+    if stripped.startswith("|"):
+        stripped = stripped[1:]
+    if stripped.endswith("|"):
+        stripped = stripped[:-1]
+    return [cell.strip() for cell in stripped.split("|")]
+
+
 def _relative_key(token, first_key=None):
     token = token.strip()
     # normpath EVERY branch: an un-normalized '..' in a key (e.g. `~/.claude/harness/../x`)
@@ -99,15 +116,6 @@ def _keys_from_text(text):
     return [first] + [_relative_key(token, first) for token in tokens[1:]]
 
 
-def _is_dir_key(key, row_text, token):
-    # A dir-scoped key is spelled with a trailing slash in col1 (`cache_gate/`,
-    # `ground-truth-gates/`, `references/`). The earlier heuristic also promoted EVERY
-    # token in a row whose text mentioned "references/" or "cachelib" -- that made a
-    # file token like `.../SKILL.md` a bogus directory prefix (astra: unjustified
-    # inference). The trailing slash is the only real signal; use it alone.
-    return token.rstrip().endswith("/")
-
-
 def _parse_permission_table(path):
     text = _read_text(path, "40-maintenance.md")
     # Split on newline ONLY. _read_text opened in text mode (universal newlines), so CRLF/CR are
@@ -116,68 +124,79 @@ def _parse_permission_table(path):
     # value or manufacture a column-0 line (codex#2, reproduced 2026-09-09).
     lines = text.split("\n")
 
-    # Track fences (0-3 leading spaces) to exclude fenced examples from table header search (codex B1-TABLE-SOURCE).
-    fence = None  # (char, length) of open fence, or None
-    header = None
+    # F5: bind the header search to the §1 section. The permission table is §1's; searching
+    # the WHOLE file let a decoy `| File | May edit... |` table placed BEFORE §1 be taken as
+    # authoritative (reproduced 2026-09-14). Anchor on the `## §1` heading; search only from
+    # there to the next h2 (`## `). §2 (`## §2 ...`) also starts with `## `, so start the
+    # end-scan strictly after the §1 line.
+    sec_start = None
     for i, line in enumerate(lines):
+        if line.startswith("## §1"):
+            sec_start = i
+            break
+    if sec_start is None:
+        raise GateError("40-maintenance.md: §1 section heading (## §1) is missing")
+    sec_end = len(lines)
+    for j in range(sec_start + 1, len(lines)):
+        if lines[j].startswith("## "):
+            sec_end = j
+            break
+
+    # Recognise ONLY column-0 fences (FENCE_OPEN/FENCE_CLOSE) to skip a fenced EXAMPLE of the
+    # header: a column-0 line (the header and every data row are column-0) can be fenced-code
+    # content ONLY inside a column-0 fence -- see the fence note above. The header is matched
+    # EXACTLY at column 0 (not .strip()), so an INDENTED example header can never be mistaken
+    # for the real one, and a column-0 fenced example is skipped by this tracking.
+    fence = None  # (char, length) of open column-0 fence, or None
+    header = None
+    for i in range(sec_start + 1, sec_end):
+        line = lines[i]
         if fence is None:
-            # Check for fence open: 0-3 leading spaces, then ``` or ~~~
-            match = re.match(r"^[ ]{0,3}(`{3,}|~{3,})(.*)$", line)
-            if match and not (match.group(1)[0] == "`" and "`" in match.group(2)):
-                fence = (match.group(1)[0], len(match.group(1)))
+            opener = FENCE_OPEN.match(line)
+            if opener and not (opener.group(1)[0] == "`" and "`" in opener.group(2)):
+                fence = (opener.group(1)[0], len(opener.group(1)))
                 continue
-            # Search for table header only outside fences (codex B1-TABLE-SOURCE).
-            if line.strip() == TABLE_HEADER:
+            if line == TABLE_HEADER:
                 header = i
                 break
         else:
-            # Check for fence close: 0-3 leading spaces, then same char, same or longer length, spaces/tabs only.
-            match = re.match(r"^[ ]{0,3}(" + re.escape(fence[0]) + r"{" + str(fence[1]) + r",})[ \t]*$", line)
-            if match:
+            closer = FENCE_CLOSE.match(line)
+            if closer and closer.group(1)[0] == fence[0] and len(closer.group(1)) >= fence[1]:
                 fence = None
 
     if header is None:
         raise GateError("40-maintenance.md: §1 permission table header is missing")
-    if header + 1 >= len(lines):
+    if header + 1 >= sec_end:
         raise GateError("40-maintenance.md: §1 table separator is missing or malformed")
-    # Validate separator row: should have exactly 3 delimiter cells (| --- | --- | --- |).
-    sep_line = lines[header + 1]
-    sep_fields = sep_line.split("|")
-    if (len(sep_fields) < 5 or not all(re.match(r"^\s*:?-{3,}:?\s*$", sep_fields[i].strip())
-                                        for i in [1, 2, 3])):
+    # F4: the separator must have EXACTLY the header's column count (3), each a valid GFM
+    # delimiter. A 4-delimiter separator under the 3-column header was accepted (reproduced
+    # 2026-09-14), letting a mis-shaped table parse as §1. _split_row tolerates the optional
+    # bounding pipes; the count check is what rejects a wrong column count.
+    header_cols = TABLE_HEADER.count("|") - 1  # 3
+    sep_cells = _split_row(lines[header + 1])
+    if len(sep_cells) != header_cols or not all(re.match(r"^:?-{3,}:?$", cell) for cell in sep_cells):
         raise GateError("40-maintenance.md: §1 table separator is missing or malformed")
 
     rows = []
-    # Track fences while reading table rows to skip indented table continuations outside fences (B1-TABLE-STOP).
-    fence = None
-    for line_number, line in enumerate(lines[header + 2 :], header + 3):
-        # Check fence state.
-        if fence is None:
-            match = re.match(r"^[ ]{0,3}(`{3,}|~{3,})(.*)$", line)
-            if match and not (match.group(1)[0] == "`" and "`" in match.group(2)):
-                fence = (match.group(1)[0], len(match.group(1)))
-                break  # Exit table on fence open.
-        else:
-            match = re.match(r"^[ ]{0,3}(" + re.escape(fence[0]) + r"{" + str(fence[1]) + r",})[ \t]*$", line)
-            if match:
-                fence = None
-            break  # Exit table on any non-data line while tracking fences.
-
-        # A valid table row starts with optional spaces, then |. Indented rows (0-3 spaces) are valid (B1-TABLE-STOP).
-        if not re.match(r"^[ ]{0,3}\|", line):
+    for line_number, line in enumerate(lines[header + 2 : sec_end], header + 3):
+        # F3: a GFM table ends at a BLANK line, the §1 boundary, or any non-row line (prose,
+        # a fence); every line that still carries pipes before that is a row, its leading and
+        # trailing pipe OPTIONAL. The old parser REQUIRED a leading pipe and silently truncated
+        # the table at the first pipeless row (reproduced 2026-09-14). A line with NO pipe at
+        # all cannot be a table row -- it terminates the table (a fence's ``` and ordinary prose
+        # both land here); a line that DOES carry pipes but resolves to too few cells is a
+        # malformed row and fails CLOSED below.
+        if line.strip() == "" or "|" not in line:
             break
-        # Strip leading indentation to extract the row (0-3 spaces consumed by CommonMark indent).
-        stripped = line.lstrip()
-        fields = stripped.split("|")
-        # A well-formed row is `| File | verdict | Rule |` -> ['', c1, c2, c3, ...] (len>=5).
-        # Validate: leading | produces empty fields[0]; need at least 3 data cells.
-        if len(fields) < 5 or not fields[0] == "":
-            raise GateError(f"40-maintenance.md:{line_number}: malformed §1 data row (bad format)")
-        # Check the three required cells are present and non-empty.
-        if not fields[1].strip() or not fields[2].strip() or not fields[3].strip():
+        cells = _split_row(line)
+        # >= header_cols (not ==): an unescaped interior '|' in the unused Rule column splits
+        # it into extra cells; GFM ignores the extras, so read only the first header_cols. A
+        # row with FEWER cells is genuinely malformed -> fail CLOSED.
+        if len(cells) < header_cols:
+            raise GateError(f"40-maintenance.md:{line_number}: malformed §1 data row (expected {header_cols} cells)")
+        col1, verdict_raw, col3 = cells[0], cells[1], cells[2]
+        if not col1 or not verdict_raw or not col3:
             raise GateError(f"40-maintenance.md:{line_number}: malformed §1 data row (missing or empty required cells)")
-        col1 = fields[1].strip()
-        col3 = fields[3].strip()
         classes = []
         if "Project `CLAUDE.md` files" in col1:
             classes.append(PROJECT_CLASS)
@@ -186,11 +205,12 @@ def _parse_permission_table(path):
         keys = [] if classes else _keys_from_text(col1)
         if not classes and not keys:
             raise GateError(f"40-maintenance.md:{line_number}: §1 row has no backticked key")
-        verdict = _normalize_verdict(fields[2].strip())
+        verdict = _normalize_verdict(verdict_raw)
         # `** **` strips to empty (astra: a verdict that is only markup passed the
         # non-empty check on the raw cell but normalizes to nothing).
         if not verdict:
             raise GateError(f"40-maintenance.md:{line_number}: §1 verdict is empty after normalization")
+        tokens = TICKS.findall(col1)
         rows.append({
             "line": line_number,
             "keys": keys,
@@ -200,16 +220,16 @@ def _parse_permission_table(path):
             # or the registry-side lookup `key in row["dir_keys"]` would let a "## `harness/`"
             # section bind to the class row despite no directory permission row (codex,
             # reproduced 2026-09-09). Class rows are class-scoped only (mirrors _row_matches).
+            # F7: select dir_keys from the ALREADY-RESOLVED keys (a trailing-slash token), never
+            # by re-resolving the raw token -- re-resolution re-anchored a bare relative dir key
+            # to `hooks/harness/hooks/harness/...` (reproduced 2026-09-14). keys[idx] corresponds
+            # to tokens[idx] (both derive from col1 in order).
             "dir_keys": set() if classes else {
-                _relative_key(token, keys[0] if keys else None)
-                for token in TICKS.findall(col1)
-                if _is_dir_key(_relative_key(token, keys[0] if keys else None), col1, token)
-            } if keys else set(),
+                keys[idx] for idx, tok in enumerate(tokens) if tok.rstrip().endswith("/")
+            },
             "verdict": verdict,
             "text": col1,
         })
-    else:
-        raise GateError("40-maintenance.md: §1 table has no terminating non-table line")
     if not rows:
         raise GateError("40-maintenance.md: §1 permission table has no data rows")
 
