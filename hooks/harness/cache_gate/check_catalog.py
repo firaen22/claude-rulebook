@@ -233,21 +233,28 @@ def _parse_registry(path):
     # U+2028 etc., truncating a canonical value or manufacturing a column-0 verdict (codex#2).
     for line_number, line in enumerate(text.split("\n"), 1):
         if fence is None:
-            # Check for fence open: 0-3 leading spaces (B1-FENCE).
-            opener = re.match(r"^[ ]{0,3}(`{3,}|~{3,})(.*)$", line)
+            # COLUMN-0 fence open only (see the fence note above): the verdict detector below
+            # is column-0-anchored (`line.startswith(VERDICT_LINE)`), and a column-0 line can
+            # be fenced-code content ONLY inside a column-0 fence. A prior change widened this
+            # to 0-3 leading spaces for "CommonMark validity" but did NOT track container
+            # indent, so a 2-space list-nested fence stayed open across a column-0 verdict and
+            # HID a contradiction (F2, reproduced 2026-09-14). Recognising only column-0 fences
+            # is the fail-safe rule: an indented fence's content is itself indented, so it can
+            # never contain a column-0 verdict to hide.
+            opener = FENCE_OPEN.match(line)
             # A backtick fence's info string may not contain a backtick -- that makes it inline
             # code ("```x```"), not a fence opener; tilde fences carry no such limit.
             if opener and not (opener.group(1)[0] == "`" and "`" in opener.group(2)):
                 fence = (opener.group(1)[0], len(opener.group(1)))
                 continue
         else:
-            # Check for fence close: 0-3 leading spaces, matching char, >= length, spaces/tabs only.
-            closer = re.match(r"^[ ]{0,3}(" + re.escape(fence[0]) + r"{" + str(fence[1]) + r",})[ \t]*$", line)
-            if closer:
+            # COLUMN-0 fence close: matching char, >= length, spaces/tabs only.
+            closer = FENCE_CLOSE.match(line)
+            if closer and closer.group(1)[0] == fence[0] and len(closer.group(1)) >= fence[1]:
                 fence = None
             continue
-        # Check for ATX heading: 0-3 leading spaces, then ## (B1-FENCE, catalog-heading-bind).
-        atx_match = re.match(r"^[ ]{0,3}(#{1,6})[ \t]+(.*)$", line)
+        # Column-0 ATX h2 heading (consistent with the column-0 verdict detector below).
+        atx_match = re.match(r"^(#{1,6})[ \t]+(.*)$", line)
         if atx_match and atx_match.group(1) == "##":
             if current:
                 sections.append(current)
