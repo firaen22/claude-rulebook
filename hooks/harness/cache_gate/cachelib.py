@@ -34,7 +34,13 @@ _CACHE_MARKER = re.compile(r"^(?!\s*>)(?:[\W_]|\d+[.)])*cache[sd]?\s+over(?![a-z
 
 def has_cache_marker(text):
     """True if any line declares the skill a local-harness cache (see _CACHE_MARKER)."""
-    return any(_CACHE_MARKER.match(line) for line in text.splitlines())
+    # Split on CommonMark line endings ONLY (\n / \r / \r\n). str.splitlines() ALSO breaks on
+    # \v \f \x1c-\x1e \x85 U+2028 U+2029 -- none of which Markdown treats as a line ending --
+    # so a mid-line U+2028 (etc.) manufactured a `Cache over` marker on a body that renders as
+    # one non-marker line. check_caches' reverse-check then read that as a valid gated marker and
+    # SUPPRESSED its "lacks marker" error (grok, reproduced 2026-09-14; same class as the
+    # check_catalog newline-split hardening, codex#2).
+    return any(_CACHE_MARKER.match(line) for line in re.split(r"\r\n|\r|\n", text))
 
 
 HERE = os.path.dirname(os.path.abspath(__file__))
