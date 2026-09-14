@@ -15,6 +15,7 @@ import argparse
 import json
 import os
 import sys
+import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import cachelib  # noqa: E402  (deliberate: robust local import, never via cwd/$PWD)
@@ -29,6 +30,9 @@ def _read_lock_raw(lock_path):
     guard to fresh-init and let a drifted source through with an unchanged body.
     Returns a dict (possibly partial) or None if there is no usable prior lock.
     """
+    # Reject symlink lockfiles: a symlink target could escape ROOT.
+    if os.path.islink(lock_path):
+        return None
     try:
         with open(lock_path, encoding="utf-8") as handle:
             data = json.load(handle)
@@ -121,9 +125,17 @@ def main():
                 built_via = "normal"
 
         lock = {"cache": name, "sources": source_shas, "body_sha": body_sha, "built_via": built_via}
-        with open(lock_path, "w", encoding="utf-8") as handle:
-            json.dump(lock, handle, indent=2, sort_keys=True)
-            handle.write("\n")
+        # Atomic write via tempfile to avoid symlink follow: write to temp, then rename.
+        lock_dir = os.path.dirname(lock_path)
+        try:
+            with tempfile.NamedTemporaryFile(mode="w", dir=lock_dir, encoding="utf-8", delete=False, suffix=".json") as tmp:
+                tmp_path = tmp.name
+                json.dump(lock, tmp, indent=2, sort_keys=True)
+                tmp.write("\n")
+            os.replace(tmp_path, lock_path)
+        except OSError as exc:
+            print(f"ERROR: {name}: failed to write lock ({exc})", file=sys.stderr)
+            return 2
         print(f"BUILT {name}")
     return 0
 

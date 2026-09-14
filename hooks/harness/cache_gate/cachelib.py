@@ -19,16 +19,17 @@ VALID_BUILT_VIA = ("normal", "fresh-init", "unchanged-body-override")
 # stays exempt). This matcher went through both failure directions in review before landing
 # here: an exact `startswith` fail-OPENED on emphasis/indent variants; a plain literal STILL
 # missed `**Cache over**`/`- Cache over`/lower-case/BOM (fable N1: 8 false-neg) and newly
-# false-flagged `Cache overflow`/`overwrite`. The regime below (astra R3-3 + fable N1, both
-# reproduced, 0 false-neg / 0 false-pos over 14 variants, flags exactly the 3 live caches):
-#   ^(?!\s*>)          -- reject a blockquote `> Cache over` (a QUOTED example, not a decl)
-#   (?:[\W_]|\d+\.)*   -- consume leading emphasis (** __), list markers (- , 1.), BOM, indent
-#   cache[sd]? over    -- Cache/Caches/Cached over, case-insensitive
-#   (?![a-z])          -- but NOT overflow/overwrite (over must end the word)
+# false-flagged `Cache overflow`/`overwrite`. The regime below (astra R3-3 + fable N1 +
+# grok 2026-09, both reproduced, 0 false-neg / 0 false-pos over 14 variants + ordered-list,
+# flags exactly the 3 live caches):
+#   ^(?!\s*>)           -- reject a blockquote `> Cache over` (a QUOTED example, not a decl)
+#   (?:[\W_]|\d+[.)])*  -- consume leading emphasis (** __), list markers (- , 1. , 1)), BOM, indent
+#   cache[sd]? over     -- Cache/Caches/Cached over, case-insensitive
+#   (?![a-zA-Z])        -- but NOT overflow/overwrite (over must end the word, case-proof)
 # Residual false-pos is only prose literally beginning "Cache over ..." -- inherent to any
 # line-prefix convention, none in the live tree; the reverse-check keeps the literal
 # load-bearing for gated skills.
-_CACHE_MARKER = re.compile(r"^(?!\s*>)(?:[\W_]|\d+\.)*cache[sd]?\s+over(?![a-z])", re.IGNORECASE)
+_CACHE_MARKER = re.compile(r"^(?!\s*>)(?:[\W_]|\d+[.)])*cache[sd]?\s+over(?![a-zA-Z])", re.IGNORECASE)
 
 
 def has_cache_marker(text):
@@ -170,6 +171,9 @@ def load_lock(name, entry):
     green.
     """
     path = lock_path_for(entry["skill"])
+    # Reject symlink lockfiles: a symlink target could escape ROOT (F3).
+    if os.path.islink(path):
+        raise GateError(f"{name}: lockfile is a symlink (escape risk): {path}")
     try:
         with open(path, encoding="utf-8") as handle:
             lock = json.load(handle)
