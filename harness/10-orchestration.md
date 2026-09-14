@@ -20,31 +20,20 @@ Agent types that matter:
 - `agent-skills:code-reviewer` / `security-auditor` / `test-engineer` — review roles.
 - `claude-code-guide` — questions about Claude Code/API itself.
 
-**External CLIs (Bash) — there are FIVE, not three:** `codex` (`gpt-5.6-luna`; two PROVISIONAL
-within-codex exceptions → `gpt-6-astra` at `medium`: small-code review with unstated
-hazards (R1) and implementation whose scale/depth bound can't be stated (E4), both
-N=3 on 2026-09-06 — routing map §3 has the numbers and scope), `agy`
-(Gemini `3.7-flash-medium`; review pin `3.6-flash-high`), `grok` (`~/.grok/bin/grok`,
-`grok-4.6`), `opencode` (free pool), and NIM (a model backend, not an agent — direct
-curl, or via opencode when file edits are needed). Playbooks in
-`~/.claude/memory/workflow_*.md` + `reference_nim_via_opencode.md` are the source of
-truth for invocation syntax and known traps. Three that bite before you read them:
-**grok ingests `~/.claude` by default** — isolate HOME or it is not an independent
-review lens; **opencode's `$PWD` is not its cwd** — set `env["PWD"]` AND `--dir`;
-**an empty return is never "no findings"** — agy returns empty rc=0 ~17% at ~8KB
-(always retry, ≤3×), grok can return a schema-VALID empty review that passes every
-guard (tell: `usage.reasoning_tokens` vs input size), and opencode's first real-
-generation zero-byte means reroute, not retry.
-Two more, measured 2026-09-02: **Bash cwd is reset to the project dir after every
-call** — `cd` does not carry; use absolute paths or `git -C <abs>` in each call.
-**A subagent's CLAUDE.md + skill list is the parent's LAST system-prompt rebuild**
-(`/compact` refreshes it), not session start — a before/after subagent experiment
-records which rebuild each arm inherited.
-Re-verify a CLI still works with a 5-second probe before batch-dispatching:
-`codex exec -m gpt-5.6-luna --skip-git-repo-check -s read-only "PONG"` (always pass
-`-m` — the bare config default is NOT the measured model) ·
-`~/.grok/bin/grok -p PONG --disable-web-search --no-subagents` ·
-`agy -p PONG --model gemini-3.7-flash-medium` (bare `agy -p` is NOT the pinned model).
+**External CLIs (Bash) — FIVE, not three:** `codex`, `agy`, `grok`, `opencode`, and
+NIM (a model backend, not an agent — direct curl, or via opencode when edits are
+needed). Their slugs, review pins, the (PROVISIONAL) within-codex `gpt-6-astra`
+exceptions, the traps that bite before you read them (grok ingests `~/.claude` unless
+HOME is isolated; opencode's `$PWD` is not its cwd; an empty return is never "no
+findings"), and the 5-second re-verify probe for each CLI live in
+`~/.claude/memory/workflow_*.md` + `reference_subordinate_routing_map.md`
+(+ `reference_nim_via_opencode.md`; the map WINS over §2 on executor choice) — open
+the relevant one and run its probe before batch-dispatching. Two harness-execution
+facts not in those files (measured 2026-09-02): **Bash cwd resets
+to the project dir after every call** — `cd` does not carry; use absolute paths or
+`git -C <abs>`. **A subagent's CLAUDE.md + skill list is the parent's LAST
+system-prompt rebuild** (`/compact` refreshes it), not session start — a before/after
+subagent experiment records which rebuild each arm inherited.
 
 If this file's tool list disagrees with what the harness offers you, the harness
 wins — then update this file per `40-maintenance.md`.

@@ -1,9 +1,9 @@
 {
   "body_sha": "7a80596f3c7f781de638f1fa9d07ed3805c787ce15d6c5988be397f6f843716f",
-  "built_via": "normal",
+  "built_via": "unchanged-body-override",
   "cache": "delegation-and-review",
   "sources": {
-    "harness/10-orchestration.md": "1c24e6198765163cbd1dd1d4cae2312776a48c513210889b45d7fe5293cd4e1f",
+    "harness/10-orchestration.md": "72ee60afd81b8a5c00f33359ef8bd117384fb5d64e0c98c10d0e959d5b2f83a2",
     "harness/30-delegation-templates.md": "b9040323aeb1583ec95bb946300fc5f2ef943a4f50d2285273b9c02bfeb66a9d"
   }
 }
