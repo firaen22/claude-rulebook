@@ -68,8 +68,14 @@ def _normalize_verdict(value):
 
 def _relative_key(token, first_key=None):
     token = token.strip()
+    # normpath EVERY branch: an un-normalized '..' in a key (e.g. `~/.claude/harness/../x`)
+    # slipped through as `harness/../x` and neither string-matched the inventory relpath it
+    # should nor was rejected as an escape (reproduced 2026-09-14). Normalizing collapses
+    # interior '..'; a key that still escapes (leading '../') simply never matches an
+    # inventory relpath, so the governed object fails coverage CLOSED rather than binding
+    # to the wrong row.
     if token.startswith("~/.claude/"):
-        return token[len("~/.claude/") :].lstrip("/")
+        return os.path.normpath(token[len("~/.claude/") :].lstrip("/"))
     if token == "~/.claude":
         return ""
     if token.startswith("~/.local/"):
@@ -79,7 +85,7 @@ def _relative_key(token, first_key=None):
     if first_key and not first_key.startswith("/"):
         return os.path.normpath(os.path.join(os.path.dirname(first_key), token))
     if "/" not in token:
-        return os.path.join("harness", token)
+        return os.path.normpath(os.path.join("harness", token))
     return os.path.normpath(token)
 
 
