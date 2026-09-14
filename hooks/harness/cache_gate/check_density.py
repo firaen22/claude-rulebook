@@ -57,7 +57,9 @@ def check_file(relpath):
     """
     abspath = cachelib.resolve_within_root(relpath)
     try:
-        with open(abspath, encoding="utf-8") as handle:
+        # Use newline="\n" (not default universal newlines) so bare \r doesn't split rows (D1).
+        # This matches awk's LF-delimited records.
+        with open(abspath, encoding="utf-8", newline="\n") as handle:
             lines = handle.readlines()
     except (OSError, UnicodeError) as exc:
         raise GateError(f"cannot read {relpath}: {exc}")

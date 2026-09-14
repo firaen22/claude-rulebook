@@ -69,7 +69,23 @@ def main():
             # sources. A stale cache swapped back in, or an edited cache not re-pinned,
             # must not pass. Missing/unreadable skill = ERROR (the cache is gone).
             skill_path = cachelib.resolve_within_root(entry["skill"])
-            body_now = cachelib.sha256_file(skill_path)
+            # Read file once (SPLIT-BODY): derive both hash and marker from same bytes.
+            try:
+                with open(skill_path, "rb") as handle:
+                    body_bytes = handle.read()
+            except OSError as exc:
+                print(f"ERROR: {name}: skill unreadable ({exc})", file=sys.stderr)
+                errors += 1
+                continue
+            # Hash the bytes we just read (SPLIT-BODY: single read snapshot for hash+marker).
+            import hashlib
+            body_now = hashlib.sha256(body_bytes).hexdigest()
+            # Decode for marker check (with replacement on invalid UTF-8).
+            body_text = body_bytes.decode("utf-8", errors="replace")
+            # Reverse-check (fable S8): marker must be present in the body we just hashed.
+            if not cachelib.has_cache_marker(body_text):
+                print(f"ERROR: {name}: gated skill lacks the 'Cache over' marker ({entry['skill']})", file=sys.stderr)
+                errors += 1
         except GateError as exc:
             print(f"ERROR: {exc}", file=sys.stderr)
             errors += 1
@@ -78,18 +94,6 @@ def main():
             print(f"ERROR: {name}: skill unreadable ({exc})", file=sys.stderr)
             errors += 1
             continue
-
-        # Reverse-check (fable S8): a manifest'd skill MUST carry the 'Cache over' marker,
-        # so the conservative forward matcher (cachelib.has_cache_marker) stays load-bearing
-        # -- if a gated cache drops the marker, catch it here rather than widen the matcher.
-        try:
-            with open(skill_path, encoding="utf-8", errors="replace") as handle:
-                if not cachelib.has_cache_marker(handle.read()):
-                    print(f"ERROR: {name}: gated skill lacks the 'Cache over' marker ({entry['skill']})", file=sys.stderr)
-                    errors += 1
-        except OSError as exc:
-            print(f"ERROR: {name}: skill unreadable ({exc})", file=sys.stderr)
-            errors += 1
 
         via = lock.get("built_via", "normal")
         # WARN only on the AUDIT-worthy override -- a force-sync that skipped the body
