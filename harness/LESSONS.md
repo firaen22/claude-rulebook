@@ -124,3 +124,25 @@ The at-3 promotion duty above does NOT apply to entries here.
   background author whose output IS the artifact, one writer per path, forbidden from
   spawning background children that write it; a voided run's tree stays quarantined
   (a replacement finishing elsewhere does not release it).
+
+## 2026-09-16 — codex v0.154.0 silent no-assistant-turn + grok idle; cross-family review gate blocked
+Running the cross-model-review gate on 3 opus-pack doctrine ports (~12KB inline
+packet, well under the documented ~30KB codex cliff), BOTH cross-family CLIs failed
+all 3 rounds — a tooling degradation, not a packet problem:
+- **codex v0.154.0**: no or partial assistant turn. Round 1 (gpt-6-astra) stdout ended
+  at the echoed prompt (no `codex` marker, no `tokens used`, `-o` never written); round 2
+  (astra) emitted only a `[assumed]` preamble line then stopped; round 3 (gpt-5.6-luna,
+  effort=high) again produced NO assistant turn at all. This is the "preamble-only → fully
+  silent" degradation the codex playbook documents for >~30KB packets, now firing at 12KB
+  on v0.154.0 — the cliff MOVED. Re-measure the inline-packet boundary on this version
+  before trusting a codex review; check for the `codex` marker, never read an empty answer
+  as a verdict.
+- **grok-4.6**: classic multi-step IDLE — narrated its plan ("I'll read the brief, then
+  the three files, then write the report") and exited without executing, 0–170 bytes, on
+  BOTH the staged-files recipe AND an inline-judgement packet. Neither shape cured it this
+  session.
+- **Consequence (cross-model-review §6):** could not assemble ≥2 working families → cross-
+  family gate UNMET, recorded as a gap; fell back to same-family fresh-context floor (my
+  own re-derivation + one general-purpose agent, both PROCEED). Did NOT fake a dual-family
+  PROCEED. Retry the CLIs next session; if codex stays silent at small packets, treat
+  v0.154.0 as regressed and pin/roll back or re-probe the boundary.
