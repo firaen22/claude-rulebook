@@ -12,18 +12,20 @@ Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 [[workflow-codex-subordinate]] [[workflow-agy-subordinate]] [[workflow-grok-subordinate]]
 [[workflow-opencode-subordinate]] [[reference-nim-via-opencode]]
 
-> 📌 **VERSION STAMP — re-verified 2026-09-11 by running each binary:**
-> `grok 1.0.24 (68e414c661e3)` · `codex-cli 0.153.4` · `opencode 1.18.30` · `agy 1.2.1`.
+> 📌 **VERSION STAMP — re-verified 2026-09-17 by running each binary:**
+> `grok 1.0.34 (3736acbc8658)` · `codex-cli 0.154.0` · `opencode 1.18.31` · `agy 1.2.5`.
 > Every rc / ceiling / bug-status claim in this file and the linked playbooks is
-> **VERSION-BOUND**. agy jumped a full minor version since the last stamp (1.1.28→1.2.1,
-> opportunistic self-update, not targeted at anything here) — codex/opencode/grok held
-> steady. Every agy rc/pin/edge claim below (the 3.6-flash-medium / 3.7-flash pins, K1 edge
-> results, empty-return-is-permission-deny finding) was measured through 1.1.x and is
-> **UNVERIFIED on 1.2.1** until re-run — treat agy findings from this point forward as
-> provisional pending a re-bench. Every grok rc/edge/schema claim below was measured on
-> 1.0.13 and remains **UNVERIFIED on 1.0.24** (unchanged from the last stamp). codex's
-> ~30KB inline-review ceiling (§2a) remains UNVERIFIED on 0.153.4 — a stamp is a reading,
-> not a guarantee. **Re-run `--version` before trusting a number.**
+> **VERSION-BOUND**. codex jumped a full minor version since the last stamp
+> (0.153.4→0.154.0, user-installed, not targeted at anything here) — opencode/agy/grok
+> held steady. Every codex rc/ceiling/bug-status claim below (the ~30KB inline-review
+> ceiling §2a, `gpt-5.6-luna` default behavior, the astra-vs-luna E4 scale finding) was
+> measured on 0.153.4 and is **UNVERIFIED on 0.154.0** until re-run — treat codex
+> findings from this point forward as provisional pending a re-bench. Every agy
+> rc/pin/edge claim below (the 3.6-flash-medium / 3.7-flash pins, K1 edge results,
+> empty-return-is-permission-deny finding) was measured through 1.1.x and remains
+> **UNVERIFIED on 1.2.x** (unchanged from the last stamp). Every grok rc/edge/schema
+> claim below was measured on 1.0.13 and remains **UNVERIFIED on 1.0.34** (unchanged
+> from the last stamp). **Re-run `--version` before trusting a number.**
 
 ## 0. Two rules that override every row below
 
