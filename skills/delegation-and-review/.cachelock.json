@@ -1,6 +1,6 @@
 {
-  "body_sha": "7a80596f3c7f781de638f1fa9d07ed3805c787ce15d6c5988be397f6f843716f",
-  "built_via": "unchanged-body-override",
+  "body_sha": "d847e3b3feac3ff65600c55c8ea069c6891c952428c79e63e37e89d1fff68eb5",
+  "built_via": "normal",
   "cache": "delegation-and-review",
   "sources": {
     "harness/10-orchestration.md": "72ee60afd81b8a5c00f33359ef8bd117384fb5d64e0c98c10d0e959d5b2f83a2",
