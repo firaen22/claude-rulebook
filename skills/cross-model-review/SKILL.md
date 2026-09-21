@@ -199,6 +199,11 @@ this pack's own review (PR #30 round 1): a valid must-fix whose proposed
 rewrite reintroduced the very defect the rule under review existed to prevent,
 and would have paraphrased a clause another file owns (skill-authoring §3).
 
+**Narrowing is not repair by itself** (`unprobed` — see Provenance). A scope
+qualifier closes an over-claim finding only when the revised claim is supported
+by the evidence AND every reproduced counterexample the finding cited falls
+outside the revised scope; otherwise the finding stays open.
+
 **Two remedies for one defect are a free cross-check** (`unprobed` — see
 Provenance). When a fix you are holding is overtaken by someone else's
 landed fix for the same finding — a maintainer's gate commit, a parallel
@@ -332,6 +337,14 @@ is the general one — pre-existing-vs-regression is a baseline diff, and
 applicability is a runtime-state question — not the specific findings.
 Both rules ship `unprobed` per the covenant; their probes join the private
 round-5 queue.
+The §3 narrowing-is-not-repair rule (2026-09-16) is reverse-ported from
+opus-pack #241, the owner-adopted narrow residual of the contributor's own
+PR #235 (distilled from PR #233's review — a scope qualifier recorded `fixed`
+in round 1, round 2 showed two reproduced counterexamples still inside the
+qualified boundary). #235's longer treatment and its companion operational-rigor
+§4 "sufficient-observation" clause were owner-rejected as duplicating the
+fix-disposition doctrine here and check-name-not-coverage in operational-rigor
+§4. Ships `unprobed` per the covenant.
 Re-verify
 line: model families, CLI availability, "flagship" identity, and effort tiers
 are volatile — re-discover at session time; never trust a model name or tier
