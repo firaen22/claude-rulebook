@@ -34,7 +34,7 @@ tokens. The closed list (voting-vs-single, scaffolding, tier-routing, flat-vs-ta
 fusion-free) is closed. The failure mode I predict for future sessions: a benchmark
 is a well-defined, satisfying task, and real shipping work is messy — so the system
 drifts back toward measuring. Default posture stands: apply findings to real work
-(moira-web, TG-bot-helper, secondbrain, client automations); new experiments only
+(the private product repos and client automations); new experiments only
 when a live decision hinges on an unmeasured axis, with hypothesis + deterministic
 harness first.
 

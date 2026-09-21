@@ -216,7 +216,7 @@ into §4, no extraction attempted — genuinely new trigger, not a rewording. �
 2026-07-24 (session-mining fifth pass, local-only — NOT upstreamed): §4 gained a
 one-line zsh `${PIPESTATUS[0]}` exit-code-capture trap (a bash-ism yields garbage under
 zsh → false "no errors" green; re-run with explicit redirect + `echo $?`), mined from a
-moira verification incident. Genuinely new trigger in §4's verify-by-execution domain;
+private-project verification incident. Genuinely new trigger in §4's verify-by-execution domain;
 +6 lines, no compaction (floor-is-trigger-relative). This is a local cache refinement
 that deliberately did NOT go upstream (too niche/environment-specific for opus-pack), so
 it introduces intentional local↔upstream divergence on this file. →373 as of 2026-08-14
