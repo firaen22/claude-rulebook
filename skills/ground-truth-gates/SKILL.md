@@ -533,11 +533,19 @@ every re-run destroy the baseline it will be compared against. The ban is on
 silent REPLACEMENT, not on a stable path; an append-only ledger whose rows
 carry their run keys satisfies it. **Re-running a recipe creates NEW evidence; it
 does not verify the prior evidence record being audited** (reverse-ported
-2026-08-29 from opus-pack #226). That preservation rule is the producer side;
+2026-08-29 from opus-pack #226; consumer-side preserve-before-rerun added
+2026-09-16 from #239). That preservation rule is the producer side;
 this is the consumer side: when a claim cites an earlier run, log, artifact or
-verdict, inspect that cited evidence IDENTITY first — its durable form (artifact,
+verdict — or when the evidence you expected to read looks truncated, unreadable,
+incomplete, or unexpectedly missing — inspect or recover that cited evidence
+IDENTITY first, before re-running its producer: its durable form (artifact,
 run id, CI URL, commit), its recorded inputs/config, what it actually contains,
-and whether the claim is faithful to it. The identity is the evidence, not the
+and whether the claim is faithful to it. If re-running its producer could mutate,
+rotate, replace, or obscure that state, preserve it first — a producer that
+overwrites or rotates its own output can destroy a truncated or failing original
+before it is read; an already-immutable or content-addressed original needs
+nothing, and genuinely missing evidence is recorded as missing, not preserved.
+The identity is the evidence, not the
 pathname: a content-verified archival copy (hash- or run-id-matched) IS the cited
 record. A fresh execution answers a different question — what happens NOW, under
 this invocation's model, config and environment — and gets its own row, never the
