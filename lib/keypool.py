@@ -32,25 +32,29 @@ def pool(prefix, fallback=None):
     raw = (os.environ.get(base + "S") or "").split(",")
     raw.append(os.environ.get(base) or "")
     i = 1
-    while os.environ.get(f"{base}_{i}"):
+    while (os.environ.get(f"{base}_{i}") or "").strip():   # whitespace-only counts as empty
         raw.append(os.environ[f"{base}_{i}"])
         i += 1
 
-    keys, seen = [], set()
-    for k in raw:
-        k = k.strip()
-        if k and k not in seen:      # same key in two places is ONE bucket
-            seen.add(k)
-            keys.append(k)
+    def dedupe(items):
+        keys, seen = [], set()
+        for k in items:
+            k = (k or "").strip()
+            if k and k not in seen:  # same key in two places is ONE bucket
+                seen.add(k)
+                keys.append(k)
+        return keys
+
+    keys = dedupe(raw)
 
     msg = (f"no {prefix} key: set {base}S in ~/.zshenv "
            "(note: ~/.zshrc is NOT read by non-interactive shells — Claude Code's "
            "Bash tool, cron and launchd all miss it)")
     if not keys and fallback is not None:
         try:
-            keys = [k.strip() for k in fallback() if k and k.strip()]
-        except Exception as e:
-            raise RuntimeError(f"{msg}; fallback also failed: {e}") from e
+            keys = dedupe(fallback())
+        except Exception as e:       # type only: the text (and the chain) may carry a credential
+            raise RuntimeError(f"{msg}; fallback also failed: {type(e).__name__}") from None
     if not keys:
         raise RuntimeError(msg)
     return keys

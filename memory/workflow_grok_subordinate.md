@@ -258,6 +258,16 @@ fixtures. 3 of its 5 findings were real, 1 rejected on corpus evidence.
 
 ### 🔴 "Empty" has TWO causes — separate them before blaming either
 
+🔴 **A THIRD cause, check it FIRST (2026-09-21, v1.0.40): `rc=124` = YOUR timeout.** Plain
+mode streams one narration line per turn and prints the report only at the END, so a run
+killed by `timeout 300` leaves 400-1000 bytes of "I'll read X / I'll run Y" and reads as
+"empty". 4/4 "empty" reviews in one session were rc=124; the same packet re-run with
+`timeout 1500` finished rc=0 at 375s and 448s. Idle (below) is rc=0; this is rc=124 — read
+the rc. Review timeout >= 1500, never 300; and tell a read-only reviewer "static review,
+you cannot execute, mark [unverified]". Also: an unknown `-m` id exits **rc=0** with the
+error on stdout. → [[finding-grok-empty-is-timeout-2026-09-21]]
+
+
 The parser bug above is one. The other is grok genuinely idling: on a multi-step
 read-then-analyze brief it **narrates its plan and exits** ("Next I'll locate the
 repo, read the changed files") without executing — 3/3 on one review task, and
