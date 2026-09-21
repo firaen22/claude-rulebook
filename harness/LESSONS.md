@@ -146,3 +146,17 @@ all 3 rounds — a tooling degradation, not a packet problem:
   own re-derivation + one general-purpose agent, both PROCEED). Did NOT fake a dual-family
   PROCEED. Retry the CLIs next session; if codex stays silent at small packets, treat
   v0.154.0 as regressed and pin/roll back or re-probe the boundary.
+
+## 2026-09-19 — `git checkout -- <file>` inside a probe reverted my own uncommitted edit on a dirty tree
+- What happened: during the step-4 license-revoke probe (moira-web/scripts/qimen-oracle) I
+  appended a byte to `geju.py`, confirmed `--qualify-middle` refused, then "restored" with
+  `git checkout -- geju.py`. The tree was dirty: that command also discarded the uncommitted
+  step-4 strict-grid edit to the same file. Recovered only because a `cp` backup had been taken
+  seconds earlier; re-verified by sha256 == the observed record's `helperSha256`.
+- Root cause: `git checkout -- <path>` restores HEAD, not "the state before my probe" — on a
+  dirty tree the two differ, and the probe's own edit and the pending work are indistinguishable
+  to git.
+- Rule change needed: NONE (existing rule covers it — operational-rigor §2 "baseline before you
+  mutate" / repo-baseline). Practice: on a dirty tree, restore a probe by COPY (`cp file file.bak`
+  → probe → `cp file.bak file`, verify hash), never by `git checkout`/`git restore`.
+- Status: noted
