@@ -12,19 +12,19 @@ Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 [[workflow-codex-subordinate]] [[workflow-agy-subordinate]] [[workflow-grok-subordinate]]
 [[workflow-opencode-subordinate]] [[reference-nim-via-opencode]]
 
-> 📌 **VERSION STAMP — re-verified 2026-09-17 by running each binary:**
-> `grok 1.0.34 (3736acbc8658)` · `codex-cli 0.154.0` · `opencode 1.18.31` · `agy 1.2.5`.
+> 📌 **VERSION STAMP — re-verified 2026-09-21 by running each binary:**
+> `grok 1.0.40 (eb1a2256660d)` · `codex-cli 0.155.1` · `opencode 1.18.31` · `agy 1.2.7`.
 > Every rc / ceiling / bug-status claim in this file and the linked playbooks is
-> **VERSION-BOUND**. codex jumped a full minor version since the last stamp
-> (0.153.4→0.154.0, user-installed, not targeted at anything here) — opencode/agy/grok
-> held steady. Every codex rc/ceiling/bug-status claim below (the ~30KB inline-review
+> **VERSION-BOUND**. codex jumped another minor version since the last stamp
+> (0.154.0→0.155.1, self-updated, not targeted at anything here) — agy/grok moved
+> patch-only, opencode held steady. Every codex rc/ceiling/bug-status claim below (the ~30KB inline-review
 > ceiling §2a, `gpt-5.6-luna` default behavior, the astra-vs-luna E4 scale finding) was
-> measured on 0.153.4 and is **UNVERIFIED on 0.154.0** until re-run — treat codex
+> measured on 0.153.4 and is **UNVERIFIED on 0.155.1** until re-run — treat codex
 > findings from this point forward as provisional pending a re-bench. Every agy
 > rc/pin/edge claim below (the 3.6-flash-medium / 3.7-flash pins, K1 edge results,
 > empty-return-is-permission-deny finding) was measured through 1.1.x and remains
 > **UNVERIFIED on 1.2.x** (unchanged from the last stamp). Every grok rc/edge/schema
-> claim below was measured on 1.0.13 and remains **UNVERIFIED on 1.0.34** (unchanged
+> claim below was measured on 1.0.13 and remains **UNVERIFIED on 1.0.40** (unchanged
 > from the last stamp). **Re-run `--version` before trusting a number.**
 
 ## 0. Two rules that override every row below
