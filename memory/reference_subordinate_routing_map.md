@@ -181,7 +181,7 @@ bad answer became 0 bytes).
   is not the pinned model — always pass `--model`. `-low` is NOT promoted to general
   default: medium's justification is transport, and `-low` had the worst transport of the
   3.6 arms (3 timeouts/35 vs medium's 1); 3.7-low transport is unmeasured at scale.
-- **grok** `grok-4.6` — third option at ceiling, best structured output, SUBSCRIPTION-billed
+- **grok** `grok-4.7` (pin moved from `grok-4.6` 2026-09-22: review-task 9/9 vs 4/9 N=3, impl parity, faster — PROVISIONAL; numbers in this entry were measured on 4.6) — third option at ceiling, best structured output, SUBSCRIPTION-billed
   (SuperGrok flat plan — the ~$0.005/run telemetry is reported, not billed; the metered path
   is `openrouter/x-ai/grok-4.6`, a separate product), effort tiers are FLAT (don't build effort routing). *Weakness:* slowest of
   the three (16.1s vs 8.5/9.2); provisional HANG-class miss; **ingests `~/.claude` by

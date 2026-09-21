@@ -1,6 +1,6 @@
 ---
 name: workflow-grok-subordinate
-description: "How to use the xAI Grok CLI as a subordinate — invocation, the isolate-HOME requirement, --json-schema envelope + tool-use short-circuit guard, verified capability profile. 2026-08-27: grok HOLDS write+shell and an isolated --cwd does NOT contain it — only a `--tools` allowlist does, and that flag FAILS OPEN on any unrecognised name; NEW native X-retrieval lane (x_keyword_search verified live), mutually exclusive with that control. DEFAULT MODEL 2026-08-23: grok-4.6. ROUTING MEASURED 2026-08-23 head-to-head vs codex+agy: at parity except HANG/termination edges (0/3 vs 2/3, 2/3 — n=3 one task, p=0.17 pooled / 0.40 per-arm, PROVISIONAL). Unstated-edge GUARDED 0/28 isolated-HOME + 0/6 default-config (i.e. 28/28 and 6/6 MISSES) (08-25 N=6 repeat RETRACTED the earlier 1/2 lift as noise) — deterministic across BOTH configs now — the HANG-class real-brief head-to-head result stays PROVISIONAL at n=3; the synthetic-edge behavior is settled, its link to the real-brief HANG failure remains the hypothesis."
+description: "How to use the xAI Grok CLI as a subordinate — invocation, the isolate-HOME requirement, --json-schema envelope + tool-use short-circuit guard, verified capability profile. 2026-08-27: grok HOLDS write+shell and an isolated --cwd does NOT contain it — only a `--tools` allowlist does, and that flag FAILS OPEN on any unrecognised name; NEW native X-retrieval lane (x_keyword_search verified live), mutually exclusive with that control. DEFAULT MODEL 2026-09-22: grok-4.7 (was grok-4.6 since 08-23; 4.7 = parity as implementer, ~1.5x faster, review task 9/9 vs 4.6 4/9 at N=3 — PROVISIONAL; --json-schema lane still measured on 4.6 only). ROUTING MEASURED 2026-08-23 head-to-head vs codex+agy: at parity except HANG/termination edges (0/3 vs 2/3, 2/3 — n=3 one task, p=0.17 pooled / 0.40 per-arm, PROVISIONAL). Unstated-edge GUARDED 0/28 isolated-HOME + 0/6 default-config (i.e. 28/28 and 6/6 MISSES) (08-25 N=6 repeat RETRACTED the earlier 1/2 lift as noise) — deterministic across BOTH configs now — the HANG-class real-brief head-to-head result stays PROVISIONAL at n=3; the synthetic-edge behavior is settled, its link to the real-brief HANG failure remains the hypothesis."
 metadata:
   node_type: memory
   type: reference
@@ -34,7 +34,7 @@ cp <sources> $GDIR/files/; cp brief.txt $GDIR/files/00-REVIEW-BRIEF.txt
 HOME="$TMPHOME" timeout 1700 ~/.grok/bin/grok -p "Read ./files/00-REVIEW-BRIEF.txt \
   first, then read EVERY file in ./files/. Do not read outside ./files/. You have \
   read-only tools only, so print your complete findings report to stdout." \
-  -m grok-4.6 --cwd "$GDIR" --always-approve --disable-web-search --no-subagents \
+  -m grok-4.7 --cwd "$GDIR" --always-approve --disable-web-search --no-subagents \
   --output-format plain --tools read_file,grep,list_dir
 ```
 🔴 **`$TMPHOME` must be SEEDED, not empty (2026-09-01).** The recipe's isolated
@@ -105,7 +105,7 @@ file's expiry is irrelevant. → [[reference-grok-auth-expiry]]
 
 Single-turn headless (the delegation form):
 ```
-~/.grok/bin/grok -p "<PROMPT>" -m grok-4.6 --cwd <DIR> \
+~/.grok/bin/grok -p "<PROMPT>" -m grok-4.7 --cwd <DIR> \
   --always-approve --disable-web-search --no-subagents --output-format plain
 # read-only variant (CONTAINED — verified 2/2, see §CONTAINMENT):
 #   ... --tools read_file,grep,list_dir      # every name must be real: typo = fails OPEN
@@ -113,7 +113,16 @@ Single-turn headless (the delegation form):
 - `--cwd` is honoured correctly. Proven with a hostile-PWD split (real cwd + `--cwd` vs a
   decoy `PWD` env): the file landed in cwd, decoy stayed empty. **This is NOT the opencode
   `$PWD` bug** — you do not need the `env["PWD"]` dance, though setting it is harmless.
-- Models: `grok-4.6` (default), `grok-4.5`. Both authenticate and answer.
+- Models: **`grok-4.7` (default since 2026-09-22)**, `grok-4.7-build-fast`, `grok-4.6`, `grok-4.5`.
+  Why 4.7: hardaxis battery N=3/task — REVIEW of unstated hazards 9/9 vs 4.6's 4/9 (4.6 misses
+  O(n^2) + float precision); implementation tasks identical (E1/H1/H2/H3 100% both, E4 15/18 both);
+  09-21 bench 8/10 both, median latency ~1.5x faster. PROVISIONAL (one JS review subject).
+  UNCHANGED on 4.7: unstated-edge blindness when WRITING code (chunk 0/2, deep flatten 0/3) — spec
+  every edge. 4.7 reviews run 216-418s: **timeout >= 600s**, never 300. Every table/number below
+  labelled 4.6 was measured on 4.6 and is NOT re-measured; `--json-schema` lane on 4.7 = unmeasured
+  (fall back to `-m grok-4.6` there if adherence looks off). Model must be selectable in the CLI
+  account first — an unavailable id exits 0 with the error on stdout.
+  → `finding_grok_47_hardaxis_2026-09-22.md`, `finding_grok_47_bench_2026-09-21.md` (project memory).
 - `--always-approve` auto-approves tool execution. It EDITS FILES — and an isolated
   cwd does **NOT** confine it (disproved 2026-08-27: it wrote to a sibling tmpdir
   outside `--cwd` on the first ask). Contain with `--tools`; see §CONTAINMENT.
