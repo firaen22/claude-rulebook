@@ -326,7 +326,7 @@ contributor-reported — the rule ships with an in-body `unprobed` marker
 per the README covenant's second branch.
 The §3 baseline-classification and runtime-state adjudication rules
 (2026-07-24) are class-distilled from a mining pass over the owner's own
-sessions (no code taken): a moira-web behavior-preserving refactor where
+sessions (no code taken): a private-repo behavior-preserving refactor where
 codex's "not merge-ready" and agy's "CRITICAL" both dissolved under
 reproduction as pre-existing base-branch behaviors the branch faithfully
 preserved
