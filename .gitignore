@@ -33,6 +33,10 @@
 # groqcall.py stays out (Groq is a suspended route) as does nimroute.py.
 !lib/keypool.py
 !lib/debt-scan.mjs
+# Added 2026-09-22. Subordinate-CLI dispatch wrapper; reads keys only via keypool/env,
+# scans every packet before launch, and its own `scan_secrets([source])` is [] —
+# the selftest fixture key is built at runtime so the file can itself travel as a packet.
+!lib/dispatch.py
 
 # Hooks: sources + tests only. hooks.log is a runtime log, *.bak* are snapshots,
 # settings.json is machine-specific (absolute paths, permissions, MCP) — ship the
