@@ -37,8 +37,10 @@ STDOUT_ERR = re.compile(r"^\s*(\x1b\[[0-9;]*m)*(Error|error|ERROR)\b"
 # banner+denial rule below read a live PONG PASS as STDERR_DENIAL (2026-09-22) on the loose form
 DENIAL = re.compile(r"denied|not allowed|requires? approval|approval (required|needed)|permission (error|required)", re.I)
 PROMPT_ON_STDIN = object()   # stdin_override sentinel, see run_one
-RATE = re.compile(r"\b429\b|rate.?limit|quota", re.I)
-# the invocation itself was rejected (argv/usage) — distinct from a model that failed mid-run
+RATE = re.compile(r"\b429\b|rate.?limit|quota|usage limit", re.I)   # codex: "hit your usage limit"
+# the invocation itself was rejected (argv/usage) — distinct from a model that failed mid-run.
+# Matched against the TAIL of stderr only (see classify): codex echoes the whole prompt into
+# stderr, and a packet quoting "Usage: python3 x.py" once turned a quota error into LAUNCH_ERROR
 USAGE = re.compile(r"usage:|unrecognized|unknown (option|argument|flag|command)|conflicts with"
                    r"|(required|invalid value|unexpected argument|argument .* required)", re.I)
 
@@ -123,13 +125,14 @@ def classify(rc, out, err, elapsed, cap, timed_out, pong):
     if timed_out:
         return "TIMEOUT"
     if rc != 0:
-        if RATE.search(err) or RATE.search(out):
+        tail = "\n".join(err.splitlines()[-40:])   # past any echoed prompt; CLIs print their errors last
+        if RATE.search(tail) or RATE.search(out):
             return "RATE_LIMIT"
-        if DENIAL.search(err) and not out.strip():
+        if DENIAL.search(tail) and not out.strip():
             return "STDERR_DENIAL"
         # LAUNCH_ERROR = the CLI rejected the invocation (no binary / usage error), never "it was fast":
         # a server HTTP 400 one second in is a model-side ERROR (review 2026-09-22)
-        return "LAUNCH_ERROR" if rc == 127 or USAGE.search(err) else "ERROR"
+        return "LAUNCH_ERROR" if rc == 127 or USAGE.search(tail) else "ERROR"
     if not out.strip():
         return "STDERR_DENIAL" if DENIAL.search(err) else "EMPTY"
     # a banner on stdout does not clear a denial on stderr
@@ -241,6 +244,12 @@ def selftest():
         ("launch",      A(name="la"),    "x", ["sh", "-c", "echo 'error: unrecognized arguments: --foo' >&2; exit 2"], "LAUNCH_ERROR"),
         ("no_binary",   A(name="nb"),    "x", ["/nonexistent/cli"], "LAUNCH_ERROR"),
         ("fast_server_err", A(name="fs"), "x", ["sh", "-c", "echo 'HTTP 400 Bad Request' >&2; exit 1"], "ERROR"),  # fast ≠ launch
+        # codex echoes the prompt into stderr: a packet line "Usage: python3 x.py" 60 lines above the
+        # real error must not decide the status (live 2026-09-22: quota hit read as LAUNCH_ERROR)
+        ("echo_quota",  A(name="eq"),    "x", ["sh", "-c", "{ echo user; echo 'Usage: python3 analyze.py'; seq 60; "
+                                               "echo 'ERROR: You have hit your usage limit. try again at 11:48 PM.'; } >&2; exit 1"], "RATE_LIMIT"),
+        ("echo_srv",    A(name="es"),    "x", ["sh", "-c", "{ echo user; echo 'Usage: python3 analyze.py'; seq 60; "
+                                               "echo 'HTTP 500 Internal Server Error'; } >&2; exit 1"], "ERROR"),
         ("rate",        A(name="rl"),    "x", ["sh", "-c", "echo 'HTTP 429 Too Many' >&2; exit 1"], "RATE_LIMIT"),
         ("secret_env",  A(name="sec"),   "key=abcdef0123456789SECRET", ["sh", "-c", "echo leaked"], "SECRET_BLOCK"),
         ("secret_lower_short", A(name="sl"), "pw is short-pass", ["sh", "-c", "echo leaked"], "SECRET_BLOCK"),
