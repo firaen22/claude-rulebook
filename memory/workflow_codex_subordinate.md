@@ -50,6 +50,17 @@ Codex CLI (`/Users/yauch/.local/bin/codex`, v0.153.4 as of 2026-09-06; playbook 
 - **Vision / image input:** `-i, --image <FILE>...` attaches images. **GOTCHA (verified 2026-06-02):** the flag is greedy (`<FILE>...`), so a positional prompt placed AFTER `-i` is consumed as a second image path → codex falls back to reading the prompt from stdin and errors "No prompt provided via stdin." Fix: pipe the prompt via stdin — `echo "<prompt>" | codex exec -m gpt-5.6-luna --skip-git-repo-check -i img.png` (or put the prompt before `-i`). Confirmed reading a controlled screenshot (random token + number + status) exactly. Use for OCR, screenshot-to-bug, diagram/chart reads. Multiple `-i` flags work for A/B comparison (`... -i img1 -i img2 -`, prompt via stdin) — a viable vision-REVIEW mode, but codex's vision has blind spots (it missed edge arcs agy caught); adjudicate any vision disagreement against a pixel crop, never on one model's read.
 - Cross-model code review: `codex exec review` / `codex review`.
 - Must be in a trusted dir OR pass `--skip-git-repo-check`.
+- **Wrapper (2026-09-22, rulebook `8423af8`):** `python3 ~/.claude/lib/dispatch.py codex
+  --model gpt-6-astra --effort medium --prompt-file brief.md --outdir <scratch> --name c1
+  [--pong]` — prompt on stdin (`-`), `--sandbox read-only`, `-o <name>-final.txt`, secret
+  scan before launch, named status out. Served model is confirmable: stderr carries a
+  `model: <slug>` line — that is the identity evidence, not the review text.
+- 🔴 **codex stderr ALWAYS contains `approval: never`** (banner line, alongside `model:`,
+  `sandbox:`, `reasoning effort:`). Any stderr classifier keyed on a bare word like
+  `approval`/`permission`/`denied` will read every healthy codex run as a denial — the
+  wrapper's first banner-fix did exactly that and only a live PONG caught it (selftest
+  fixtures were synthetic). Match denial PHRASES (`requires approval`, `permission denied`,
+  `not allowed`) and keep a fixture built from the real banner bytes.
 
 ## Failure mode: ONE broken MCP entry kills EVERY `codex exec` (verified 2026-06-07)
 codex's config loader is **all-or-nothing**: if any `[mcp_servers.X]` block in `~/.codex/config.toml`

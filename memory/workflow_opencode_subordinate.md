@@ -45,10 +45,24 @@ id has a PAID bare twin; the `-contributor-free` suffix is load-bearing.
 SCRATCH=$(mktemp -d) && cd "$SCRATCH" && timeout 180 opencode run --auto -m opencode/muse-spark-1.2-contributor-free "$(cat /tmp/opencode-prompt.txt)" > /tmp/opencode-out.txt 2>&1 &
 ```
 
-**With file attachments:**
+**With file attachments — prompt BEFORE `-f` (corrected 2026-09-22):**
 ```bash
-opencode run --auto -m <model> -f path/to/file.ts -f path/to/other.ts "<prompt>"
+opencode run --auto -m <model> "<prompt>" -f path/to/file.ts -f path/to/other.ts
 ```
+`-f` is an array flag: a positional placed after it is swallowed as another file path —
+rc=1 in 0.7 s with stderr `File not found: <your prompt text>` (hit live 09-22 building the
+wrapper; it reads like a missing attachment, it is the prompt). Pass attachments as
+ABSOLUTE paths — the child resolves relative ones against `--dir`/`$PWD`, not your cwd.
+
+**Wrapper (2026-09-22, rulebook `8423af8`):** `python3 ~/.claude/lib/dispatch.py opencode
+--model opencode/muse-spark-1.2-contributor-free --prompt-file brief.md --outdir <scratch>
+--name o1 [--files ...] [--pong]` (`nim` is the same lane with an `nvidia/<vendor>/<model>`
+slug). Stages the brief as `00-BRIEF.md` in an isolated `--dir`, sets `PWD`, resolves
+attachments to absolute paths and scans them, and takes an exclusive `flock` across every
+opencode/nim run in the outdir — the shared `~/.local/share/opencode/opencode.db` still
+throws "database is locked" under parallel launches, so the wrapper serializes instead of
+cloning `XDG_DATA_HOME`. Named status out; `--effort` is NOT forwarded (`effort_applied:
+false` in the result — opencode has no flag for it).
 
 **JSON output (for parsing):**
 ```bash

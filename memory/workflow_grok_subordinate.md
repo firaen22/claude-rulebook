@@ -20,6 +20,25 @@ This file is orders only.
 > ⚠️ **Grok ≠ Groq.** Groq is SUSPENDED (NordVPN egress IP blocklisted, 403s before auth)
 > and has no CLI at all. Nothing about that applies here. Never type `groq`.
 
+## Wrapper: `~/.claude/lib/dispatch.py grok` (2026-09-22, rulebook `8423af8`)
+
+Encodes this whole file's recipe — staged `00-BRIEF.md` in `--cwd`, HOME isolated AND
+rsync-seeded from `~/.grok` (the two-file copy returned "Not signed in" on a fresh
+auth.json; seed everything), `--tools read_file,grep,list_dir`, copy deleted in
+`finally` and PASS forced to ERROR if it survives. Returns a named status
+(PASS/PONG_FAIL/EMPTY/STDOUT_ERROR/STDERR_DENIAL/RATE_LIMIT/TIMEOUT/LAUNCH_ERROR/ERROR/
+SECRET_BLOCK) — a classification of the bytes, not a diagnosis; read `<name>-err.txt`.
+```
+python3 ~/.claude/lib/dispatch.py grok --model grok-4.7 --prompt-file brief.md \
+  --outdir <scratch> --name g1 --timeout 1800 [--pong]
+```
+🔴 **Review cap ≥ 1800 s, not 900.** A 20 KB review packet took **857 s** on 4.7
+(attempt 1 at `--timeout 900` = TIMEOUT with 0 bytes; attempt 2 died on an xAI
+HTTP 500 "Service temporarily unavailable" at 440 s — vendor flake, the identical
+packet passed on retry). A review dispatch is read-shaped, so a 500 is a plain
+retry; a TIMEOUT means YOUR cap. Three-lens review of the wrapper itself
+(codex+grok+TypeSafe): project memory `finding_dispatch_wrapper_crossreview_2026-09-22.md`.
+
 ## Large review packets: files on disk, NEVER --prompt-file
 
 VERIFIED 2026-08-27 (sweep 18, first successful grok review): a ~100KB packet via
@@ -118,7 +137,8 @@ Single-turn headless (the delegation form):
   O(n^2) + float precision); implementation tasks identical (E1/H1/H2/H3 100% both, E4 15/18 both);
   09-21 bench 8/10 both, median latency ~1.5x faster. PROVISIONAL (one JS review subject).
   UNCHANGED on 4.7: unstated-edge blindness when WRITING code (chunk 0/2, deep flatten 0/3) — spec
-  every edge. 4.7 reviews run 216-418s: **timeout >= 600s**, never 300. Every table/number below
+  every edge. 4.7 reviews run 216-857s (857 on a 20 KB packet, 09-22): **timeout >= 1800s**,
+  never 300 and not 900 either (§Wrapper). Every table/number below
   labelled 4.6 was measured on 4.6 and is NOT re-measured; `--json-schema` lane on 4.7 = unmeasured
   (fall back to `-m grok-4.6` there if adherence looks off). Model must be selectable in the CLI
   account first — an unavailable id exits 0 with the error on stdout.

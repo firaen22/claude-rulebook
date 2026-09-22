@@ -7,6 +7,28 @@ metadata:
   originSessionId: 9d9ceaff-475d-47a4-871b-5bc9ce1b2498
 ---
 
+## 2026-09-22 — three failure SHAPES on one id, one session (via `dispatch.py nim`)
+
+`nvidia/mistralai/mistral-nemotron`, identical PONG packet, four launches through
+`~/.claude/lib/dispatch.py nim` (rulebook `8423af8`; `opencode run --auto -m <id> --dir`):
+| run | status | rc | elapsed | bytes | stderr |
+|---|---|---|---|---|---|
+| 1 | TIMEOUT | 124 | 180 s | 0 | only the `> build · mistralai/mistral-nemotron` banner |
+| 2 | TIMEOUT | 124 | 250 s | 0 | same |
+| 3 | **PASS** | 0 | 67 s | 5 | same |
+| 4 | ERROR | 1 | 62 s | 0 | `Error: {"message":"EngineCore encountered an issue…","type":"BadRequestError","code":400}` |
+- The PASS proves the id is live and the packet is fine; the other three are
+  **server-side** (a 0-byte hang past the cap, and a vLLM `EngineCore` 400 that took a
+  minute to arrive). Nothing in the client distinguishes them from a dead id EXCEPT the
+  banner line — a launch failure never prints `> build ·`. Read stderr before diagnosing.
+- Wrapper consequence: rc≠0 with an HTTP error is `ERROR`, never `LAUNCH_ERROR`
+  (LAUNCH_ERROR is rc=127 or usage-shaped stderr only — grok's review caught the old
+  `elapsed<5s` heuristic mislabelling exactly this 400). A stall is `TIMEOUT` with
+  `out_bytes: 0`; per [[workflow-opencode-subordinate]] the stall rule still holds —
+  reroute after the first one, do not budget retries on this lane.
+- Not re-probed after the wrapper fixes; treat mistral-nemotron as PER-SESSION FLAKY,
+  1 pass in 4, until a warm N≥5 says otherwise.
+
 ## PATCHED 2026-09-08 — nimroute.py PARITY list cleaned, all 4 dead ids removed
 
 Fresh re-probe before patching (R0): pulled `/v1/models` live (81 ids, same count as

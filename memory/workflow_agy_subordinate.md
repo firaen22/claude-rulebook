@@ -171,10 +171,18 @@ agy --model gemini-3.7-flash-medium --dangerously-skip-permissions -p "<prose pr
   agy --model gemini-3.7-flash-medium -p "<prose prompt>"
   agy models          # list callable models
   ```
-  `agy --effort low|medium|high` also appears in `--help` @v1.1.5 but is **UNVERIFIED** — it
-  was never exercised; only `--model` has evidence behind it. Unknown whether `--effort`
-  interacts with the `-low/-medium/-high` suffix already baked into the model ID, or is
-  independent. Do not assume it works; test before relying on it.
+  **`--effort` — VERIFIED 2026-09-22 (supersedes the earlier UNVERIFIED note):** the flag
+  and the model-id suffix are the SAME knob. A bare slug (`gemini-3.6-flash`) **requires**
+  `--effort low|medium|high` and errors without it; a suffixed slug (`gemini-3.6-flash-high`)
+  **rejects** a `--effort` that disagrees with its suffix (`--effort medium` + `-high` =
+  error). Either pin the suffix and omit the flag, or pass the bare slug + flag — never
+  both. `~/.claude/lib/dispatch.py agy` (rulebook `8423af8`) implements exactly that:
+  forwards `--effort` only for an un-suffixed slug and reports `effort_applied` in the
+  result JSON.
+  ```
+  python3 ~/.claude/lib/dispatch.py agy --model gemini-3.6-flash-high \
+    --prompt-file brief.md --outdir <scratch> --name a1 [--pong]
+  ```
 - **Lineup snapshot 2026-07-22** (`agy models`, volatile fact — re-run before relying):
   `gemini-3.6-flash-{high,medium,low}`, `gemini-3.5-flash-{medium,high,low}`,
   `gemini-3.1-pro-{low,high}`, `claude-sonnet-4-6`, `claude-opus-4-6-thinking`,
