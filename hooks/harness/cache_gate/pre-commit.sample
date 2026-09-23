@@ -87,11 +87,14 @@ printf '%s\n' "$output" | grep '^WARN' || true
 # check, but deleting the lock and rebuilding yields a SILENT `fresh-init` -- the quiet
 # bypass of the refusal. A fresh-init lock whose path ALREADY exists in HEAD is a re-init,
 # not a genuinely new cache, so make it equally visible. (Runs on the staged export.)
+# A lock byte-identical to HEAD's was not rebuilt in this commit, so it is not a re-init:
+# operational-rigor's original fresh-init lock (791ee0d) WARNed on every commit until this
+# check (2026-09-23).
 for lk in "$tmp"/skills/*/.cachelock.json; do
     [ -f "$lk" ] || continue
     grep -q '"built_via": "fresh-init"' "$lk" || continue
     rel=${lk#"$tmp"/}
-    if git cat-file -e "HEAD:$rel" 2>/dev/null; then
+    if git cat-file -e "HEAD:$rel" 2>/dev/null && ! git cat-file blob "HEAD:$rel" | cmp -s - "$lk"; then
         echo "WARN $rel: lock re-initialized (fresh-init) but a prior lock exists in HEAD -- audit the re-sync"
     fi
 done
