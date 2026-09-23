@@ -160,3 +160,15 @@ all 3 rounds — a tooling degradation, not a packet problem:
   mutate" / repo-baseline). Practice: on a dirty tree, restore a probe by COPY (`cp file file.bak`
   → probe → `cp file.bak file`, verify hash), never by `git checkout`/`git restore`.
 - Status: noted
+
+## 2026-09-23 — frozen letter body edited to remove private names (`9b9f6a3`)
+- What happened: `9b9f6a3` (2026-09-22) changed one line of the frozen body of
+  `50-letter-to-future-sessions.md` (§"Three things the user did not ask for") to replace
+  private project names. 40-maintenance §1 says the letter body is frozen like the diagnosis.
+  Found 2026-09-23 while auditing the skill-authoring `unchanged-body-override` lock.
+- Root cause: the rulebook repo is PUBLIC; the frozen body carried private names. Freezing
+  protects history from rewrites, but it does not outrank keeping private data out of a
+  public repo.
+- Rule change needed: NONE. The edit stands; reverting it would republish the names. Record
+  of the exception: this entry. Any future redaction of a frozen file gets its own entry here.
+- Status: noted
