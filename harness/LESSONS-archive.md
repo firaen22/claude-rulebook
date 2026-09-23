@@ -1077,3 +1077,67 @@ refers to an entry archived by an earlier pass, not to anything moved here.
   </dev/null > /tmp/codex-out.txt 2>&1 &`" and `:44` "Must be in a trusted dir OR pass
   `--skip-git-repo-check`."; `~/.claude/memory/workflow_grok_subordinate.md:262`
   "narrates its plan and exits".
+
+
+## Moved here by the 2026-09-23 compression (LESSONS.md was 174 lines / 5 dated entries)
+
+The two 2026-09-11 entries below carried `Status: applied` and are moved verbatim.
+The other three dated entries stay in LESSONS.md: 09-19 and 09-23 are `noted`; 09-16
+has no Status line and its prescription (re-measure codex's inline-packet cliff) is
+not homed in a rules file, so it is treated as unapplied.
+
+**Destination verification (§3, run 2026-09-23 before the move):**
+- 09-11 Haiku entry → `~/.claude/harness/10-orchestration.md:10` "**Omitting `model:` is
+  not neutral, and the served tier is not a nameable default:**" (A1) and `:148`
+  "**Confirm the served model when identity is load-bearing.**" (A2).
+- 09-11 orphan entry → `~/.claude/harness/10-orchestration.md:211` "**A parent Agent's
+  "completed" does not mean its children finished.**" and `:217` "So PREVENT, don't
+  detect: any background author whose output IS the artifact gets its own tree" (B).
+- Reverse sweep `rg -n 'Clean-room author|Orphaned grandchild'` over skills/, harness/,
+  memory/, CLAUDE.md: no pointer to either heading.
+
+## 2026-09-11 — Clean-room author subagent read the forbidden file AND was silently served by Haiku 4.5
+- What happened: dispatched an `Agent` (no `model:` override) to write `qimen-badju-v2.ts`
+  clean-room with a prose "do NOT open qimen-badju.ts" rule. Transcript audit: all 53
+  turns served by `claude-haiku-4-5-20251001`; it ran `head -50` and `sed -n '50,200p'`
+  on the forbidden v1 file, then spawned a child "to port v1 to v2". Output scored
+  12/65 perfect, 10,605 breaks. Run voided; redispatched with `model: fable` and a
+  hardened brief (no subagents, no shell reads, audited afterwards).
+- Root cause: two mechanisms. (1) The read ban was prose and the agent held Bash —
+  an instance of the CLOSED "read-only instruction is not a control" counter (covered
+  at delegation-and-review SKILL.md:429; NOT re-incremented). (2) NEW: an in-harness
+  `Agent` without `model:` inherits the configured default subagent model, which was
+  Haiku, and nothing in the completion notification says which model served it — the
+  experiment's whole variable (model quality) was silently swapped.
+- Rule change needed: `~/.claude/harness/10-orchestration.md` — when the served model
+  is part of what the task measures (or the task is judgment-heavy), pass `model:`
+  explicitly on every `Agent` dispatch AND confirm post-hoc from the task transcript's
+  `"model":"…"` field before trusting the result (mirror of cross-model-review §5
+  identity rule, extended from reviewers to authors).
+- Status: applied — `10-orchestration.md` §0/§2/§5 (commit `00a9b38`, 2026-09-11), as
+  A1 (§0/§2, explicit `model:` when load-bearing) + A2 (§5, post-hoc served-vs-requested
+  tier confirmation, incl. `spawnDepth ≥ 2` descendants; VOID + quarantine on unverified
+  or disagreeing identity). Cross-family reviewed (codex + grok, 3 rounds) plus a
+  same-family Fable pass.
+
+## 2026-09-11 — Orphaned grandchild agent wrote into the tree after its parent "completed"
+- What happened: run-1's child ("Port v1 to v2") kept running after run-1 reported
+  completed and after I had restored the stub and dispatched run 2 in the same tree.
+  It overwrote `qimen-badju-v2.ts` with a 1,381-line v1 port at 16:44 while run 2
+  was mid-exploration. Caught only because the completion notification carried an
+  unfamiliar task-id. Run 2 had not yet written or re-read the file → resumed.
+- Root cause: a parent's completion notification does not imply its children are
+  finished; two authors then share one working tree with no write boundary.
+- Rule change needed: `~/.claude/harness/10-orchestration.md` — before dispatching
+  into a tree, `ListAgents` and confirm no subagent (any depth) is alive; a void run's
+  descendants must be stopped explicitly. Prefer `isolation: "worktree"` for any
+  author whose output is the experiment's artifact.
+- Status: applied — `10-orchestration.md` §7 (commit `00a9b38`, 2026-09-11) as rule B,
+  but NOT as originally prescribed: cross-family review (3 rounds, codex + grok)
+  reproduced that `ListAgents` returns peer sessions only (cannot see in-session
+  Agent-tool descendants) and that a dispatcher never automatically holds a
+  grandchild's task-id — so the pre-dispatch-check design above cannot work. Landed
+  instead as PREVENTION: mandatory `isolation: "worktree"`/fresh path for any
+  background author whose output IS the artifact, one writer per path, forbidden from
+  spawning background children that write it; a voided run's tree stays quarantined
+  (a replacement finishing elsewhere does not release it).

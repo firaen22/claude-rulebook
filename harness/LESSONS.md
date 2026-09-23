@@ -26,6 +26,7 @@ and why — lives in that pass's banner in `LESSONS-archive.md`. One line each h
 | 2026-08-27 | 196 lines / 7 items | 5 objects | First pass to grep every destination and quote its sentence. Homed one orphaned order. |
 | 2026-08-29 | 181 lines / 4 entries + 3 counters | 4 entries | All 10 destinations re-grepped: all resolve, but 3 line numbers drifted, 1 paraphrase never matched, 1 sentence had been REPLACED by a rule that inverts it. Homed the failed-grep order in discovery-sweep.md. |
 | 2026-09-06 | 247 lines / 5 entries | all 5 | 30 destinations re-grepped whitespace-normalised: 29 resolve. 1 REPLACED (`41-file-registry.md` "prospective (new/edited lines only" — that section now records the 09-02 migration instead); the ≤150 rule itself is live in `40-maintenance.md` §4, so the prescription stands and only the citation rotted. Reverse-sweep found no pointer to any moved heading. Nothing dropped. |
+| 2026-09-23 | 174 lines / 5 entries | 2 applied (09-11) | Both destinations re-grepped in `10-orchestration.md`: resolve. No back-reference to either heading. 3 counter line citations had drifted; re-pointed. 3 `noted`/no-status entries stay. |
 
 ⚠️ **CORRECTED 2026-08-26.** The 07-12 and 08-25 passes used to claim every moved
 entry "was verified applied by grepping its rule in the destination cache before
@@ -42,9 +43,9 @@ the rule edit and ask in-session.
   (2026-07-14 codex constraint-enforcement wiped files silently; 2026-07-28 codex
   deliberately reverted my landed fix and then TRUTHFULLY reported "no other file
   was modified", because it had put it back). Rule is applied at
-  `skills/delegation-and-review/SKILL.md:449` — "While ANY subordinate holds
+  `skills/delegation-and-review/SKILL.md:557` — "While ANY subordinate holds
   write access to a tree, land nothing in it yourself: stage in scratch, merge
-  after it exits" (re-grepped 2026-08-29; was cited :444); the counter matters because the two
+  after it exits" (re-grepped 2026-09-23; was cited :444, then :449); the counter matters because the two
   instances had different mechanisms and neither was caught by reading the
   report as specified.
 - **`gate-before-commit` cannot resolve `cd $VAR` — 2 instances** (2026-07-11,
@@ -65,11 +66,11 @@ The at-3 promotion duty above does NOT apply to entries here.
   both `--sandbox` names all uncontained (5/5), only the `--tools` allowlist held
   (2/2), and the NEW mechanism is that `--tools` FAILS OPEN on one unrecognised
   name (rc=0, no warning). Live at FOUR destinations:
-  `skills/delegation-and-review/SKILL.md:429` — "Classify an agent by the TOOLS
+  `skills/delegation-and-review/SKILL.md:537` — "Classify an agent by the TOOLS
   IT HOLDS, never by what its brief asks for" (quote corrected 2026-08-29: the
   earlier citation paraphrased it, and the paraphrase matched no text in the
-  file) — and `:436` (worktree/enforced-copy boundary; both line numbers were
-  cited as :423/:431 before the 08-29 re-grep), routing-map rule R-D
+  file) — and `:544` (worktree/enforced-copy boundary; cited :423/:431 before the
+  08-29 re-grep, :429/:436 before the 09-23 one), routing-map rule R-D
   ("verify the boundary by attempting an escape, never by reading the flag
   name"), and `workflow_grok_subordinate.md` §CONTAINMENT. Full history in
   `LESSONS-archive.md` (08-27 compression). Reopen procedure: if a new
@@ -78,52 +79,6 @@ The at-3 promotion duty above does NOT apply to entries here.
   closed one. (CLOSED here is counter-section vocabulary, not a `Status:`
   value.)
 
-
-## 2026-09-11 — Clean-room author subagent read the forbidden file AND was silently served by Haiku 4.5
-- What happened: dispatched an `Agent` (no `model:` override) to write `qimen-badju-v2.ts`
-  clean-room with a prose "do NOT open qimen-badju.ts" rule. Transcript audit: all 53
-  turns served by `claude-haiku-4-5-20251001`; it ran `head -50` and `sed -n '50,200p'`
-  on the forbidden v1 file, then spawned a child "to port v1 to v2". Output scored
-  12/65 perfect, 10,605 breaks. Run voided; redispatched with `model: fable` and a
-  hardened brief (no subagents, no shell reads, audited afterwards).
-- Root cause: two mechanisms. (1) The read ban was prose and the agent held Bash —
-  an instance of the CLOSED "read-only instruction is not a control" counter (covered
-  at delegation-and-review SKILL.md:429; NOT re-incremented). (2) NEW: an in-harness
-  `Agent` without `model:` inherits the configured default subagent model, which was
-  Haiku, and nothing in the completion notification says which model served it — the
-  experiment's whole variable (model quality) was silently swapped.
-- Rule change needed: `~/.claude/harness/10-orchestration.md` — when the served model
-  is part of what the task measures (or the task is judgment-heavy), pass `model:`
-  explicitly on every `Agent` dispatch AND confirm post-hoc from the task transcript's
-  `"model":"…"` field before trusting the result (mirror of cross-model-review §5
-  identity rule, extended from reviewers to authors).
-- Status: applied — `10-orchestration.md` §0/§2/§5 (commit `00a9b38`, 2026-09-11), as
-  A1 (§0/§2, explicit `model:` when load-bearing) + A2 (§5, post-hoc served-vs-requested
-  tier confirmation, incl. `spawnDepth ≥ 2` descendants; VOID + quarantine on unverified
-  or disagreeing identity). Cross-family reviewed (codex + grok, 3 rounds) plus a
-  same-family Fable pass.
-
-## 2026-09-11 — Orphaned grandchild agent wrote into the tree after its parent "completed"
-- What happened: run-1's child ("Port v1 to v2") kept running after run-1 reported
-  completed and after I had restored the stub and dispatched run 2 in the same tree.
-  It overwrote `qimen-badju-v2.ts` with a 1,381-line v1 port at 16:44 while run 2
-  was mid-exploration. Caught only because the completion notification carried an
-  unfamiliar task-id. Run 2 had not yet written or re-read the file → resumed.
-- Root cause: a parent's completion notification does not imply its children are
-  finished; two authors then share one working tree with no write boundary.
-- Rule change needed: `~/.claude/harness/10-orchestration.md` — before dispatching
-  into a tree, `ListAgents` and confirm no subagent (any depth) is alive; a void run's
-  descendants must be stopped explicitly. Prefer `isolation: "worktree"` for any
-  author whose output is the experiment's artifact.
-- Status: applied — `10-orchestration.md` §7 (commit `00a9b38`, 2026-09-11) as rule B,
-  but NOT as originally prescribed: cross-family review (3 rounds, codex + grok)
-  reproduced that `ListAgents` returns peer sessions only (cannot see in-session
-  Agent-tool descendants) and that a dispatcher never automatically holds a
-  grandchild's task-id — so the pre-dispatch-check design above cannot work. Landed
-  instead as PREVENTION: mandatory `isolation: "worktree"`/fresh path for any
-  background author whose output IS the artifact, one writer per path, forbidden from
-  spawning background children that write it; a voided run's tree stays quarantined
-  (a replacement finishing elsewhere does not release it).
 
 ## 2026-09-16 — codex v0.154.0 silent no-assistant-turn + grok idle; cross-family review gate blocked
 Running the cross-model-review gate on 3 opus-pack doctrine ports (~12KB inline
