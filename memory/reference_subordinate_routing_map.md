@@ -129,7 +129,7 @@ is not.
 | Anything with a loop / iteration / termination edge | codex or agy — or grok WITH the edge stated | PROVISIONAL, n=3, p=0.17 pooled |
 | Same, but the edge CANNOT be stated (unstated-edge exposure is the risk) | **agy `gemini-3.7-flash-low`** — then verify by execution regardless | 15/20 fresh-day repeat (prior 14/20, p=1.000); `-medium` 4/20 same day. NOT safe, just least-bad |
 | Post-implementation code review on a real repo | **NOT agy** | adoption 0/5, 0/5, 1/5, 3/8 across 4 sweeps. Scope note 2026-08-25: on a SMALL single-file seeded-defect review, codex and agy TIED 8/8 vs 8/8 (saturated instrument) — this row does not generalize down to small single-file review, stays scoped to large real-repo packets → [[finding-step4-seeded-review-2026-08-25]] |
-| Pre-commit / post-impl review of SMALL code with unstated hazards (the R1 shape) | **codex `-m gpt-6-sol -c model_reasoning_effort=medium`**; astra = alternate; not luna (5.6 or 6) for this shape | R1 2026-09-23, pooled N=5, ONE JS subject, PROVISIONAL: sol 15/15 = astra 15/15 (tie → sol for lower variance; not cheaper/faster); gpt-6-luna 6/9. Supersedes 2026-09-06 N=3 astra-first. Within-codex pick only — astra never benched vs agy. Does NOT cover large real-repo packets (row above) or spec-before-building (slug unmeasured there); does not override "post-impl real-repo → NOT agy" → [[finding-codex-56-family-2026-07-22]] |
+| Pre-commit / post-impl review of SMALL code with unstated hazards (the R1 shape) | **codex `-m gpt-6-astra -c model_reasoning_effort=medium`**; sol = fallback when astra's usage limit is low; not luna (5.6 or 6) for this shape | R1 2026-09-23, pooled N=5, ONE JS subject, graded per finding, PROVISIONAL: astra 15/15 > sol 13/15 (both sol misses = sumTo precision) > 5.6-luna 5/9, 6-luna 3/9. Replicates 2026-09-06 N=3 astra-first. Within-codex pick only — astra never benched vs agy. Does NOT cover large real-repo packets (row above) or spec-before-building (slug unmeasured there); does not override "post-impl real-repo → NOT agy" → [[finding-codex-56-family-2026-07-22]] |
 | Multi-file / long-horizon agentic work | **none of them — do it yourself** | UNMEASURED on all five; opencode 0 edits on 20/20 hard |
 
 ### 2a. Review packet SHAPE — codex and grok need OPPOSITE shapes
@@ -156,8 +156,8 @@ bad answer became 0 bytes).
 
 ## 3. Per-tool one-liners
 
-- **codex** `gpt-5.6-luna` (implementation default) / **`gpt-6-sol`** (review of small unstated-hazard code, astra alternate,
-  2026-09-23) / **`gpt-6-astra`** (WITHIN codex, once codex is already the chosen tool —
+- **codex** `gpt-5.6-luna` (implementation default) / **`gpt-6-astra`** (review of small
+  unstated-hazard code, sol = fallback, 2026-09-23 N=5; and WITHIN codex, once codex is already the chosen tool —
   implementation where a numeric-magnitude / recursion-depth bound can't be spec'd up front;
   this is a model pick, not a family route: astra was never benched against agy, so the §2
   agy-low row still owns unstated-edge routing) — the only judgment tier. 5.5/5.6/astra all saturate H1/H2/H3 (36/36 + 27/27, 2026-09-05/06),
