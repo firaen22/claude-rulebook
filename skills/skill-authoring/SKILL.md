@@ -527,8 +527,9 @@ what happened (concrete), root cause (a MECHANISM), rule change needed, status.
    feature dies silently. Before REGISTERING any path in a durable file,
    re-run the artifact at its permanent location — the registry row points at
    proof, not at a copy.
-5. `~/.claude` is a whitelist git repo (CLAUDE.md + harness/ + memory/) — rule
-   edits are diffable via `git -C ~/.claude log`.
+5. `~/.claude` is a whitelist git repo (CLAUDE.md, harness/, memory/, skills/,
+   hooks/, named lib/ files — `.gitignore` is the list) — rule edits are
+   diffable via `git -C ~/.claude log`.
 
 ## 6 · The honest limit
 
