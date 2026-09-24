@@ -129,7 +129,7 @@ is not.
 | Anything with a loop / iteration / termination edge | codex or agy — or grok WITH the edge stated | PROVISIONAL, n=3, p=0.17 pooled |
 | Same, but the edge CANNOT be stated (unstated-edge exposure is the risk) | **agy `gemini-3.7-flash-low`** — then verify by execution regardless | 15/20 fresh-day repeat (prior 14/20, p=1.000); `-medium` 4/20 same day. NOT safe, just least-bad |
 | Post-implementation code review on a real repo | **NOT agy** | adoption 0/5, 0/5, 1/5, 3/8 across 4 sweeps. Scope note 2026-08-25: on a SMALL single-file seeded-defect review, codex and agy TIED 8/8 vs 8/8 (saturated instrument) — this row does not generalize down to small single-file review, stays scoped to large real-repo packets → [[finding-step4-seeded-review-2026-08-25]] |
-| Pre-commit / post-impl review of SMALL code with unstated hazards (the R1 shape) | **codex `-m gpt-5.6-luna -c model_reasoning_effort=medium` WITH the astra pack prefixed** (pack text, then `\n\n---\n\n`, then the brief — recipe in `workflow_codex_subordinate.md`). Alternate: `-m gpt-6-astra` medium (luna quota-blocked, or a second pass when a miss is catastrophic). Not bare luna, not sol | Owner-approved 2026-09-25 on astra-pack bench stage 1 (N=5, PREREG D4): 5.6-luna+pack r1 15/15 and held-out r2 15/15 = astra 15/15, 0 fp; bare 5.6-luna 11/15, 4/15; sol no lift (12→11/15). PROVISIONAL: one held-out JS subject; pack as prompt prefix only. Supersedes the 2026-09-23 sol-routine/astra-gate split. Same scope limits as before (not large real-repo packets, not spec review) → [[finding-astra-pack-stage1-2026-09-24]] |
+| Pre-commit / post-impl review of SMALL code with unstated hazards (the R1 shape) | **codex `-m gpt-5.6-luna -c model_reasoning_effort=medium` WITH the astra pack prefixed** (pack text, then `\n\n---\n\n`, then the brief — recipe in `workflow_codex_subordinate.md`). Alternates: `-m gpt-6-sol` medium + pack, or `-m gpt-6-astra` medium (luna quota-blocked, or a second pass when a miss is catastrophic). Not bare luna (held-out r2 4/15). **JS only** — other languages unmeasured: there use `gpt-6-astra` medium | Owner-approved 2026-09-25 on astra-pack bench stage 1 (N=5, PREREG D4), corrected the same day after a five-lens cross-model review + re-grade: 5.6-luna+pack r1 15/15, r2 15/15; sol+pack 15/15 on both too (the first-reported "sol no lift 12→11" was a grader keyword miss, 'nested…RangeError'). astra ran in that bench on r2 only: **tied astra on r2 only**, at the score ceiling, so "equals astra" is not shown; r1/e4 astra numbers are other benches. 0 grader-flagged fp on r2 (r1: 1 flag). PROVISIONAL: two tiny JS subjects, one held out, pack as prompt prefix only. Supersedes the 2026-09-23 sol-routine/astra-gate split. Same scope limits as before (not large real-repo packets, not spec review) → [[finding-astra-pack-stage1-2026-09-24]] |
 | Multi-file / long-horizon agentic work | **none of them — do it yourself** | UNMEASURED on all five; opencode 0 edits on 20/20 hard |
 
 ### 2a. Review packet SHAPE — codex and grok need OPPOSITE shapes
@@ -156,13 +156,13 @@ bad answer became 0 bytes).
 
 ## 3. Per-tool one-liners
 
-- **codex** `gpt-5.6-luna` (implementation default; also R-shape review WITH the astra pack, 2026-09-25) / **`gpt-6-astra`** (review alternate for small
-  unstated-hazard code — the 2026-09-23 sol-routine/astra-gate split is superseded by luna+pack, see §2; and WITHIN codex, once codex is already the chosen tool —
+- **codex** `gpt-5.6-luna` (implementation default; also R-shape review of JS WITH the astra pack, 2026-09-25) / **`gpt-6-astra`** (review alternate for small
+  unstated-hazard code, and the review pick outside JS — the 2026-09-23 sol-routine/astra-gate split is superseded for JS by luna+pack, see §2; and WITHIN codex, once codex is already the chosen tool —
   implementation where a numeric-magnitude / recursion-depth bound can't be spec'd up front;
   this is a model pick, not a family route: astra was never benched against agy, so the §2
   agy-low row still owns unstated-edge routing) — the only judgment tier. 5.5/5.6/astra all saturate H1/H2/H3 (36/36 + 27/27, 2026-09-05/06),
-  so for ordinary coding pick on cost not capability — BUT astra SEPARATES on two measured
-  axes (2026-09-06, N=3, [[finding-codex-56-family-2026-07-22]] Tests 6–7): unstated-scale
+  so for ordinary coding pick on cost not capability — BUT bare astra SEPARATES from bare luna/sol on two measured
+  axes (with the astra pack, luna and sol tie astra's review score at the ceiling on JS, 2026-09-25, §2) (2026-09-06, N=3, [[finding-codex-56-family-2026-07-22]] Tests 6–7): unstated-scale
   edges (E4 astra 9/9 vs luna 4/9 — luna's `sumTo(1e9)` loop MATCHES the happy-path spec and is
   silently off only at the unstated grader scale; if you can state the bound, spec it for luna)
   and review coverage (R1 astra 9/10 ×3, 0 nits; sol 8/10 + 2–3 nits, ~2× slower; luna 5/8/6
