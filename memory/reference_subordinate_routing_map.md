@@ -158,7 +158,9 @@ bad answer became 0 bytes).
 
 - **codex** `gpt-5.6-luna` (implementation default; also R-shape review of JS WITH the astra pack, 2026-09-25) / **`gpt-6-astra`** (review alternate for small
   unstated-hazard code, and the review pick outside JS — the 2026-09-23 sol-routine/astra-gate split is superseded for JS by luna+pack, see §2; and WITHIN codex, once codex is already the chosen tool —
-  implementation where a numeric-magnitude / recursion-depth bound can't be spec'd up front;
+  implementation where a numeric-magnitude / recursion-depth bound can't be spec'd up front — outside JS; for JS the
+  owner picked **`gpt-6-sol` medium + astra pack** 2026-09-25 (scale bench N=5: 45/50 vs astra 35/50; missed the
+  PREREG held-out bar by one case, so an owner call; astra = alternate; recipe + evidence in workflow_codex_subordinate.md);
   this is a model pick, not a family route: astra was never benched against agy, so the §2
   agy-low row still owns unstated-edge routing) — the only judgment tier. 5.5/5.6/astra all saturate H1/H2/H3 (36/36 + 27/27, 2026-09-05/06),
   so for ordinary coding pick on cost not capability — BUT bare astra SEPARATES from bare luna/sol on two measured

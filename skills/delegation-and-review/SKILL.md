@@ -40,7 +40,7 @@ writing the spec costs more than doing the task, don't delegate.
 |---|---|
 | Read-only search / "where is X", conclusion needed this turn | Agent `Explore` (sonnet; haiku if single-fact) |
 | Spec'd implementation, spec is airtight, SINGLE file | **free pool** per the routing map (it wins on executor choice) — not codex |
-| Spec'd implementation needing judgment, or spanning files | codex (`workspace-write`; `-m gpt-6-astra -c model_reasoning_effort=medium` when a numeric-magnitude / recursion-depth bound can't be stated — E4 2026-09-06, N=3, within-codex pick only; bound known → spec it for luna), or Agent `general-purpose` sonnet |
+| Spec'd implementation needing judgment, or spanning files | codex (`workspace-write`; when a numeric-magnitude / recursion-depth / precision bound can't be stated: JS → `-m gpt-6-sol -c model_reasoning_effort=medium` WITH the astra pack (owner pick 2026-09-25, scale bench 45/50 vs astra 35/50, N=5; recipe in `workflow_codex_subordinate.md`), alternate / non-JS → `-m gpt-6-astra` medium; within-codex pick only; bound known → spec it for luna), or Agent `general-purpose` sonnet |
 | Cheap lookup, domain-concept naming, pattern discovery, OCR/vision | agy (never on the critical path) |
 | Bulk bounded execution, cheapest tier | opencode free (sequential, isolated dir) |
 | Multi-step in-repo task needing repo conventions + own budget | spawn_task (user-gated chip) |
