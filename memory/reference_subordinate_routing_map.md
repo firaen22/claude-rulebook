@@ -129,7 +129,7 @@ is not.
 | Anything with a loop / iteration / termination edge | codex or agy — or grok WITH the edge stated | PROVISIONAL, n=3, p=0.17 pooled |
 | Same, but the edge CANNOT be stated (unstated-edge exposure is the risk) | **agy `gemini-3.7-flash-low`** — then verify by execution regardless | 15/20 fresh-day repeat (prior 14/20, p=1.000); `-medium` 4/20 same day. NOT safe, just least-bad |
 | Post-implementation code review on a real repo | **NOT agy** | adoption 0/5, 0/5, 1/5, 3/8 across 4 sweeps. Scope note 2026-08-25: on a SMALL single-file seeded-defect review, codex and agy TIED 8/8 vs 8/8 (saturated instrument) — this row does not generalize down to small single-file review, stays scoped to large real-repo packets → [[finding-step4-seeded-review-2026-08-25]] |
-| Pre-commit / post-impl review of SMALL code with unstated hazards (the R1 shape) | **Routine review rounds: codex `-m gpt-6-sol -c model_reasoning_effort=medium`. Pre-commit gate (last review before committing anything load-bearing, and any change touching numeric/magnitude logic): codex `-m gpt-6-astra -c model_reasoning_effort=medium`**; not luna (5.6 or 6) for this shape | R1 2026-09-23, pooled N=5, ONE JS subject, hand-read per finding, PROVISIONAL: astra 15/15 > sol 12–13/15 (every sol miss = sumTo precision above 2^53; flatten depth and O(n²) 5/5 both; gap not significant, Fisher p≈0.17–0.44) > 5.6-luna 5/9, 6-luna 3/9. Split set by owner 2026-09-23: sol's one measured blind spot is the class the astra gate exists to catch — skipping the gate ships it. Replicates 2026-09-06 N=3 astra-first. Within-codex pick only — astra never benched vs agy. Does NOT cover large real-repo packets (row above) or spec-before-building (slug unmeasured there); does not override "post-impl real-repo → NOT agy" → [[finding-codex-56-family-2026-07-22]] |
+| Pre-commit / post-impl review of SMALL code with unstated hazards (the R1 shape) | **codex `-m gpt-5.6-luna -c model_reasoning_effort=medium` WITH the astra pack prefixed** (pack text, then `\n\n---\n\n`, then the brief — recipe in `workflow_codex_subordinate.md`). Alternate: `-m gpt-6-astra` medium (luna quota-blocked, or a second pass when a miss is catastrophic). Not bare luna, not sol | Owner-approved 2026-09-25 on astra-pack bench stage 1 (N=5, PREREG D4): 5.6-luna+pack r1 15/15 and held-out r2 15/15 = astra 15/15, 0 fp; bare 5.6-luna 11/15, 4/15; sol no lift (12→11/15). PROVISIONAL: one held-out JS subject; pack as prompt prefix only. Supersedes the 2026-09-23 sol-routine/astra-gate split. Same scope limits as before (not large real-repo packets, not spec review) → [[finding-astra-pack-stage1-2026-09-24]] |
 | Multi-file / long-horizon agentic work | **none of them — do it yourself** | UNMEASURED on all five; opencode 0 edits on 20/20 hard |
 
 ### 2a. Review packet SHAPE — codex and grok need OPPOSITE shapes
@@ -156,8 +156,8 @@ bad answer became 0 bytes).
 
 ## 3. Per-tool one-liners
 
-- **codex** `gpt-5.6-luna` (implementation default) / **`gpt-6-astra`** (review of small
-  unstated-hazard code: sol for routine rounds, astra as the pre-commit gate, 2026-09-23 N=5; and WITHIN codex, once codex is already the chosen tool —
+- **codex** `gpt-5.6-luna` (implementation default; also R-shape review WITH the astra pack, 2026-09-25) / **`gpt-6-astra`** (review alternate for small
+  unstated-hazard code — the 2026-09-23 sol-routine/astra-gate split is superseded by luna+pack, see §2; and WITHIN codex, once codex is already the chosen tool —
   implementation where a numeric-magnitude / recursion-depth bound can't be spec'd up front;
   this is a model pick, not a family route: astra was never benched against agy, so the §2
   agy-low row still owns unstated-edge routing) — the only judgment tier. 5.5/5.6/astra all saturate H1/H2/H3 (36/36 + 27/27, 2026-09-05/06),
