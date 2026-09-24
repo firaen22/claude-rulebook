@@ -156,9 +156,9 @@ bad answer became 0 bytes).
 
 ## 3. Per-tool one-liners
 
-- **codex** `gpt-5.6-luna` (implementation default; also R-shape review WITH the astra pack, 2026-09-25) / **`gpt-6-astra`** (review alternate for small
+- **codex** `gpt-5.6-luna` (implementation default; WITH the astra pack for R-shape review and for unstated-bound implementation, 2026-09-25, bench D4+D5) / **`gpt-6-astra`** (alternate for both; formerly the pick for review of small
   unstated-hazard code — the 2026-09-23 sol-routine/astra-gate split is superseded by luna+pack, see §2; and WITHIN codex, once codex is already the chosen tool —
-  implementation where a numeric-magnitude / recursion-depth bound can't be spec'd up front;
+  implementation where a numeric-magnitude / recursion-depth bound can't be spec'd up front — now luna+pack, astra alternate;
   this is a model pick, not a family route: astra was never benched against agy, so the §2
   agy-low row still owns unstated-edge routing) — the only judgment tier. 5.5/5.6/astra all saturate H1/H2/H3 (36/36 + 27/27, 2026-09-05/06),
   so for ordinary coding pick on cost not capability — BUT astra SEPARATES on two measured
