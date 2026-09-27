@@ -102,8 +102,10 @@ def build(tool, a, prompt_text, cwd):
         staged = Path(cwd) / "00-BRIEF.md"
         staged.write_text(prompt_text)
         env["PWD"] = str(cwd)
-        # prompt positional BEFORE -f: -f is an array flag and swallows a trailing positional
-        argv = ["opencode", "run", "--auto", "-m", a.model, "--dir", str(cwd),
+        # prompt positional BEFORE -f: -f is an array flag and swallows a trailing positional.
+        # v2 dropped --dir (subprocess cwd= sets it). --standalone: on the shared background service
+        # a timeout-killed client leaves the run going server-side (verified 2026-09-27, v2.0.18)
+        argv = ["opencode", "run", "--standalone", "--auto", "-m", a.model,
                 "Read the attached 00-BRIEF.md and carry out what it says. Do not edit any file. "
                 "Print the full result to stdout.", "-f", "00-BRIEF.md"]
         for f in a.files:
@@ -153,7 +155,7 @@ def classify(rc, out, err, elapsed, cap, timed_out, pong):
 def run_one(tool, a, prompt_text, argv_override=None, stdin_override=None):
     outdir = Path(a.outdir).resolve(); outdir.mkdir(parents=True, exist_ok=True)
     a.outdir = str(outdir)   # build() reads a.outdir; a relative HOME/-o path breaks under the child's cwd
-    cwd = Path(a.cwd).resolve() if a.cwd else outdir / f"_dir_{a.name}"   # absolute: --dir/--cwd are read from the child's cwd
+    cwd = Path(a.cwd).resolve() if a.cwd else outdir / f"_dir_{a.name}"   # absolute: grok's --cwd is read from the child's cwd
     cwd.mkdir(parents=True, exist_ok=True)
     # resolve attachments ONCE: the scan and the child (running in `cwd`, not here) must read the same
     # file — a relative `-f x.md` would otherwise point the child at cwd/x.md, a file never scanned
@@ -214,7 +216,7 @@ def run_one(tool, a, prompt_text, argv_override=None, stdin_override=None):
                served_model=served_model(tool, err), out=str(outdir / f"{a.name}-out.txt"),
                err=str(outdir / f"{a.name}-err.txt"), cwd=str(cwd),
                # --effort reaches codex and un-suffixed agy only; grok --reasoning-effort and
-               # opencode --variant exist but every pin was measured without them — visible, not forwarded
+               # opencode's -m provider/model#variant exist but every pin was measured without them — visible, not forwarded
                effort_applied=(tool == "codex" or (tool == "agy" and "--effort" in argv)))
     return finish(res, outdir, a.name)
 
@@ -280,9 +282,10 @@ def selftest():
                                                             and "model_reasoning_effort=medium" in v and s == "P"),
         ("agy_bare",      "agy",      A(model="g-flash"),  lambda v, s: v[v.index("--effort")+1] == "medium" and v[-2:] == ["-p", "P"]),
         ("agy_suffixed",  "agy",      A(model="g-flash-high"), lambda v, s: "--effort" not in v and v[-2:] == ["-p", "P"]),
-        ("opencode_f_last","opencode",A(model="m", files=["x.md"]), lambda v, s: v.index("-f") > v.index("--dir") + 2
+        ("opencode_f_last","opencode",A(model="m", files=["x.md"]), lambda v, s: v.index("-f") > v.index("-m") + 2
+                                                            and "--dir" not in v
                                                             and v[-4:] == ["-f", "00-BRIEF.md", "-f", "x.md"]),
-        ("nim_same_shape","nim",      A(model="m"),        lambda v, s: v[:3] == ["opencode", "run", "--auto"]),
+        ("nim_same_shape","nim",      A(model="m"),        lambda v, s: v[:4] == ["opencode", "run", "--standalone", "--auto"]),
     ]
     for label, tool, a, check in shape:
         cwd = d / f"_dir_{label}"; cwd.mkdir(exist_ok=True)
