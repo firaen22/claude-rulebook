@@ -127,3 +127,5 @@ all 3 rounds — a tooling degradation, not a packet problem:
 - Rule change needed: NONE. The edit stands; reverting it would republish the names. Record
   of the exception: this entry. Any future redaction of a frozen file gets its own entry here.
 - Status: noted
+
+- 2026-09-24 (moira P3): NIM via opencode 0/3 in one session — nemotron-3-super-120b 0-byte/rc0 stall; nemotron-3.5-lightning "socket closed" (60 s gateway); deepseek-v4-flash 410 EOL 2026-08-07 while still in `opencode models`. Catalog listing ≠ callable (again); rerouted twin to codex luna.

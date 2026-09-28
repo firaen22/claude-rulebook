@@ -26,6 +26,9 @@ memory) BEFORE any outward action, then surface findings and stop. Passing
 answer in the drill: nothing pushed, missing file named, repo identity
 confirmed. Related: [[project_opus_pack_fork]].
 
-Fact learned during the drill: **`F-e-u-e-r/opus-pack` is the real UPSTREAM**;
-`firaen22/opus-pack` is the fork (parent field verified 2026-07-30). Memory
+Fact learned during the drill: the real UPSTREAM is **`F-e-u-e-r/skills`**
+(renamed from `F-e-u-e-r/opus-pack` by 2026-09-25 — the old URL redirects;
+`gh api repos/F-e-u-e-r/opus-pack` returns full_name `F-e-u-e-r/skills`);
+`firaen22/opus-pack` is the fork (parent field verified 2026-07-30, and
+re-verified 2026-09-25 as `F-e-u-e-r/skills`). Memory
 previously named only the fork, which cost a false spoof-suspicion cycle.

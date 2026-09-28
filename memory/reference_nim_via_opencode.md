@@ -1,11 +1,30 @@
 ---
 name: reference-nim-via-opencode
-description: "How NVIDIA NIM is wired as a subordinate (model backend behind opencode, not a standalone agent CLI) + benchmarked model picks, IDs, and the catalog-lies/probe gotcha. Catalog 81 ids as of 09-08 (was 81 on 09-06, 82 on 08-29, 95 on 08-25); nimroute.py PATCHED 09-08 — the 4 dead ids (gpt-oss-120b, llama-3.1-70b-instruct, nemotron-3-nano-30b-a3b, inkling) removed from PARITY, list reordered fastest-first"
+description: "How NVIDIA NIM is wired as a subordinate (model backend behind opencode, not a standalone agent CLI) + benchmarked model picks, IDs, and the catalog-lies/probe gotcha. Catalog 82 ids as of 09-23 — minimax-m3 410 EOL, removed from PARITY 09-23; 60 s non-stream gateway cutoff (was 81 on 09-08, 81 on 09-06, 82 on 08-29, 95 on 08-25); nimroute.py PATCHED 09-08 — the 4 dead ids (gpt-oss-120b, llama-3.1-70b-instruct, nemotron-3-nano-30b-a3b, inkling) removed from PARITY, list reordered fastest-first"
 metadata: 
   node_type: memory
   type: reference
   originSessionId: 9d9ceaff-475d-47a4-871b-5bc9ce1b2498
 ---
+
+## REFRESH 2026-09-23 — catalog 81→82; `minimaxai/minimax-m3` (PARITY[1]) is 410 EOL + delisted
+Fresh `/v1/models` pull (`keypool.pool("NVIDIA_NIM")` — the prefix, NOT `NVIDIA_NIM_API_KEY`).
+Snapshot + probe log: `experiments/model-refresh-2026-09-23/` (first saved id list since 08-07 —
+diff the next refresh against `nim_catalog_2026-09-23.txt`, not prose). Direct-curl PONG, N=1–3:
+| id | status |
+|---|---|
+| `minimaxai/minimax-m3` | ⛔ **410 EOL, gone from catalog** — REMOVED from nimroute.py `PARITY` same day on user go (chain 5→4; FAST/MODEL_MAP unchanged; import-verified) |
+| `mistralai/mistral-nemotron` | PONG 0.4 s on retry (first call HTTP 500 at 13 s) — flaky, consistent with 09-22 |
+| `poolside/laguna-xs-2.1` | PONG 47.7 s |
+| `nvidia/nemotron-3-super-120b-a12b`, `nvidia/nemotron-3-ultra-550b-a55b` | 503 "Service temporarily overloaded" 2/2 — listed, overloaded today |
+| NEW `deepseek-ai/deepseek-v4.1-flash` | PONG 1.1 s |
+| NEW `z-ai/glm-5.3-flash` | PONG 25.9 s |
+| NEW `nvidia/nemotron-3.5-lightning-30b-a3b` | PONG 54.7 s (first try: 60 s disconnect) |
+| NEW `meta/muse-glimmer-30b` | PONG only when STREAMED (first chunk 31.8 s); non-stream = 60 s disconnect 2/2 |
+| NEW `moonshotai/kimi-k3`, NEW `z-ai/glm-5.3`, `google/gemma-4-31b-it` | 60.2 s `RemoteDisconnected`, 0 chunks even streamed — **stalled today, not dead** (control `zzz/not-a-model` = instant 404; EOL = instant 410) |
+- **New gotcha: the NIM gateway cuts a NON-streamed call at exactly ~60 s.** A slow-first-token model
+  reads as dead unless streamed. Probe with `stream:true` before recording a 60 s disconnect as a death.
+- Also new since 08-07 (not chat, not probed): `nvidia/nemotron-parse-2.0`. Unbenched: every NEW row above.
 
 ## 2026-09-22 — three failure SHAPES on one id, one session (via `dispatch.py nim`)
 

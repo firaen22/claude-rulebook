@@ -28,6 +28,10 @@ auth.json; seed everything), `--tools read_file,grep,list_dir`, copy deleted in
 `finally` and PASS forced to ERROR if it survives. Returns a named status
 (PASS/PONG_FAIL/EMPTY/STDOUT_ERROR/STDERR_DENIAL/RATE_LIMIT/TIMEOUT/LAUNCH_ERROR/ERROR/
 SECRET_BLOCK) — a classification of the bytes, not a diagnosis; read `<name>-err.txt`.
+**One `--cwd` per concurrent job (2026-09-24, observed).** The wrapper stages `00-BRIEF.md`
+in `--cwd`; two dispatches started in the same directory both read whichever brief was
+staged last — a "part 1" blind-rank job returned part 2's rankings. Not a grok fault, a
+staging collision. Give every parallel dispatch its own directory.
 ```
 python3 ~/.claude/lib/dispatch.py grok --model grok-4.7 --prompt-file brief.md \
   --outdir <scratch> --name g1 --timeout 1800 [--pong]
