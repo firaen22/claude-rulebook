@@ -204,7 +204,7 @@ re-resolve imperative at the tier §0 actually writes for.** Do not trim it.
 The transferable lesson is about the ledger, not this rule: a bare-arm verdict
 inherits the TIER of the arm that produced it. "Redundant" measured on a strong
 arm is a claim about strong readers, and §0 does not write for them. Record the
-tier next to every verdict; re-probe at the weakest tier before any trim.
+tier and date next to every verdict; re-probe at the weakest tier before any trim.
 
 Two method notes from the same pass:
 
@@ -258,7 +258,7 @@ unprobed checklist kernel; THIS COPY WINS on any dispute between them.
   difference), say "disregard memory", and check the output for citations;
   that check bounds only QUOTED recall, so a surprising bare-pass from a
   memory-bearing arm stays suspect, not license. Run both arms at the tier
-  the file is written for, and record that tier and what the baseline
+  the file is written for, and record that tier, the date, and what the baseline
   carried next to the verdict — a bare ✓ argues redundancy in that
   environment at that tier, never everywhere, and no bare-pass from an arm
   stronger than the audience licenses removing a line. n=1/arm screens large

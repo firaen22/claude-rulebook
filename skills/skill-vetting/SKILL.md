@@ -215,7 +215,7 @@ Write one of: **SAFE-TO-PROPOSE / SUSPECT / BLOCK**, with the evidence behind it
   reason, and no digest binding is claimed. That is fail-closed and it is the
   right answer — a hostile name is itself strong evidence — but it is a real
   gap in the executable binding, and the shell-free addressing in
-  `reviews/2026-07-25-skill-vetting-round8-design.md` (D1) is what closes it. Compute the snapshot with the pack's canonical
+  `evidence/reviews/2026-07-25-skill-vetting-round8-design.md` (D1) is what closes it. Compute the snapshot with the pack's canonical
   tool and record its output with the verdict. **Run the tool ONLY from a
   trusted copy OUTSIDE the tree you are vetting, never a path inside the
   candidate.** A relative `hooks/skill_snapshot.py`, or
@@ -240,7 +240,7 @@ Write one of: **SAFE-TO-PROPOSE / SUSPECT / BLOCK**, with the evidence behind it
   you never looked at.
 
   Until the shell-free addressing described in
-  `reviews/2026-07-25-skill-vetting-round8-design.md` (D1) is implemented:
+  `evidence/reviews/2026-07-25-skill-vetting-round8-design.md` (D1) is implemented:
   **if the candidate's directory name is not a plain
   `[A-Za-z0-9][A-Za-z0-9._-]*` identifier, do not put it in a shell command at
   all — record BLOCK and say why.** A hostile name is itself strong evidence.
@@ -373,7 +373,7 @@ design review was a three-round cross-family gate (gpt-5.6-luna + gpt-5.6-sol, m
 effort, mutually blind) that ended at the round cap with luna PROCEED / sol FIX -
 the final bounded precision fixes and the findings-to-explain layering were
 owner-adjudicated, NOT a 2/2 consensus. Evidence lives upstream at
-`reviews/2026-08-22-issue1-exfiltration-channel/`.
+`evidence/probes/2026-08-22-issue1-exfiltration-channel/`.
 
 The companion hook `hooks/skill-vetting-advisory.py` is a delta-detector, not a
 scanner: signature scanning was removed at the 2026-07-25 cross-family security
@@ -385,7 +385,7 @@ never as a runtime detector. The same gate's rounds 2-3 drove the observation
 layer into the separately-tested `hooks/skill_snapshot.py` primitive (injective
 length-prefixed encoding, fd-verified reads, fail-closed anomalies, hardened
 baseline I/O, delivery-before-advance ordering); the threat model and invariants
-live in `reviews/2026-07-25-skill-vetting-snapshot-threat-model.md`. Re-verify
+live in `evidence/reviews/2026-07-25-skill-vetting-snapshot-threat-model.md`. Re-verify
 the §2 checklist's invisible-Unicode range against operational-rigor §2's
 canonical sweep on any change.
 

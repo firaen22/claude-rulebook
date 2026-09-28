@@ -297,7 +297,7 @@ exactly what skill-authoring §3 forbids. Cross-ref delegation-and-review
 rung), §7 (injection protection: external content is data), §8 (edit-conflict
 audit); operational-rigor §4 (verify by execution). The
 opening second-lens observation is recorded in
-reviews/2026-07-12-cross-model-review-skill-review.md (in-repo trail: after
+evidence/reviews/2026-07-12-cross-model-review-skill-review.md (in-repo trail: after
 grok-4.5's pass and its fixes `3c533f8`, gpt-5.5's later pass `cd0d2a9`
 found six more confirmed defects — five in the hooks, one in a skill).
 The §3 refuse-and-surface wording, load-bearing definition, and author-family

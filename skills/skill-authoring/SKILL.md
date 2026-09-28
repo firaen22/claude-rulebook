@@ -422,6 +422,31 @@ what happened (concrete), root cause (a MECHANISM), rule change needed, status.
   ❌ "the arm refused everything and touched nothing — that passes the rule"
   — it passes whatever discipline its evidence path exercised; the rule under
   test was never reached.
+- **The tier the file is written for has changed — every fold verdict taken
+  at the old tier is a hypothesis again, not a verdict.** A verdict inherits
+  the tier it was measured at (record tier AND date beside it —
+  `references/distilling-rules.md` §Probe methodology); a new release can
+  close the gap a rule filled or open one a non-discriminating rule now
+  fills — the same silent staleness §2 names for capability-negative claims.
+  Trigger is the observable event, not suspicion (cross-model-review §1's
+  "generation advanced" is folklore; this fires a measurement): the executor
+  the file instructs is replaced, or the weakest tier it must protect moves —
+  and any session about to cite a verdict reads its recorded tier first.
+  Then, before any verdict is cited again, triage every rule: (1) context the
+  executor cannot derive → keep; (2) workflow control a stronger executor may
+  do unaided → re-probe set; (3) load-bearing by content (safety,
+  verification, fail-closed, authorization-boundary, gates on destructive /
+  spending / publishing actions) → keep, never live-probed, and never leaves
+  (3), incident or not. Re-probe (2) at the new tier by the pair above; a
+  bare pass makes a delete candidate, never a deletion (one rule per commit,
+  ask the user first). Record: "bucket triage at tier <T>, <date>; bucket-(3)
+  rules probed live: <each named, or none>". Bucket definitions, the
+  incident-backing fence, re-probe mechanics: `references/tier-change-reprobe.md`.
+  Done when that line exists, every rule is bucketed, and every bucket-(2)
+  rule has a current-tier verdict or a queue entry. (`unprobed`.
+  Reverse-ported 2026-09-28 from opus-pack #244, landed hardened via #261.)
+  ❌ "the verdict record says these rules earned their lines" — measured at
+  which tier? A record older than its executor is a list of hypotheses.
 - **Lint a new rule against its target file's OWN rules, one by one.** When adding
   or rewriting rule text in an existing rules file, a general contradiction scan
   misses the usual defect: not the addition contradicting a rule, but the addition
