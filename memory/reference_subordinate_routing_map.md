@@ -12,8 +12,8 @@ Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 [[workflow-codex-subordinate]] [[workflow-agy-subordinate]] [[workflow-grok-subordinate]]
 [[workflow-opencode-subordinate]] [[reference-nim-via-opencode]]
 
-> 📌 **VERSION STAMP — re-verified 2026-09-27 by running each binary:**
-> `grok 1.0.41 (4220f3b224a6)` · `codex-cli 0.157.0` · `opencode 2.0.18` · `agy 1.2.11`.
+> 📌 **VERSION STAMP — re-verified 2026-09-29 by running each binary:**
+> `grok 1.0.41 (4220f3b224a6)` · `codex-cli 0.157.0` · `opencode 2.0.18` · `agy 1.2.12`.
 > Every rc / ceiling / bug-status claim in this file and the linked playbooks is
 > **VERSION-BOUND**. codex jumped another minor version since the last stamp
 > (0.155.1→0.157.0, self-updated, not targeted at anything here) — agy/grok moved
