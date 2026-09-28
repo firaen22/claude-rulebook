@@ -52,3 +52,8 @@
 !hooks/harness/**
 !compact-context-monitor.sh
 !settings.example.json
+# Local-only skills (2026-09-28, owner call): not rulebook. fixed-income-analysis
+# is a symlink into the private Trading repo; colab-operator and synced/ stay local.
+skills/colab-operator/
+skills/fixed-income-analysis
+skills/synced/
