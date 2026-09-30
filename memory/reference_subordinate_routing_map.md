@@ -12,12 +12,12 @@ Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 [[workflow-codex-subordinate]] [[workflow-agy-subordinate]] [[workflow-grok-subordinate]]
 [[workflow-opencode-subordinate]] [[reference-nim-via-opencode]]
 
-> 📌 **VERSION STAMP — re-verified 2026-09-29 by running each binary:**
-> `grok 1.0.41 (4220f3b224a6)` · `codex-cli 0.157.0` · `opencode 2.0.18` · `agy 1.2.12`.
+> 📌 **VERSION STAMP — re-verified 2026-09-30 by running each binary:**
+> `grok 1.0.41 (4220f3b224a6)` · `codex-cli 0.159.2` · `opencode 2.0.18` · `agy 1.2.13`.
 > Every rc / ceiling / bug-status claim in this file and the linked playbooks is
 > **VERSION-BOUND**. codex jumped another minor version since the last stamp
-> (0.155.1→0.157.0, self-updated, not targeted at anything here) — agy/grok moved
-> patch-only. **opencode jumped a MAJOR version (1.18.31→2.0.18):** `run --dir` is gone
+> (0.157.0→0.159.2, upgraded 2026-09-30 via `codex update`; standalone install, not brew/npm) — agy
+> moved patch-only (1.2.12→1.2.13), grok/opencode unchanged. **opencode jumped a MAJOR version (1.18.31→2.0.18):** `run --dir` is gone
 > (dispatch.py fixed: subprocess `cwd=` + `--standalone`), and default mode talks to a shared
 > background service where a timeout-killed client's run keeps going server-side (verified
 > 2026-09-27) — `--standalone` contains it. Every opencode/NIM rc/pin/parallelism/free-pool
@@ -25,7 +25,7 @@ Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 > opencode default model moved to `nvidia/nvidia/nemotron-3-ultra-550b-a55b` (gpt-oss-120b 410 EOL).
 > Every codex rc/ceiling/bug-status claim below (the ~30KB inline-review
 > ceiling §2a, `gpt-5.6-luna` default behavior, the astra-vs-luna E4 scale finding) was
-> measured on 0.153.4 and is **UNVERIFIED on 0.157.0** until re-run — treat codex
+> measured on 0.153.4 and is **UNVERIFIED on 0.159.2** until re-run — treat codex
 > findings from this point forward as provisional pending a re-bench. Every agy
 > rc/pin/edge claim below (the 3.6-flash-medium / 3.7-flash pins, K1 edge results,
 > empty-return-is-permission-deny finding) was measured through 1.1.x and remains
