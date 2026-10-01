@@ -12,8 +12,9 @@ Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 [[workflow-codex-subordinate]] [[workflow-agy-subordinate]] [[workflow-grok-subordinate]]
 [[workflow-opencode-subordinate]] [[reference-nim-via-opencode]]
 
-> 📌 **VERSION STAMP — re-verified 2026-09-30 by running each binary:**
-> `grok 1.0.41 (4220f3b224a6)` · `codex-cli 0.159.2` · `opencode 2.0.18` · `agy 1.2.13`.
+> 📌 **VERSION STAMP — re-verified 2026-10-01 by running each binary:**
+> `grok 1.0.44 (5b807183dd79)` · `codex-cli 0.159.3` · `opencode 2.0.18` · `agy 1.2.14`.
+> (2026-10-01 vs 09-30: grok 1.0.41→1.0.44, codex 0.159.2→0.159.3 via `codex update`, agy 1.2.13→1.2.14 — all patch-only; opencode unchanged. Claims stay flagged against the minor versions below.)
 > Every rc / ceiling / bug-status claim in this file and the linked playbooks is
 > **VERSION-BOUND**. codex jumped another minor version since the last stamp
 > (0.157.0→0.159.2, upgraded 2026-09-30 via `codex update`; standalone install, not brew/npm) — agy
@@ -25,7 +26,7 @@ Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 > opencode default model moved to `nvidia/nvidia/nemotron-3-ultra-550b-a55b` (gpt-oss-120b 410 EOL).
 > Every codex rc/ceiling/bug-status claim below (the ~30KB inline-review
 > ceiling §2a, `gpt-5.6-luna` default behavior, the astra-vs-luna E4 scale finding) was
-> measured on 0.153.4 and is **UNVERIFIED on 0.159.2** until re-run — treat codex
+> measured on 0.153.4 and is **UNVERIFIED on 0.159.x** until re-run — treat codex
 > findings from this point forward as provisional pending a re-bench. Every agy
 > rc/pin/edge claim below (the 3.6-flash-medium / 3.7-flash pins, K1 edge results,
 > empty-return-is-permission-deny finding) was measured through 1.1.x and remains
