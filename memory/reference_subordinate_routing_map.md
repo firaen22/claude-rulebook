@@ -174,7 +174,9 @@ bad answer became 0 bytes).
   so for ordinary coding pick on cost not capability — BUT bare astra SEPARATES from bare luna/sol on two measured
   axes (with the astra pack, luna and sol tie astra's review score at the ceiling on JS, 2026-09-25, §2) (2026-09-06, N=3, [[finding-codex-56-family-2026-07-22]] Tests 6–7): unstated-scale
   edges (E4 astra 9/9 vs luna 4/9 — luna's `sumTo(1e9)` loop MATCHES the happy-path spec and is
-  silently off only at the unstated grader scale; if you can state the bound, spec it for luna)
+  silently off only at the unstated grader scale; if you can state the bound, spec it for luna — MEASURED 2026-10-01 (owner go): JS impl
+  with sizes + the exact Number/BigInt contract stated → bare `gpt-5.6-luna` 50/50, 0 silent (unstated 20/50, 19 silent; 6-sol+pack
+  stated 50/50 = tie) → [[finding-luna-stated-magnitude-2026-10-01]])
   and review coverage (R1 astra 9/10 ×3, 0 nits; sol 8/10 + 2–3 nits, ~2× slower; luna 5/8/6
   avg 6.3, only recall miss). Family cost-ordering drifts (sol "most expensive" → cheapest in 6 weeks), token≠money,
   astra unpriced. Both astra rules are PROVISIONAL (N=3, one subject/task family; E4 and R1
