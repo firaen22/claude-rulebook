@@ -12,9 +12,9 @@ Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 [[workflow-codex-subordinate]] [[workflow-agy-subordinate]] [[workflow-grok-subordinate]]
 [[workflow-opencode-subordinate]] [[reference-nim-via-opencode]]
 
-> 📌 **VERSION STAMP — re-verified 2026-10-02 by running each binary:**
-> `grok 1.0.46 (2765805b9442)` · `codex-cli 0.160.0` · `opencode 2.0.21` · `agy 1.2.14`.
-> (2026-10-02: codex 0.159.3→0.160.0 via `codex update` — a MINOR bump, so every codex claim below is flagged UNVERIFIED on 0.160.x; grok/opencode/agy unchanged. 2026-10-01 vs 09-30: grok 1.0.41→1.0.46, codex 0.159.2→0.159.3 via `codex update`, agy 1.2.13→1.2.14, opencode 2.0.18→2.0.21 via `opencode upgrade` — all patch-only. Claims stay flagged against the minor versions below.)
+> 📌 **VERSION STAMP — re-verified 2026-10-05 by running each binary:**
+> `grok 1.0.46 (2765805b9442)` · `codex-cli 0.160.0` · `opencode 2.0.22` · `agy 1.2.14`.
+> (2026-10-05: opencode 2.0.21→2.0.22 — patch-only; grok/codex/agy unchanged. 2026-10-02: codex 0.159.3→0.160.0 via `codex update` — a MINOR bump, so every codex claim below is flagged UNVERIFIED on 0.160.x; grok/opencode/agy unchanged. 2026-10-01 vs 09-30: grok 1.0.41→1.0.46, codex 0.159.2→0.159.3 via `codex update`, agy 1.2.13→1.2.14, opencode 2.0.18→2.0.21 via `opencode upgrade` — all patch-only. Claims stay flagged against the minor versions below.)
 > Every rc / ceiling / bug-status claim in this file and the linked playbooks is
 > **VERSION-BOUND**. codex jumped another minor version since the last stamp
 > (0.157.0→0.159.2, upgraded 2026-09-30 via `codex update`; standalone install, not brew/npm) — agy
