@@ -7,6 +7,24 @@ metadata:
   originSessionId: 9d9ceaff-475d-47a4-871b-5bc9ce1b2498
 ---
 
+## 2026-10-03 — `mistral-nemotron` 410 EOL; `opencode run` hangs on an open stdin (corrected 10-05)
+From the omp-vs-opencode bench pre-flight ([[finding-omp-vs-opencode-2026-10-03]]):
+- `mistralai/mistral-nemotron` → **HTTP 410 EOL** (2026-09-28). Not in nimroute.py (grep 10-03: no hit).
+- opencode **v2.0.21** has **no `--dir`**: set the subprocess cwd and `$PWD`.
+- ⛔ **RETRACTED 10-05: "the background service hangs on NIM, `--standalone` fixes it".** Real cause:
+  `opencode run` **reads stdin to EOF whenever stdin is not a TTY**, in BOTH modes. A Bash-tool shell's stdin
+  is an open socket that never EOFs → 0 bytes until `timeout` kills it (rc 124). Reproduced 10-05, NIM glm:
+  - inherited stdin: service mode 90 s / 0 B, `--standalone` 90 s / 0 B;
+  - `</dev/null`: both PONG (10–43 s);
+  - a pipe held open 20 s answers at 23 s, and a piped prompt with no message arg is used as the message.
+  The 10-02 hangs were hand-run loops with no `</dev/null`. Why some 10-02 runs without it did not hang
+  is unexplained (Bash-tool stdin state may vary per call).
+  **Rule: every hand-run `opencode run` gets `</dev/null`.** `dispatch.py` (`stdin=DEVNULL`, line ~191) and the
+  bench (`bench.py:43`) were already safe. `--standalone` stays for its own reason: the 09-27 orphaned
+  server-side run after a timeout kill.
+- Live through both opencode and omp on 10-03 (150-cell bench): `deepseek-ai/deepseek-v4.1-flash`,
+  `z-ai/glm-5.3-flash`, `poolside/laguna-xs-2.1`.
+
 ## REFRESH 2026-09-23 — catalog 81→82; `minimaxai/minimax-m3` (PARITY[1]) is 410 EOL + delisted
 Fresh `/v1/models` pull (`keypool.pool("NVIDIA_NIM")` — the prefix, NOT `NVIDIA_NIM_API_KEY`).
 Snapshot + probe log: `experiments/model-refresh-2026-09-23/` (first saved id list since 08-07 —
