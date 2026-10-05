@@ -22,6 +22,7 @@ Operational guardrails (non-negotiable, see Benchmark findings below):
 1. Default SEQUENTIAL (shared SQLite db → "database is locked" under naive parallel — re-confirmed 2026-07-03). **Parallel IS possible**: give each instance its own `XDG_DATA_HOME` with auth.json copied in (see Benchmark findings #1) — verified 3-way parallel file-edits, all on-disk correct, 15s wall.
 2. Run in an ISOLATED scratch dir (`--auto` = full read+write; it roams).
 3. `timeout 180`-wrap every call (free models hang).
+3a. **Every hand-run `opencode run` gets `</dev/null`** (or a piped prompt). It reads stdin to EOF when stdin is not a TTY, and the Bash tool's stdin never closes → 0 bytes until timeout, in service AND `--standalone` mode (v2.0.21 + v2.0.22, 2026-10-05). Hook `~/.claude/hooks/gate-opencode-stdin.py` blocks the bare form. [[reference-nim-via-opencode]]
 4. Prefer native `opencode/*` (Zen) over `openrouter/*:free` (rate-limits + hangs).
 5. Verify output yourself; parse BOTH inline code blocks AND files the agent wrote.
 

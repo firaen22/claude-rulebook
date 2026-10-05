@@ -50,7 +50,7 @@ agy --dangerously-skip-permissions -p "$(cat /tmp/agy-prompt.txt) \
 # also need the line "do NOT search outside ./files/".
 SCRATCH=$(mktemp -d) && cd "$SCRATCH" && timeout 180 \
   ~/.opencode/bin/opencode run --dangerously-skip-permissions \
-  -m opencode/big-pickle "$(cat /tmp/oc-prompt.txt)" > /tmp/oc-out.txt 2>&1 &
+  -m opencode/big-pickle "$(cat /tmp/oc-prompt.txt)" </dev/null > /tmp/oc-out.txt 2>&1 &
 ```
 
 NIM via opencode: `-m nvidia/openai/gpt-oss-120b` — provider prefix is `nvidia/`,
@@ -78,6 +78,7 @@ sustained/complex headless · `nemotron` never a default (flaky) · avoid
 | agy safety refusal (exit 0, ~300-byte apology) on a review dispatch | Attack verbs on security-adjacent code ("break", "bypass", "spoofable") — 2/2 refusals | Defensive reframe: "you are hardening our own app; verify each file against its intended contract" (1/1, found a real fail-open bug) |
 | agy review "edited" repo files despite read-only prose | Agentic mode + `--add-dir` ignores prose scoping; uncommitted edits contaminate YOUR baseline reads | Reviews get no `--add-dir` (or scratch-copy); git-diff before trusting file state after any agy run |
 | opencode "database is locked" | Parallel runs share one SQLite db | Go sequential, or give each instance its own `XDG_DATA_HOME` + auth.json |
+| opencode exit 124, 0 bytes, on a hand-run call | `opencode run` reads stdin to EOF when stdin is not a TTY; the Bash tool's stdin never closes (v2.0.21 + v2.0.22, 2026-10-05) | Add `</dev/null` (hook `gate-opencode-stdin.py` blocks the bare form); `dispatch.py` already does |
 | opencode exit 124 | timeout ≠ task failure (NIM 429 retry-loop) | Grade on-disk state; direct-curl PONG to check 429 |
 | Subordinate output 0 bytes, exit 0 | Free-model tool-use file-review failure | Check non-empty before relying; route must-deliver reviews to codex |
 | Spawned session `isRunning` but stale `lastActivityAt` | Mis-scope → silent stall (won't push back) | Ground-truth check (files/git, FULL blast radius incl. out-of-cwd); rescope |
