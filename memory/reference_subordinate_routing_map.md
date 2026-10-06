@@ -13,8 +13,8 @@ Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 [[workflow-opencode-subordinate]] [[reference-nim-via-opencode]]
 
 > 📌 **VERSION STAMP — re-verified 2026-10-05 by running each binary:**
-> `grok 1.0.46 (2765805b9442)` · `codex-cli 0.160.0` · `opencode 2.0.22` · `agy 1.2.14`.
-> (2026-10-05: opencode 2.0.21→2.0.22 — patch-only; grok/codex/agy unchanged. 2026-10-02: codex 0.159.3→0.160.0 via `codex update` — a MINOR bump, so every codex claim below is flagged UNVERIFIED on 0.160.x; grok/opencode/agy unchanged. 2026-10-01 vs 09-30: grok 1.0.41→1.0.46, codex 0.159.2→0.159.3 via `codex update`, agy 1.2.13→1.2.14, opencode 2.0.18→2.0.21 via `opencode upgrade` — all patch-only. Claims stay flagged against the minor versions below.)
+> `grok 1.0.46 (2765805b9442)` · `codex-cli 0.160.0` · `opencode 2.0.22` · `agy 1.2.17`.
+> (2026-10-05 late: agy 1.2.14→1.2.17 — patch-only; all five + TypeSafe `jev-1.13.0` passed a `dispatch.py --pong` / one-call probe the same hour. 2026-10-05: opencode 2.0.21→2.0.22 — patch-only; grok/codex/agy unchanged. 2026-10-02: codex 0.159.3→0.160.0 via `codex update` — a MINOR bump, so every codex claim below is flagged UNVERIFIED on 0.160.x; grok/opencode/agy unchanged. 2026-10-01 vs 09-30: grok 1.0.41→1.0.46, codex 0.159.2→0.159.3 via `codex update`, agy 1.2.13→1.2.14, opencode 2.0.18→2.0.21 via `opencode upgrade` — all patch-only. Claims stay flagged against the minor versions below.)
 > Every rc / ceiling / bug-status claim in this file and the linked playbooks is
 > **VERSION-BOUND**. codex jumped another minor version since the last stamp
 > (0.157.0→0.159.2, upgraded 2026-09-30 via `codex update`; standalone install, not brew/npm) — agy
@@ -138,6 +138,8 @@ is not.
 | Post-implementation code review on a real repo | **NOT agy** | adoption 0/5, 0/5, 1/5, 3/8 across 4 sweeps. Scope note 2026-08-25: on a SMALL single-file seeded-defect review, codex and agy TIED 8/8 vs 8/8 (saturated instrument) — this row does not generalize down to small single-file review, stays scoped to large real-repo packets → [[finding-step4-seeded-review-2026-08-25]] |
 | Pre-commit / post-impl review of SMALL code with unstated hazards (the R1 shape) | **codex `-m gpt-6.1-sol -c model_reasoning_effort=medium` WITH the astra pack prefixed** (pack text, then `\n\n---\n\n`, then the brief — recipe in `workflow_codex_subordinate.md`; default since 2026-09-30). Alternate: `-m gpt-5.6-luna` medium + pack (sol quota-blocked, or a second pass when a miss is catastrophic). Not bare luna (held-out r2 4/15). **JS only** — other languages unmeasured: there use `gpt-6.1-sol` medium. ⛔ `gpt-6-astra` only on the owner's explicit command for that task (owner 2026-09-29; drains the codex limit) | Owner-approved 2026-09-25 on astra-pack bench stage 1 (N=5, PREREG D4), corrected the same day after a five-lens cross-model review + re-grade: 5.6-luna+pack r1 15/15, r2 15/15; sol+pack 15/15 on both too (the first-reported "sol no lift 12→11" was a grader keyword miss, 'nested…RangeError'). astra ran in that bench on r2 only: **tied astra on r2 only**, at the score ceiling, so "equals astra" is not shown; r1/e4 astra numbers are other benches. 0 grader-flagged fp on r2 (r1: 1 flag). PROVISIONAL: two tiny JS subjects, one held out, pack as prompt prefix only. Supersedes the 2026-09-23 sol-routine/astra-gate split. Same scope limits as before (not large real-repo packets, not spec review) → [[finding-astra-pack-stage1-2026-09-24]]. **2026-09-30 (codex 0.159.2):** review slots that named `gpt-6-sol` moved to `gpt-6.1-sol` (owner go) — bare R1 6.1 15/15 vs 6-sol 12/15; with pack (r1+r2, N=5) 6.1+pack, bare 6.1 and 6-sol+pack all 30/30 by hand (ceiling), 6.1+pack ~41 % fewer r1 tokens and ~1.6× faster than 6-sol+pack; luna+pack default and the JS scale-implementation slot NOT re-measured, unchanged → [[finding-codex-gpt61-sol-bench-2026-09-30]]. **2026-09-30 addendum 2 (owner go):** JS review default moved to `gpt-6.1-sol`+pack, luna+pack now alternate — r1+r2 N=5: 6.1+pack 30/30 vs luna+pack 28/30 (+2 = the registered bar exactly; luna misses are r1 sumTo; crediting one borderline cell would tie); ~47 % fewer r1 tokens, ~30 % slower. JS scale slot re-measured and STAYS `gpt-6-sol`+pack: 50/50 vs 6.1+pack 36/50 with 14 silent wrong (6.1 returns `Number(exact BigInt)`) → [[finding-codex-gpt61-sol-bench-2026-09-30]]. |
 | Multi-file / long-horizon agentic work | **none of them — do it yourself** | UNMEASURED on all five; opencode 0 edits on 20/20 hard |
+| Typed probability / choice over short text (urgency, department, yes-no with a graded P) | **TypeSafe `jev-latest`** when you need GRADED probabilities to threshold. No live NIM substitute is measured: the NIM arm was `mistralai/mistral-nemotron`, **HTTP 410 EOL since 2026-09-28** ([[reference-nim-via-opencode]]) — re-bench before routing a NIM arm | MEASURED N=100 synthetic tickets, one run/arm (2026-09-20): accuracy competitive (urg 94% vs NIM 93%), "better calibrated" claim UNSUPPORTED (ECE 0.121 vs NIM 0.046) — but Jev spreads 55 distinct probs vs NIM's 7. Not an agent, not a reviewer → [[finding-typesafe-jev-bench-2026-09-20]]. Ladder follow-up **CLOSED 2026-09-25, SUPPORTED** (corrected 09-29): Jev ranks a specified rung order better than NIM, 0.973 vs 0.775, 55 scenarios × 5 rungs × 2 runs/arm; target-informed set, ranking only (not calibration), NIM served model unverified → [[project-typesafe-ladder-2026-09-24]] |
+| TypeSafe as a REVIEW lens | **don't** — scores only, never a finding source | Used in 3 multi-lens reviews (2026-09-22 ×2, 09-25): "priority corroboration only, no finding of its own"; once scored a FABRICATED control finding as P0 (no signal). Its scores count toward nothing on their own (R-B) |
 
 ### 2a. Review packet SHAPE — codex and grok need OPPOSITE shapes
 
@@ -222,6 +224,15 @@ bad answer became 0 bytes).
   parallel fan-out; opencode-NIM only when file edits are needed. *Weakness:* catalog lies
   (listed ≠ callable); non-streaming gateway kills at ~60s and has produced FOUR false death
   certificates — always smoke with `stream:true`.
+- **TypeSafe** (`jev-latest`, served `jev-1.13.0`) — NOT one of the five subordinates: a typed
+  classifier API, no agent, no files, not in `dispatch.py`. `POST https://api.typesafe.ai/v1/systemone`,
+  `Authorization: Bearer $TYPESAFE_API_KEY` (`~/.zshenv`), body `{state, model:"jev-latest",
+  questions:{name:{type:"noul"|"choice", instructions, criteria?}}}` → `answers.name.noul` (P) /
+  `.choice`; read `model` from the response for the served version. Working caller:
+  `claude-code-technique/experiments/typesafe-ladder-2026-09-23/run_arm.py` (`_body`, `_real_transport`).
+  ~0.4 s per call (probe 2026-10-05). *Weakness:* conservative on ambiguous items (all 6 urgency
+  misses on the `ambig` tier); review-lens output is noise. Cursor's auto-review blocks the raw
+  call (key → third-party API) — expect an approval prompt.
 
 ## 4. Compose them: routing beats any single tool
 
