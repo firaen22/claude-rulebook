@@ -10,11 +10,11 @@ metadata:
 
 Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 [[workflow-codex-subordinate]] [[workflow-agy-subordinate]] [[workflow-grok-subordinate]]
-[[workflow-opencode-subordinate]] [[reference-nim-via-opencode]]
+[[workflow-opencode-subordinate]] [[workflow-splash-qwen]] [[reference-nim-via-opencode]]
 
-> 📌 **VERSION STAMP — re-verified 2026-10-05 by running each binary:**
-> `grok 1.0.46 (2765805b9442)` · `codex-cli 0.160.0` · `opencode 2.0.22` · `agy 1.2.17`.
-> (2026-10-05 late: agy 1.2.14→1.2.17 — patch-only; all five + TypeSafe `jev-1.13.0` passed a `dispatch.py --pong` / one-call probe the same hour. 2026-10-05: opencode 2.0.21→2.0.22 — patch-only; grok/codex/agy unchanged. 2026-10-02: codex 0.159.3→0.160.0 via `codex update` — a MINOR bump, so every codex claim below is flagged UNVERIFIED on 0.160.x; grok/opencode/agy unchanged. 2026-10-01 vs 09-30: grok 1.0.41→1.0.46, codex 0.159.2→0.159.3 via `codex update`, agy 1.2.13→1.2.14, opencode 2.0.18→2.0.21 via `opencode upgrade` — all patch-only. Claims stay flagged against the minor versions below.)
+> 📌 **VERSION STAMP — binaries checked 2026-10-07 via each `--version` (no `dispatch.py --pong` this pass):**
+> `grok 1.0.46 (2765805b9442)` · `codex-cli 0.160.1` · `opencode 2.0.24` · `agy 1.3.0`.
+> (2026-10-07: agy 1.2.17→1.3.0 — **MINOR** bump; agy rc/pin/edge claims stay **UNVERIFIED on 1.3.x** (already UNVERIFIED on 1.2.x). opencode 2.0.22→2.0.24 — patch-only. codex 0.160.0→0.160.1 — patch-only. grok unchanged. §2 route-to rows unchanged — no re-bench. 2026-10-05 late: agy 1.2.14→1.2.17 — patch-only; all five + TypeSafe `jev-1.13.0` passed a `dispatch.py --pong` / one-call probe the same hour. 2026-10-05: opencode 2.0.21→2.0.22 — patch-only; grok/codex/agy unchanged. 2026-10-02: codex 0.159.3→0.160.0 via `codex update` — a MINOR bump, so every codex claim below is flagged UNVERIFIED on 0.160.x; grok/opencode/agy unchanged. 2026-10-01 vs 09-30: grok 1.0.41→1.0.46, codex 0.159.2→0.159.3 via `codex update`, agy 1.2.13→1.2.14, opencode 2.0.18→2.0.21 via `opencode upgrade` — all patch-only. Claims stay flagged against the minor versions below.)
 > Every rc / ceiling / bug-status claim in this file and the linked playbooks is
 > **VERSION-BOUND**. codex jumped another minor version since the last stamp
 > (0.157.0→0.159.2, upgraded 2026-09-30 via `codex update`; standalone install, not brew/npm) — agy
@@ -22,7 +22,7 @@ Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 > (dispatch.py fixed: subprocess `cwd=` + `--standalone`), and default mode talks to a shared
 > background service where a timeout-killed client's run keeps going server-side (verified
 > 2026-09-27) — `--standalone` contains it. Every opencode/NIM rc/pin/parallelism/free-pool
-> score below was measured on 1.x and is **UNVERIFIED on 2.0.18** until re-benched; the
+> score below was measured on 1.x and is **UNVERIFIED on 2.0.x** (installed 2.0.24 as of 2026-10-07) until re-benched; the
 > opencode default model moved to `nvidia/nvidia/nemotron-3-ultra-550b-a55b` (gpt-oss-120b 410 EOL).
 > Every codex rc/ceiling/bug-status claim below (the ~30KB inline-review
 > ceiling §2a, `gpt-5.6-luna` default behavior, the astra-vs-luna E4 scale finding) was
@@ -30,7 +30,7 @@ Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 > findings from this point forward as provisional pending a re-bench. Every agy
 > rc/pin/edge claim below (the 3.6-flash-medium / 3.7-flash pins, K1 edge results,
 > empty-return-is-permission-deny finding) was measured through 1.1.x and remains
-> **UNVERIFIED on 1.2.x** (unchanged from the last stamp). Every grok rc/edge/schema
+> **UNVERIFIED on 1.2.x and 1.3.x** (1.3.0 installed 2026-10-07; no re-bench). Every grok rc/edge/schema
 > claim below was measured on 1.0.13 and remains **UNVERIFIED on 1.0.41** (unchanged
 > from the last stamp). **Re-run `--version` before trusting a number.**
 
@@ -141,6 +141,19 @@ is not.
 | Typed probability / choice over short text (urgency, department, yes-no with a graded P) | **TypeSafe `jev-latest`** when you need GRADED probabilities to threshold. No live NIM substitute is measured: the NIM arm was `mistralai/mistral-nemotron`, **HTTP 410 EOL since 2026-09-28** ([[reference-nim-via-opencode]]) — re-bench before routing a NIM arm | MEASURED N=100 synthetic tickets, one run/arm (2026-09-20): accuracy competitive (urg 94% vs NIM 93%), "better calibrated" claim UNSUPPORTED (ECE 0.121 vs NIM 0.046) — but Jev spreads 55 distinct probs vs NIM's 7. Not an agent, not a reviewer → [[finding-typesafe-jev-bench-2026-09-20]]. Ladder follow-up **CLOSED 2026-09-25, SUPPORTED** (corrected 09-29): Jev ranks a specified rung order better than NIM, 0.973 vs 0.775, 55 scenarios × 5 rungs × 2 runs/arm; target-informed set, ranking only (not calibration), NIM served model unverified → [[project-typesafe-ladder-2026-09-24]] |
 | TypeSafe as a REVIEW lens | **don't** — scores only, never a finding source | Used in 3 multi-lens reviews (2026-09-22 ×2, 09-25): "priority corroboration only, no finding of its own"; once scored a FABRICATED control finding as P0 (no signal). Its scores count toward nothing on their own (R-B) |
 
+### 2b. Optional local Splash cross-lens (not a route target)
+
+**Not a sixth subordinate** — not `dispatch.py`, not for implementation. Harness artifact:
+`claude-code-technique` `experiments/qwen-splash-local-2026-10-07/` on `main`.
+
+| Task | Optional lens (not dispatch.py) | Basis |
+|---|---|---|
+| Harness / methods packet when Splash is already up | **Local Splash cross-lens only** — `http://127.0.0.1:8000/v1`, model `incoai/Qwen3.8-27B-Splash`; [[workflow-splash-qwen]] | MEASURED 2026-10-07: golden selftest + TypeSafe PASS validate **bench state**, not Qwen review quality. Qwen r2 printed PROCEED (R-B: void alone). **Weak lens** in that harness — missed 3 sol-found mutation defects. Require grok/codex agreement or author reproduction before acting on Qwen text; never single-source ship. Server down ⇒ fail closed → [[finding-splash-qwen-routing-2026-10-07]] |
+
+Implementation or multi-file agentic work via Splash Qwen: **not routed** — use §2 rows
+(free pool / opencode / codex / **none of them — do it yourself** for multi-file); coding
+quality unmeasured.
+
 ### 2a. Review packet SHAPE — codex and grok need OPPOSITE shapes
 
 Measured, both directions, one task family. Getting it backwards costs a whole run and
@@ -210,12 +223,12 @@ bad answer became 0 bytes).
   `structuredOutput` comes back NULL with a complete draft stranded in `text` ~1/16 (08-27) —
   drop the rep, and never fall back to `.text` (the one observed orphan was a confident false
   alarm that passed every shape check).
-- **opencode** — the free agent layer: the only free path that edits files. Isolated scratch
+- **opencode** — the free agent layer: the only free path that edits files. 2.x: use
+  `opencode run --standalone` with `</dev/null` (shared background service otherwise; `run --dir` is gone — see `build-and-env` / `workflow_opencode_subordinate`). Isolated scratch
   dir + `timeout` + sequential by default (parallel OK with isolated `XDG_DATA_HOME` + copied auth.json). *Weakness:* no judgment-to-refuse; reliability (not
-  reasoning) ceiling on multi-file; `$PWD`-not-cwd bug last CONFIRMED live at 1.18.19 — set
-  `env["PWD"]` AND `--dir` or your verdicts are artifacts (it has manufactured two retracted
-  findings). ⚠️ **Installed build is `1.18.25` (2026-08-31) — it moved 1.18.23→1.18.25 mid-session.**
-  The bug's status on 1.18.2x is UNVERIFIED; keep setting both (harmless if fixed).
+  reasoning) ceiling on multi-file; `$PWD`-not-cwd bug last CONFIRMED live at 1.18.19 — on 2.0.x
+  **UNVERIFIED**; keep `env["PWD"]` aligned with dispatch's subprocess `cwd=` (harmless if fixed).
+  ⚠️ **Installed build is `2.0.24` (2026-10-07).** Every free-pool/rc score in §2 was measured on 1.x.
   🔴 Also measured 2026-08-31: opencode hangs in TIME-VARYING windows (8/8 hang → 4/4 pass →
   0/6 hang → 10/10 pass, same command). Gate any bench on a stability check and treat a
   control timeout as stop-and-re-probe, NEVER as a model score.
