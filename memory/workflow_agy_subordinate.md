@@ -9,6 +9,8 @@ metadata:
 
 # Calling `agy` (Gemini 3.5 / 3.6 Flash) as a subordinate
 
+> 📌 **CLI VERSION (2026-10-07):** agy **1.3.0** at `~/.local/bin/agy` (was 1.2.17). **MINOR bump — no re-bench.** Every measured rc/pin/edge claim in this file stays **UNVERIFIED on 1.3.x** (already UNVERIFIED on 1.2.x). Route-to rows unchanged — `reference_subordinate_routing_map.md` VERSION STAMP 2026-10-07. Last fleet `dispatch.py --pong`: 2026-10-05 (agy 1.2.17). Restart agy after upgrade if a session was open. Log: `reference_cli_version_log.md`.
+
 > # ⛔ READ FIRST — 2026-09-04: "agy returned nothing" is a PERMISSION DENY, not transport
 > agy chose to invoke a shell tool, headless mode could not prompt, it auto-denied, and
 > the process exited **rc=0 with empty stdout and a 300-BYTE STDERR MESSAGE** naming the
