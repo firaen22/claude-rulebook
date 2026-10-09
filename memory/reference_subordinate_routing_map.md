@@ -12,9 +12,9 @@ Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 [[workflow-codex-subordinate]] [[workflow-agy-subordinate]] [[workflow-grok-subordinate]]
 [[workflow-opencode-subordinate]] [[workflow-splash-qwen]] [[reference-nim-via-opencode]]
 
-> 📌 **VERSION STAMP — binaries checked 2026-10-07 via each `--version` (no `dispatch.py --pong` this pass):**
-> `grok 1.0.46 (2765805b9442)` · `codex-cli 0.160.1` · `opencode 2.0.24` · `agy 1.3.0`.
-> (2026-10-07: agy 1.2.17→1.3.0 — **MINOR** bump; agy rc/pin/edge claims stay **UNVERIFIED on 1.3.x** (already UNVERIFIED on 1.2.x). opencode 2.0.22→2.0.24 — patch-only. codex 0.160.0→0.160.1 — patch-only. grok unchanged. §2 route-to rows unchanged — no re-bench. 2026-10-05 late: agy 1.2.14→1.2.17 — patch-only; all five + TypeSafe `jev-1.13.0` passed a `dispatch.py --pong` / one-call probe the same hour. 2026-10-05: opencode 2.0.21→2.0.22 — patch-only; grok/codex/agy unchanged. 2026-10-02: codex 0.159.3→0.160.0 via `codex update` — a MINOR bump, so every codex claim below is flagged UNVERIFIED on 0.160.x; grok/opencode/agy unchanged. 2026-10-01 vs 09-30: grok 1.0.41→1.0.46, codex 0.159.2→0.159.3 via `codex update`, agy 1.2.13→1.2.14, opencode 2.0.18→2.0.21 via `opencode upgrade` — all patch-only. Claims stay flagged against the minor versions below.)
+> 📌 **VERSION STAMP — binaries checked 2026-10-09 via each `--version` (no `dispatch.py --pong` this pass):**
+> `grok 1.0.50 (c58f321264ba)` · `codex-cli 0.162.0` · `opencode 2.0.26` · `agy 1.3.2`.
+> (2026-10-09: codex 0.161.0→0.162.0 — **MINOR** bump; codex rc/ceiling claims stay **UNVERIFIED on 0.162.x** (was UNVERIFIED on 0.160.x/0.161.x). grok 1.0.46→1.0.50 — patch-only; grok rc/edge/schema claims stay **UNVERIFIED on 1.0.50** (was UNVERIFIED on 1.0.41+). agy 1.3.1→1.3.2 — patch-only. opencode 2.0.24→2.0.26 — patch-only (first upgrade attempt failed, retry OK). §2 route-to rows unchanged — no re-bench. 2026-10-07: agy 1.2.17→1.3.0 — MINOR; opencode 2.0.22→2.0.24 patch; codex 0.160.0→0.160.1 patch; grok unchanged. 2026-10-05 late: all five + TypeSafe `jev-1.13.0` passed `dispatch.py --pong` / one-call probe. Claims stay flagged against the minor versions below.)
 > Every rc / ceiling / bug-status claim in this file and the linked playbooks is
 > **VERSION-BOUND**. codex jumped another minor version since the last stamp
 > (0.157.0→0.159.2, upgraded 2026-09-30 via `codex update`; standalone install, not brew/npm) — agy
@@ -22,17 +22,17 @@ Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 > (dispatch.py fixed: subprocess `cwd=` + `--standalone`), and default mode talks to a shared
 > background service where a timeout-killed client's run keeps going server-side (verified
 > 2026-09-27) — `--standalone` contains it. Every opencode/NIM rc/pin/parallelism/free-pool
-> score below was measured on 1.x and is **UNVERIFIED on 2.0.x** (installed 2.0.24 as of 2026-10-07) until re-benched; the
+> score below was measured on 1.x and is **UNVERIFIED on 2.0.x** (installed 2.0.26 as of 2026-10-09) until re-benched; the
 > opencode default model moved to `nvidia/nvidia/nemotron-3-ultra-550b-a55b` (gpt-oss-120b 410 EOL).
 > Every codex rc/ceiling/bug-status claim below (the ~30KB inline-review
 > ceiling §2a, `gpt-5.6-luna` default behavior, the astra-vs-luna E4 scale finding) was
-> measured on 0.153.4 and is **UNVERIFIED on 0.160.x** until re-run — treat codex
+> measured on 0.153.4 and is **UNVERIFIED on 0.162.x** (0.160.x/0.161.x included) until re-run — treat codex
 > findings from this point forward as provisional pending a re-bench. Every agy
 > rc/pin/edge claim below (the 3.6-flash-medium / 3.7-flash pins, K1 edge results,
 > empty-return-is-permission-deny finding) was measured through 1.1.x and remains
-> **UNVERIFIED on 1.2.x and 1.3.x** (1.3.0 installed 2026-10-07; no re-bench). Every grok rc/edge/schema
-> claim below was measured on 1.0.13 and remains **UNVERIFIED on 1.0.41** (unchanged
-> from the last stamp). **Re-run `--version` before trusting a number.**
+> **UNVERIFIED on 1.2.x and 1.3.x** (1.3.2 installed 2026-10-09; no re-bench). Every grok rc/edge/schema
+> claim below was measured on 1.0.13 and remains **UNVERIFIED on 1.0.50** (was UNVERIFIED on 1.0.41+;
+> no re-bench). **Re-run `--version` before trusting a number.**
 
 ## 0. Two rules that override every row below
 
@@ -228,7 +228,7 @@ bad answer became 0 bytes).
   dir + `timeout` + sequential by default (parallel OK with isolated `XDG_DATA_HOME` + copied auth.json). *Weakness:* no judgment-to-refuse; reliability (not
   reasoning) ceiling on multi-file; `$PWD`-not-cwd bug last CONFIRMED live at 1.18.19 — on 2.0.x
   **UNVERIFIED**; keep `env["PWD"]` aligned with dispatch's subprocess `cwd=` (harmless if fixed).
-  ⚠️ **Installed build is `2.0.24` (2026-10-07).** Every free-pool/rc score in §2 was measured on 1.x.
+  ⚠️ **Installed build is `2.0.26` (2026-10-09).** Every free-pool/rc score in §2 was measured on 1.x.
   🔴 Also measured 2026-08-31: opencode hangs in TIME-VARYING windows (8/8 hang → 4/4 pass →
   0/6 hang → 10/10 pass, same command). Gate any bench on a stability check and treat a
   control timeout as stop-and-re-probe, NEVER as a model score.
