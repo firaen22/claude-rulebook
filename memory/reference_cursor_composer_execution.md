@@ -8,8 +8,8 @@ Applies when the **Agent** in Cursor (Composer / default coding agent) runs muta
 
 ## Before editing (R0)
 
-1. Run or request the **failing command** the user cares about (or the one named in the task). Paste **actual** stdout/stderr.
-2. State **expected** in one line before proposing a fix.
+1. Name the **failing command** (or the oracle) and state **expected** output in one line **before** you run anything — input → expected, then actual; do not rationalize from stderr you already saw without stating expected first.
+2. Run or request that command; paste **actual** stdout/stderr.
 3. If the user gave an **oracle** (`pytest -k`, `grade_* --selftest`, `diff -q`, CI script), that command is the only pass/fail authority — not your narrative.
 
 ## While editing
