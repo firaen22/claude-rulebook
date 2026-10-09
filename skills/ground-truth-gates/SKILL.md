@@ -1,584 +1,1065 @@
 ---
 name: ground-truth-gates
-description: Build a deterministic regression gate (golden / replay / project — three gates) around any judgment-bearing function before changing it — classifiers, intent routers, regex matchers, redaction/PII scrubbing, text normalization, prompt-driven routing. Ships a runnable, already-run-verified template (node, zero deps). Use whenever the user asks for a test harness, golden set, eval, or regression gate; whenever you are about to edit a classifier/regex/redaction/prompt that routes real actions; whenever you are designing a runtime guard (a hook, validator, or auth check) and its fail direction; whenever an experiment needs a grading harness; and whenever you catch yourself (or a subordinate) saying "sounds right" or "should work" about behavior only real data can prove.
+description: Build executable verification gates (golden set, replay corpus, project checks) so "it works" becomes a checked fact instead of a claim. Load when changing any LLM-judgment step (classify/extract/route/prompt), refactoring logic that processes real logged data, designing tests for a fix, setting up a commit/ship gate for a project, designing a runtime guard (a hook, validator, or auth check) and its fail direction, or when you are about to trust a passing test that has never been shown able to fail. Also the reference for what "proof gate" means in delegation-and-review packets. Do NOT load for one-off scripts or exploratory spikes — plain operational-rigor covers those.
 ---
 
 # Ground-Truth Gates
 
-**The rule: no gate → no change to judgment-bearing behavior.** Behavioral
-prompting ("be careful with this regex") does nothing measurable. A harness that
-runs the REAL function over labeled REAL data converts "sounds right" into a
-falsifiable pass/fail — the highest-ROI artifact in any project; build it BEFORE
-tuning prompts, regexes, or classifier logic, not after the regression.
+**The core finding:** more prose rules do not improve a capable model on
+verifiable work — its gating habits are already native. What is missing is
+**something to gate against**. Invest in executable ground truth, not in
+longer instructions. Build gates first where judgment work happens
+(classification, extraction, routing, prompt output) — that is where habits
+are weakest and where a gate converts open-ended quality into a number plus
+a diff.
 
-If this skill ever conflicts with `~/.claude/harness/`, the harness wins (R8).
+## The one command
+
+Once `template/` has been copied into the project as `checks/` (wire-up below):
+
+```bash
+bash checks/run-all.sh
+```
+
+Discovers every `checks/*/run.mjs` (plus optional `checks/project.sh`), runs
+each, prints `PASS`/`FAIL` per gate, exits non-zero if any fail. That is the
+commit/ship gate: "all green" stops being a claim and becomes a checked fact.
 
 ## The three gates
 
-| Gate | Locks | Mechanism |
+| Gate | Question it answers | Where it pays |
 |---|---|---|
-| **Golden** | a classifier's decisions | labeled real cases run through the real function (no mocks), scored cost-asymmetrically |
-| **Replay** | a pure transform's output | frozen baseline, diffed on every run; any drifted line fails |
-| **Project** | everything at once | one command (`run-all.sh`) = typecheck + golden + replay; run it before claiming "done" |
+| **golden** | "Is this prompt/classifier actually better, by how much, and which cases does it miss?" | LLM-judgment steps. |
+| **replay** | "Did my change alter output on real logged inputs, and exactly where?" | Refactors and regex/prompt tweaks over production data — catches silent drift reading the code cannot see. |
+| **project** | "Do build/tests/types/lint pass?" | Drop a `checks/project.sh` with `npm test`, `tsc --noEmit`, an SCA scan failing on critical/known-exploited (`npm audit` / `pip-audit`), etc. |
 
-## Quick start — bundled runnable template
+A starter implementation lives in this skill's `template/` directory —
+copy it into the project as `checks/` and wire it up (~15 min per gate):
 
-The template lives in this skill's `scripts/` directory and is **run-verified**
-(all pass AND fail paths executed 2026-07-07; the commands below are the exact
-ones that ran). Zero dependencies beyond `node` ≥18.
+**golden:** replace `golden/cases.jsonl` with 30–50 *real, hand-labeled*
+examples (`{"input": ..., "label": ...}` per line) — a tiny set is gameable;
+a perfect score on a small set is an overfit warning, not a win. Replace
+`classify()` in `golden/run.mjs` with a call to the real system (keep it
+deterministic per input). Set the team's bar by editing `MIN_DEFAULT` in
+`golden/run.mjs` — that is what `run-all.sh` (and any hook/CI on top of it)
+enforces; the `--min` flag only overrides ad-hoc runs.
 
-```bash
-cd ~/.claude/skills/ground-truth-gates/scripts
+These rules make the golden gate earn its keep:
 
-# whole project gate (typecheck optional: export TYPECHECK_CMD="npx tsc --noEmit")
-bash run-all.sh                                  # → ALL GATES PASS, exit 0
+- **Anonymize structure-preserving** — replace PII values with same-shape
+  stand-ins (digits for digits, `client@example.com` for an email, a
+  placeholder name like `Jordan Lee` for a name). `REDACTED` destroys the
+  very shapes the logic keys on.
+- **Include hard negatives** — real inputs that look like a match but must
+  fall through. That is where regressions hide and where synthetic cases
+  never go.
+- **Score cost-asymmetrically** — name the class of wrong output that
+  triggers a real, unconfirmed action (wrong route, wrong send) and treat
+  any instance of it as a hard failure, not something aggregate accuracy can
+  average away. The starter `run.mjs` implements this: set `DEFER_LABEL` to
+  your safe-fallback label and the gate hard-fails on any false route
+  regardless of accuracy.
+- **Validate the capture instrument, then taint on defect.** When cases are
+  minted through a lossy reader (OCR, screenshot parsing, scraping), validate
+  the reader against known-answer inputs first and keep a per-row capture
+  artifact **anonymized** per the Anonymize rule above (PII replaced with
+  same-shape stand-ins) — not the raw original; if a true raw artifact must be
+  retained to re-validate the instrument later, hold it in a separate,
+  minimized, access-controlled store, never as raw PII/secrets in the corpus.
+  A reader defect taints every conclusion derived from its output —
+  re-derive them; never resurrect pre-fix conclusions. And a human reading of
+  a low-res artifact never overturns a pinned value without machine capture
+  or independent cross-validation (a "fix" was once shipped off a misread
+  screenshot and had to be reverted).
+- **Every row records how it was captured.** A hand-written "plausible" row
+  converts the gate into a mirror of your own guess — gate corruption, not
+  coverage. When the capture rig is unavailable, the honest state is BLOCKED
+  naming the exact rig and recipe to unblock — never synthesis.
+- **Hold out a distribution-disjoint slice as the ship decider.** When the
+  corpus was consulted during development, passing it alone is the overfit
+  warning above; the deciding gate is a slice disjoint on a real dimension
+  (date range, source, tenant) that development never saw.
 
-# golden gate alone
-node golden-gate.mjs --module ./example/classifier.mjs --cases ./example/cases.jsonl
+The golden runner doubles as an experiment grader: pre-register expected
+outputs as cases before any runs, then grade with code, not impressions —
+no harness, no experiment. Pre-register the full **outcome → action table**
+too (what each result will make you do), so a result cannot be rationalized
+into a favored action afterward. **Write the pre-registration somewhere
+durable and timestamped BEFORE the first run, and cite that timestamp in
+the finding** (`unprobed` — contributor incident as shape; see Provenance).
+Durable = version-controlled, or written into the project's permanent
+record; ephemeral = `/tmp`, a scratch/sandbox/session directory, anything
+`git check-ignore` matches. On overlap, check-ignore wins: an ignored
+working path is ephemeral for this rule even when an external archive
+preserves it — cite the archive or permanent-record path itself, not the
+ignored working copy. Transcribing the criteria into the write-up
+afterwards is a weaker record than it looks: it is made once results are
+in, so it cannot evidence the ordering that pre-registration exists to
+prove, and it fails quietly — a dead link at least tells a later reader the
+claim is unbacked. Re-check that every path a finding cites still resolves
+before publishing.
+❌ "criteria: see `scratch/PREREG.md`" — reclaimed a session later, and
+the frozen criteria can no longer be distinguished from fitted ones.
 
-# replay gate alone (freeze once with --update, eyeball, then run frozen)
-node replay-gate.mjs --module ./example/redact.mjs --corpus ./example/corpus.jsonl \
-  --baseline ./example/baseline.json
-```
+Pre-registration also has to survive the run tripping its own validity
+clause mid-flight — a run that goes dead-cell-heavy or otherwise breaches
+its pre-registered kill condition after some results are already visible.
+The failure mode here is not skipping the clause, it is **honoring it by
+patching the live run and continuing to count**: the harness gets a fix
+(a retry, a widened timeout, a corrected fixture) and the same in-flight
+run keeps going, so the corrected cells sit next to cells scored under
+the broken method and the two get treated as one comparable set. **Void
+and re-run from zero instead.** The sequence that keeps this honest: (1)
+void the run the instant its own clause fires, discard its scores as
+evidence for the verdict; (2) write the amendment down — what broke,
+what changed — in the same durable record as the pre-registration, not
+folded silently into the method section; (3) disclose that partial
+results were seen before the amendment, and give the one-line argument
+for why that visibility could not have manufactured the outcome (e.g.
+the voided run's direction favored the arm that did NOT end up winning,
+or the decision table is symmetric so a peek couldn't tilt it either
+way) — if that argument can't be made honestly, the amendment is
+contaminated and the fix needs a reviewer who never saw the voided
+scores; (4) re-run the full battery under the amended method, and the
+verdict cites only the re-run. (`unprobed` — see Provenance.)
+❌ "Run 1 lost 6 cells to a transport flake, added a retry, cells 7–36
+came back clean, calling it 30/30 net of the flake" — mixes pre- and
+post-amendment cells in one scored set with no disclosure they ran under
+different methods.
 
-### Adapting to your project — change exactly three things
+Calibrate the difficulty of the SHARED
+case set before comparing — never each arm's separately, which destroys
+comparability: a comparison where every arm sits at the same ceiling (every
+case passes in every arm) or the same floor (none does) carries no
+discriminating evidence — halt there and report "untestable at this
+tier/difficulty" as a valid outcome instead of publishing a null; between
+those extremes, compare the pre-registered per-arm scores (arms clearing a
+shared gate at different scores is still a result). Grade blind to which
+arm produced each output. And the verdict is bound to the provider, model
+tier, and configuration the arms actually ran on: an effect can shrink,
+vanish, or invert across configurations, so generalizing to another
+provider, tier, or configuration takes its own runs there — same-family
+or similar-name inference is not parity evidence. (`unprobed` — see
+Provenance.)
 
-1. **Your function.** Point `--module` at a `.mjs` exporting your real
-   `(text) => label | null` classifier (golden) or `(text) => text` transform
-   (replay). Named exports: `--export <name>`. Async functions work. TS
-   project: shim recipe in `references/worked-examples.md`.
-2. **Your data.** `cases.jsonl`: one `{"input":"…","intent":"…"}` per line.
-   `corpus.jsonl`: one JSON string per line. Real logged messages, anonymized
-   (rules below) — synthetic cases never reach where regressions hide.
-3. **Your fallback label.** `--no-match "(fallback)"` = whatever your system calls
-   "defer to the expensive fallback" (LLM, human queue). Label hard negatives with it.
+**A population claim needs the population benched — a subset scored
+under one harness supports "N of the M tested", never "no member does
+X" or "every member does X"** (`unprobed` — contributor incident as
+shape; see Provenance). The trap is sharpest for a probe that
+SEPARATES subjects: any subset that happens to lack a separating
+member makes the property look universal, and the resulting "law"
+reads as MORE solid than a per-subject score precisely because it
+sounds structural rather than sampled. Before a claim names the
+population ("the pool", "every tier", "all of them"), check the
+denominator: either every current member ran under the same harness
+build, or the claim carries its subset explicitly ("3 of the 7").
+And the denominator decays independently of the scores — population
+membership churns, so a population claim expires with the roster,
+not just with serving drift.
+❌ "no member of the pool defends unstated degenerate inputs — the
+rule is now unconditional" — 3 of 7 members had been benched; a
+whole-pool run days later found one guarding that edge 2/2 on debut
+and another 1/2. The same author had already made and retracted a
+different universal-from-subset claim on the same probe weeks
+earlier — each subset lacking a separating member looked like a law.
 
-Copy `scripts/` into your project's `checks/` and rewire the five path
-arguments in `run-all.sh` (golden: module + cases; replay: module + corpus +
-baseline). Hook it to CI or a pre-commit once it's green.
+The same calibration discipline applies within one arm across time
+(`unprobed` — contributor incident as shape; see Provenance). A
+stochastic subject — a model, a scheduler, a network path, anything whose
+output can differ on identical input — has a distribution, and a single
+full-marks sweep shows it CAN pass, not that it does; "stable", "no
+regression" and "matches baseline" are all claims about that distribution.
+Replicate before such a claim leaves your notes, and where an arm was not
+replicated, carry its run count beside its score so a lone sweep cannot read
+as a measurement. Every claimed run needs a persisted row of its own: a run
+quoted from recall, or one whose output the next run overwrote, cannot be
+re-checked and is not a run — publishing four while one is on disk is how an
+unreplicated result becomes an unfalsifiable one. And the overwrite is
+usually the harness's own design, not an accident: a results file at a
+fixed path makes every re-run destroy the baseline it will be compared
+against, so key result artifacts by run (date, tag, or run id) and treat
+an existing file at a run's keyed output path as a collision error,
+never a target to overwrite. The ban is on silent replacement, not on a
+stable path — an append-only ledger whose rows carry their run keys
+satisfies it. A
+harness that can silently consume its own prior evidence is one careless
+re-run away from an uncheckable comparison (one harness's hardcoded
+results filename replaced the prior week's scorecard on re-run; those
+rows survived only because a separate log duplicated them).
+❌ "30/30, no thinking step — make it the default." Replicated to N=4 the
+same candidate scored 30/30/20/29, failing twice by mechanisms the first run
+never produced.
 
-## Cost asymmetry — the part that makes the gate worth having
+**Arms share one runner — inventory its environment, or the harness is a
+second treatment** (`unprobed` — see Provenance). The runner's own
+standing environment — always-on hooks, injected rules or instruction
+files, wrapper behavior, permissions, tool availability, harness
+configuration — reaches the arms it runs; anything reaching some arms and
+not others is an untracked treatment riding on the comparison, and "same
+runner" by name establishes nothing (one runner name can load different
+hooks or configuration per invocation). Before scoring: enumerate the
+runner-level surfaces that can act on any arm, then hold each identical
+across arms or record the difference as a condition carried by the
+result.
+❌ "both arms ran in my session, so conditions matched" — the session's
+always-on hook fired inside the baseline arm and not the isolated
+treatment arm, so the comparison measured hook-plus-baseline against
+treatment.
 
-A **false route** (classifier fires the wrong concrete action) is far worse than
-a **defer miss** (falls through to the fallback — safe). Aggregate F1 averages
-false routes away; the gate hard-fails on `falseRoutes > 0` regardless of F1 —
-a run can pass the 0.90 macro-F1 threshold while a false route hides (measured
-case: `references/worked-examples.md`).
+**Exclusions and lost runs follow one rule set across arms** (`unprobed`
+— see Provenance). Eligibility, exclusion, and re-run rules are declared
+once, before any arm runs, and applied identically to every arm — the
+NOT-ARMED discipline of rule 2 under "What makes a gate real" below
+included. Equal final N is not required; per-arm attrition accounting
+is: started / excluded-with-reason / scored, so an unequal N is
+explainable arm by arm, and an unexplained per-arm gap blocks the
+comparison. An exclusion mechanism correlated with one arm's treatment —
+the treatment crashing exactly the runs it would have failed — can bias
+every surviving comparison; name that asymmetry in the result rather
+than averaging over it.
+❌ "dropped three malformed runs" — all three sat in one arm, and the
+malformation was that arm's own failure signature.
 
-Picking the hard-fail class in a new domain: ask "which wrong output triggers a
-concrete action a human didn't confirm?" (sends the message, books the order) —
-that's the false route. "Which wrong output just costs a fallback call?" — the warn.
+**replay:** replace `replay/corpus.jsonl` with a representative sample of
+real logged inputs. Replace `transform()` with the step being changed. Run
+`node replay/run.mjs --update` once to freeze current behavior — and eyeball
+that first freeze line by line: a baseline freezes *current* behavior, not
+*correct* behavior, and it will protect any bug it contains as ground truth
+(one committed baseline enshrined a real redaction bug this way — fix the
+transform first, then freeze); after each
+edit, plain `node replay/run.mjs` — **0 diffs = safe; any diff = the exact
+records that moved.** Re-`--update` only after eyeballing an *intended*
+change, and only as the orchestrator/reviewer — never the editing worker's
+own call (rule 4 below: gate changes are not the worker's to make).
 
-## Building the case set from real data
+**A frozen baseline inherits its environment's floating-point noise —
+declare the numeric contract, and prove portability only where claimed**
+(`unprobed` — contributor incident as shape; see Provenance). A baseline
+holding *iteratively solved* numerics (an IRR, a solver output —
+converged, not closed-form) freezes the last-bit FP behavior of the
+runtime that produced it; another runtime major diverges in the
+insignificant digits and the gate false-fails on noise — with the
+consequence the allow-list rationale under verify-by-reconstruction
+below records. The comparator instead expresses the numeric contract actually
+promised — a declared precision, tolerance, canonicalization, or other
+justified normalization, living in the gate's comparator or snapshot
+mapper, never the production code — coarse enough to absorb environment
+noise, fine enough that a genuine behavioral change still fails (the
+incident's durable remedy: rounding the solver field in the mapper). A
+baseline claimed portable across supported environments proves that
+claim on a second, relevantly different one — a pass on the freezing
+environment shows the snapshot
+matches itself, not that it is environment-stable. A runtime pinned as a
+recorded decision — documented before the red, not relabelled after it
+(operational-rigor §3's documented-decision rule) — owes no proof of a
+claim it never made; a pin added to silence a red is a stopgap that
+hands the same red to the next environment change.
+❌ "CI is red but every diff is in the 13th decimal place — pin CI to my
+local runtime version."
 
-The gate has teeth only if cases come from real logs. Export flow:
+**replay variant — parity (no corpus):** a refactor of pure-ish logic (config parsing, path
+handling, formatting) often has no logged corpus to replay. Keep the pre-change
+implementation *callable* — a pinned import, a second checkout, or
+`git show <base>:<path>` copied into a `_old` module — and run old vs new over a
+declared input set, asserting identical output/exit (allow-list any intended
+diffs). It is the replay gate for code you are refactoring when you have nothing
+logged. (Freezing the old source *text* as a string is not a parity test — it
+never runs the old code.)
 
-1. **Pull** a sample from the real source (Firestore/Postgres/S3 — you own the
-   prod-read decision; ask the user if unclear).
-2. **Anonymize structure-preserving** — replace PII VALUES, keep the SHAPE the
-   classifier keys on (same-shape map per PII class + why:
-   `references/anonymization-map.md`).
-3. **Stage** to a gitignored `candidates.jsonl` review queue. Eyeball, fix
-   labels, promote good lines into `cases.jsonl`. Never auto-promote (what to
-   flag for a human glance: `references/worked-examples.md`).
-4. **Include hard negatives** — real messages that LOOK like a command but must
-   fall through (e.g. `我想睇下今個月嘅業績` when `睇下 <name>` is a command).
-   These are where regressions hide and where synthetic cases never go.
-5. **Live misfires are seed cases** — when the guarded function misfires on a real
-   input mid-session, copy that input VERBATIM (never paraphrased) into the case set
-   with its declared expected outcome, and after the fix re-run the
-   originally-failing command as the final acceptance check. A suite grown this way
-   keeps catching what synthetic cases never do.
-6. **Validate the capture instrument, then taint on defect.** Cases minted through
-   a lossy reader (OCR, screenshot, scraping): validate the reader against
-   known-answer inputs first; keep a per-row capture artifact (anonymized per step
-   2). A reader defect taints every conclusion derived from its output. Access
-   control + the misread-screenshot case: `references/fake-pass-patterns.md`.
-7. **Every row records how it was captured.** A hand-written "plausible" row
-   converts the gate into a mirror of your own guess — corruption, not coverage.
-   Rig unavailable → the honest state is BLOCKED naming the exact rig and recipe
-   to unblock, never synthesis as a row in this case set. (A guard's labeled
-   validation plant is a narrower, corpus-scoped carve-out for a different
-   failure — see "Designing the guard itself" below — not an exception to this
-   rule for the golden/replay case set itself.)
-8. **Hold out a distribution-disjoint slice as the ship decider.** A corpus
-   consulted during development can only warn of overfit; the deciding gate is a
-   slice disjoint on a real dimension (date range, source, tenant) never seen in dev.
-9. **Pattern ORDER in a first-match or sequential-replace chain is a load-bearing
-   invariant** — more-specific must precede broader; a broad pattern placed first
-   shadows the specific one silently (both incidents:
-   `references/fake-pass-patterns.md`). Pin every ordering constraint with a case
-   in this set before touching the chain.
-10. **A green suite names the artifact it exercised.** A suite reaches its
-    subject by name (import, `PATH` lookup, package entry), and that name can
-    resolve to a copy other than the one you edited — a stale location, a
-    shadowing install, a one-step-stale build. The code runs to completion and
-    the scorecard is real; it's evidence about the wrong copy. Assert identity
-    canonicalized on both sides, with a freshness/revision witness, and run
-    any deployed-path claim through the production lookup — not just the one
-    shadow you suspected (full rule + Done bar: `references/fake-pass-patterns.md`).
-11. **A self-benefit metric ships the tests that keep it honest.** Where a tool
-    measures its own benefit (a compression ratio, cost savings, "N
-    duplicates removed"), the suite guards overstatement from both
-    directions: the no-benefit case reads its independently expected value
-    on the metric's OWN scale, at or beyond the declared no-benefit point in
-    the harm direction; at least one known-benefit calibration anchor per
-    supported input class reads within a PREDECLARED tolerance of its
-    independently computed value; and a comparison is admitted only when the
-    baseline matches the treated input's exact identity AND every
-    benefit-affecting non-treatment variable is inventoried and matches or
-    carries a predeclared normalization. Anything short is refused, not
-    reported — otherwise this is the never-ran fake-pass family (Test/gate
-    integrity below) wearing a dashboard: the flattering number can never fail.
-    ❌ "the tool reports 40% savings on every run" — including on input it
-    provably cannot compress; nothing asserted the zero-savings case, and
-    nothing calibrated the 40%. Full rule (scale-clamp trap,
-    omitted-variable admission): `references/fake-pass-patterns.md`.
+**Replay's inverse — verify-by-reconstruction** (`unprobed` — see Provenance):
+to prove "exactly X was applied" to a delivered state, reconstruct across the
+boundary with an INDEPENDENT prescription of X — a pinned oracle, the
+pre-change implementation (the parity rule above), or the spec — never the
+delivering system's own producer, whose bugs reproduce on re-run and
+self-confirm. Two sound forms: full-state comparison
+`apply_independent(baseline) == delivered` over a DECLARED projection —
+and the projection must cover the complete mutation boundary: every field
+X touches AND the fields expected to stay unchanged, with only the ambient
+fields the system legitimately mutates on its own (ids, timestamps, server
+defaults) on a declared allow-list, exactly as the parity gate above
+allow-lists intended diffs. A projection cut down to "what X touches"
+passes a delivery that also mutated state outside it — the nearest
+over-application variant; where the full boundary genuinely cannot be
+enumerated, the conclusion narrows to "exact within this projection" and
+every out-of-projection surface is reported unverified, never implied
+proven. (Raw whole-state equality with no allow-list false-fails on every
+non-pure deliver, and a false-failing gate gets weakened or dropped.) Or a
+true inversion `apply⁻¹(delivered) == baseline` ONLY where the inverse is
+a proven bijection — a lossy "undo" (reset-to-default) maps an
+under-applied state back to baseline too and passes exactly the case the
+check exists to catch. Both forms
+prove STATE, not history: repeated idempotent application and duplicate
+side effects that leave identical state are invisible to them — where
+those matter, add an operation/event witness (an application count, an
+audit log), or the claim stays state-only, said so. No independent
+prescription available → the re-run is a consistency check, labelled so —
+never a proof.
 
-## Replay-gate discipline
+**When direct state readback is unreliable or unavailable, verify through
+a downstream observable that must move under a correct application and
+cannot move otherwise** (`unprobed` — contributor incident as shape; see
+Provenance). A control/treatment pair — run the system once without the
+change and once with it, over identical input, and assert the
+treatment's downstream signal differs from the control's in the
+direction the change predicts, written down BEFORE either run (P1 > P0,
+not merely P1 ≠ P0) — proves the application happened even where the
+state it touched cannot be read back directly (an opaque UI setting, a
+third-party system with no inspectable state). The same differential
+form pins protocol-level bugs: diff your own request byte-for-byte
+against the target system's own observed WORKING request for the same
+operation — a length or byte-offset difference the diff surfaces is
+often the entire defect.
+✅ "state readback was unavailable; ran the flow with the setting unset
+(P0) and set (P1) over identical inputs, asserted P1 > P0 before either
+run — passed, proving the setting reached the downstream calculation."
+✅ "diffed my request body against the app's own captured working
+request byte-for-byte; length differed by 5, decoding to exactly the
+two JSON quotes and `Bearer ` my construction had dropped."
+❌ a single successful run with no control, read as proof the change
+did anything — nothing rules out the same output with the change absent.
 
-- Freeze (`--update`) once, **eyeball every line of the baseline**, commit it.
-  The baseline IS the spec from then on — and it freezes *current* behavior, not
-  *correct* behavior: any bug it contains is protected as ground truth (incident:
-  `references/worked-examples.md`). Fix the transform first, then freeze.
-- Drift = FAIL, always. If the drift is intentional: eyeball the printed
-  baseline-vs-actual diff line by line, then re-freeze. Never `--update` to
-  silence a failure you haven't read.
-- Baseline missing at gate time is an error (exit 2), not a silent pass.
-- Baselines are keyed by input string — duplicate corpus lines collapse to one
-  entry; keep corpus lines unique.
-- **Parity variant (no logged corpus).** Refactoring pure-ish logic (config
-  parsing, path handling, formatting) often has nothing logged to replay. Keep the
-  pre-change implementation *callable* and run old vs new over a declared input
-  set, asserting identical output/exit (recipe + the freezing-source-text-is-not-
-  parity trap: `references/worked-examples.md`).
-- **A frozen baseline inherits its environment's floating-point noise —
-  declare the numeric contract, prove portability only where claimed.** A
-  baseline holding *iteratively solved* numerics (an IRR, a solver output —
-  converged, not closed-form) freezes the last-bit FP behavior of the
-  runtime that produced it; another runtime major diverges in the
-  insignificant digits and the gate false-fails on noise. The comparator
-  should express the numeric contract actually promised — a declared
-  precision, tolerance, canonicalization, or other justified normalization,
-  living in the gate's comparator or snapshot mapper, never production code
-  — coarse enough to absorb environment noise, fine enough that a genuine
-  behavioral change still fails. A baseline claimed portable across
-  supported environments proves that claim on a second, relevantly
-  different one — a pass on the freezing environment shows the snapshot
-  matches itself, not that it's environment-stable. A runtime pinned as a
-  recorded decision (documented before the red, not relabelled after it)
-  owes no such proof; a pin added to silence a red is a stopgap that hands
-  the same red to the next environment change.
-  ❌ "CI is red but every diff is in the 13th decimal place — pin CI to my
-  local runtime version." (Local incident: fin cal's frozen IRR snapshot
-  diverged Node 22 vs 26 at ~1e-13 — rounded 10dp in the mapper, removed
-  the pin, re-ran green on the previously-failing major.)
-- **Replay's inverse — verify-by-reconstruction.** To prove "exactly X was
-  applied" to a delivered state, reconstruct across the boundary with an
-  INDEPENDENT prescription of X (a pinned oracle, the pre-change
-  implementation — the parity variant above — or the spec), never the
-  delivering system's own producer, whose bugs reproduce on re-run and
-  self-confirm. Two sound forms only: full-state comparison over a DECLARED
-  projection covering the complete mutation boundary (fields X touches AND
-  fields expected unchanged, ambient mutations on a declared allow-list), or
-  a true inversion ONLY where the inverse is a proven bijection. Both prove
-  STATE, not history — where duplicate application matters, add an
-  operation/event witness, or the claim stays state-only, said so. No
-  independent prescription available → the re-run is a consistency check,
-  labelled so — never a proof. Full rule (projection-cut-down trap,
-  false-failing whole-state equality, lossy-undo trap):
-  `references/worked-examples.md`.
-- **No reliable state readback → verify through a downstream observable
-  that must move under a correct application and cannot move otherwise**
-  (`unprobed`). Run control and treatment over identical input — once
-  without the change, once with it — asserting the treatment's downstream
-  signal differs from the control's in the direction the change PREDICTS,
-  written down before either run (P1 > P0, not merely P1 ≠ P0). The same
-  differential form pins protocol-level bugs: diff your own request
-  byte-for-byte against the target system's own observed WORKING request
-  for the same operation — a length or byte-offset difference is often the
-  entire defect.
-  ❌ a single successful run with no control, read as proof the change did
-  anything — nothing rules out the same output with the change absent.
-  Full rule + both ✅ cases: `references/worked-examples.md`.
-- **In parity work, the artifact settles disputes — reading it beats
-  adjudicating between reviewers or picking the plausible option.** When
-  the contract is parity with an external artifact (a spreadsheet, a
-  workbook, a prior implementation), a reviewer blocker or a spec
-  ambiguity is a question the artifact already answers, not a judgment
-  call — open it and read the cells. A defensive addition your own spec
-  invents that the artifact does not contain (a clamp, a guard, a floor
-  the source lacks) silently forks the parity target the moment it ships;
-  it enters the spec only as an explicitly flagged deviation, never an
-  unstated improvement.
-- **A ground-truth artifact is authoritative for behavior, not for every
-  embedded constant it hand-types — derive the derivable before porting
-  a magic number, and flag rows no scenario ever exercises.**
-  Hand-maintained oracles carry hand-typed values that should be COMPUTED
-  from other cells; a stale hand-update hides exactly in the rows no
-  realistic scenario drives, so a clean replay proves nothing about
-  whether the constant is still correct. Two shapes to check before
-  porting: (a) a constant that should derive from other cells but was
-  typed in by hand — recompute and compare; (b) two DIFFERENT quantities
-  that happen to share a value (coincidence, not identity), each
-  hand-typed under one shared name — rename them apart before either
-  changes and the shared name invites conflation.
-- **Cheapest gate shape — the grep-count ratchet.** When an anti-pattern can't be
-  removed wholesale, pin its current grep count as a dated baseline; the
-  executable done-check on every diff is "the count did not grow" (full shape:
-  `references/worked-examples.md`).
+**In parity work, the artifact settles disputes — reading it beats
+adjudicating between reviewers or picking the plausible option**
+(`unprobed` — contributor incident as shape; see Provenance). When the
+contract is parity with an external artifact (a spreadsheet, a workbook,
+a prior implementation), a reviewer blocker or a spec ambiguity is a
+question the artifact already answers, not a judgment call — open it and
+read the cells. And a defensive addition your own spec invents that the
+artifact does not contain (a clamp, a guard, a floor the source formula
+lacks) silently forks the parity target the moment it ships: it enters
+the spec only as an explicitly flagged deviation, never as an unstated
+improvement.
+✅ "two independent reviewers flagged the same clamp as suspect; opened
+the workbook — `B6 = B3*B4-B5`, no MAX anywhere. My spec's clamp was an
+invention; fixing to match, no clamp." ❌ picking whichever reviewer's
+suggested fix sounds more defensible and moving on, with the artifact
+never opened.
 
-## Test/gate integrity — the fake-pass patterns
+**A ground-truth artifact is authoritative for behavior, not for every
+embedded constant it hand-types — derive the derivable before porting a
+magic number, and flag rows no scenario ever exercises**
+(`unprobed` — contributor incident as shape; see Provenance). Hand-maintained
+oracles carry hand-typed values that should be *computed* from other
+cells; a stale hand-update hides exactly in the rows no realistic
+scenario drives, so a clean replay proves nothing about whether the
+constant is still correct. Two failure shapes to check for before
+porting: (a) a constant that should derive from other cells but was
+typed in by hand — recompute it and compare; (b) two DIFFERENT
+quantities that happen to share a value (a coincidence, not an identity)
+each hand-typed under one shared name — rename them apart, because "same
+number, different bases" invites conflation the moment either changes.
+✅ "the `144445` in rows 8–10 is `ROUNDUP(130000/0.9)` — but the sheet
+was updated by hand from row 11 downward after a minimum changed, and
+rows 8–10 are policy years that never draw, so nothing ever surfaced the
+staleness. Recomputing and flagging every unexercised row." ❌ porting a
+spreadsheet's constants verbatim because the sheet is "ground truth" and
+the replay gate is green.
 
-A green test proves nothing until you close the ways it goes green while the claim
-is false:
+**Cheapest gate shape — the grep-count ratchet:** when an anti-pattern cannot
+be removed wholesale (inline locale ternaries, stray global listeners), pin its
+current grep count as a dated baseline with the hits enumerated; the executable
+done-check on every diff is "the count did not grow" — and nobody "fixes" the
+enumerated baseline hits as a side quest either.
 
-- **An ALL-PASS suite the author wrote is necessary, never sufficient — and
-  for a text/shell PARSER it is barely evidence at all.** The suite encodes the
-  cases the author already thought of; the defects live in the ones they didn't.
-  A commit-gate hook passed its own 16-path suite, then a fresh-context review
-  told to *try to break it* (not replay it) found 6 more live defects — one of
-  which blocked a legitimate command during the review itself, and one of which
-  silently allowed a real commit. Root cause: hand-rolled sed/grep cannot
-  reconstruct shell quoting; the rewrite used a real tokenizer. **Trigger: your
-  own suite going green on a parser or guard is the moment to commission
-  another adversarial round, not the moment to extend trust.** Repeat until a
-  break-it pass returns nothing new (it found more on rounds 2 AND 3).
-- **Confirm a new test actually *runs*** — the runner lists it, or it fails when
-  you deliberately break the code — not merely that it compiles. Same family: a
-  **CI/automation config that has never executed** — count runs (the platform's
-  runs API), not files — and a **static/type-level assertion nothing ever
-  evaluates** (`unprobed`): where the build path can succeed without the
-  typechecker, an inherited compile-time assertion reads as a live invariant
-  to every reader and enforces nothing — confirm some script or CI step
-  actually invokes the checker over that file, then break the coupling once
-  and watch it go red (all never-ran variants: `references/fake-pass-patterns.md`).
-- **A dependency-absence test must strip EVERY alias of the dependency.**
-  Config and dependency lookups often resolve through multiple names (a plural
-  form, a compatibility alias, a fallback checked in order). Strip one name and
-  the fallback-absent assertion passes while a still-live alias silently
-  satisfies the dependency underneath — the suite reports the fallback path
-  exercised when the code never left the primary one. Nothing is mocked; the
-  assertion runs honestly against a false precondition (right subject, wrong
-  dependency state). Before trusting one: read the resolution code (not one
-  call site), enumerate every name/path the target resolves through, strip
-  them all; then restore ONLY the supposedly-disabled name and confirm the
-  test now fails.
-  ❌ "verified the fallback path with GROQ_API_KEY unset" — the process still
-  exported GROQ_API_KEYS (plural, the pool form), which the loader checks
-  first; the fallback the test named never ran, green for as long as the
-  test existed.
-- **The gate RUNNER's own aggregation can fail open** — none of these are the
-  code under test failing: a shell runner counting failures through
-  `return`/`exit` truncates mod 256, so exactly 256 failing files reads as
-  success; a `printf | grep -q` check under `pipefail` can SIGPIPE-fail the
-  pipeline, flipping the verdict independent of the underlying result; a test
-  that crashes before printing its own failure marker leaves the marker-grep
-  matching nothing, so the runner reports a bare, diagnostic-free failure. The
-  plumbing loses information under conditions its author never exercised.
-  Reproduce the runner's OWN failure mode before trusting its count: feed it a
-  synthetic 256th failure, an oversized output, and a file that throws before
-  printing anything. (Whoever wrote a guard has never seen it fail — the
-  known-broken run above applies to the runner too, no exemption.)
-- **An absence claim needs a positive-control probe, not just a clean scan.**
-  "Zero matches" can mean the thing isn't there, or that the query cannot see
-  it — a timestamp comparison mixing epoch-millis against a `Timestamp` column
-  that silently coerces to always-false, a grep confined to a file set that
-  excludes where the pattern actually lives (an imported helper, a re-exported
-  symbol). Before trusting a zero-result scan, prove the probe COULD have
-  matched: run it against a seeded hit, or reintroduce a known instance and
-  confirm the scan finds it. A scan that has never once returned non-zero is
-  unproven, not clean — the known-bad-arm proof applied to a claim about the
-  world.
-  ❌ "grep for the deprecated call across the target files found nothing —
-  safe to remove" — the call was one import away inside a helper the grep
-  never traversed; the scan reported its own blind spot as an all-clear.
-- **A type-valid response is not a real value.** Where a schema or prompt
-  contract requires a field present, a model under-specified on what "absent"
-  looks like emits a sentinel that satisfies the type — the literal string
-  `"null"`, an empty-but-valid object, a zero that reads as a real zero — and
-  every `if (value)` or shape check passes, laundering absence into a
-  plausible fact. Where the contract permits genuine absence, say so
-  explicitly (a real `null`/optional field, or a documented sentinel with its
-  own check) rather than leaving the model to invent one; where a value is
-  asserted present, check it against the DOMAIN, not just the type.
-  ❌ a person-lookup schema marking a field required non-null; finding no
-  data, the model emitted the four-character string `"null"` — every
-  downstream truthy guard read it as real and shipped it.
-- **A success status is not identity — a lookup can return the WRONG entity
-  and still say it worked** (`unprobed`). A search-then-fetch data API keyed
-  by a shared or ambiguous identifier (a series code with a sibling series,
-  an id resolved by fuzzy or ranked match) can hand back a record for the
-  wrong entity under an unqualified success status. This is the case-set
-  list's item 10 (green suite names its subject) at the DATA layer: there
-  the running subject can be the wrong copy while every assertion passes;
-  here the fetched row can be the wrong record while the call reports
-  success. Assert identity metadata FROM the response — a canonical id,
-  name, or category field distinct from the query key — against what was
-  actually asked for, never only the 200/success; where the API exposes a
-  canonical-name lookup, use it to confirm the returned identifier means
-  what the query intended.
-  ❌ "queried the non-manufacturing PMI series, got 200 with data" — the
-  response held the manufacturing series under the same call and status,
-  silently, because both shared the queried id family.
-  (Full rule: `references/fake-pass-patterns.md`.)
-- **A warm-state pass proves nothing about init-only code.** A zero-violation
-  observation window says nothing about code that only executes at initialization
-  (cold start, first run, migration) — exercise the cold path in a fresh context
-  before enforcing (CSP incident: `references/fake-pass-patterns.md`).
-- **A substring grader must key on a token its corpus cannot produce.** Scanning
-  prose for a word the graded material may itself contain scores the corpus, not
-  the behavior — key on a structural marker the subject must create and fill
-  (a heading, a filename, a field), and sanity-check the grader against a known-bad
-  arm before trusting a clean sweep. Unlike a never-ran test this manufactures
-  agreement over real input, so an A/B whose arms all pass reads as "no effect"
-  and retires a real rule (incident:
-  `../skill-authoring/references/distilling-rules.md`).
-- **Arm polarity alone doesn't prove a gate — a change detector can fake it.**
-  A source-string presence check or a private-structure snapshot fails on the
-  old arm and passes on the new one purely because the source text changed —
-  it'll fire on every future redesign and sleep through every future bug.
-  Before writing the test body, ask: what production change should make this
-  fail — a bug, or a decision? If only a deliberate decision can fail it,
-  it's a change detector, not a gate. Carve-out: pinning a representation is
-  fine exactly where that representation IS the contract (an error string or
-  output name with real downstream consumers) — then a deliberate contract
-  change is supposed to update the test.
-- **A suite that *grades* candidates is two-sided.** Before it scores anything,
-  show it PASSES on ≥2 structurally distinct valid solutions (a too-strict suite
-  silently rejects valid alternatives) AND FAILS on a known-broken state, both by
-  execution. And confirm the corpus exercises the changed branch: a change "verified"
-  only where the new code never fires is unverified — synthesize or capture firing inputs first.
-- **The two-sided proof above validates a grader for one invocation shape at
-  one time — reuse is a fresh claim, not an inherited one.** Before reusing
-  a validated grader (new run, new candidate pool, hours later): re-run
-  known-good AND known-bad, diffing PER-CASE outcomes (not an aggregate
-  score — same 2/6 with different cases passing is drift) against the
-  prior record, which pins the invocation shape too (args, config,
-  ephemeral values normalized). No record on hand → the proof runs fresh
-  and its record is written before any scoring. Watch for the inverted
-  signature a wrong invocation shape produces: edge cases PASS while
-  happy-path FAILS, because an edge case's own accepted-throw branch
-  silently absorbed the harness's load failure instead of grading real
-  code (incident: a file-vs-directory arg mismatch made every candidate
-  throw `MODULE_NOT_FOUND`; the known-bad scored 2/6 against a recorded
-  0/6, the 2 passes being exactly the capacity-edge cases whose
-  accepted-throw swallowed the harness's own error).
-- **A behavioral trap fixture scores only ARMED runs.** When the gate is a trap an
-  AGENT must resist (a prescribed-but-unauthorized action, a planted directive):
-  taking the bait is FAIL however blind the run was. A safe outcome counts only if
-  the transcript shows the run MET the trap; otherwise it is NOT-ARMED — excluded
-  and re-run armed, never scored as discipline (what "met" means + fixture-design
-  corollary: `references/fake-pass-patterns.md`).
-- **For a guard/error path, assert three things, not just the exit code:** the
-  returncode, a message string unique to THIS check (many errors share exit 2),
-  and that the dangerous side-effect did NOT occur (`assertNotIn`). Instrument the
-  failure's own signal — an unchanged field or intact-looking output can pass
-  while the failure still happened.
-- **Mock ≠ sign-off.** A mock / proxy / staging pass is not real-environment
-  sign-off; never launder one into the other. A live smoke run still obeys the
-  spending/destructive gates — no authorized environment → the item stays BLOCKED, not Pass.
-- **A red result is not automatically environmental** — and ruling it so is a gate
-  change, the orchestrator's call, not the worker's. Use explicit states over one
-  red/green axis: **PASS** (dated evidence), **EXPECTED-FAIL** (a known
-  environmental gap in a visible non-blocking lane — not turned green), **N/A**
-  (environment structurally can't exercise it), **BLOCKED** (couldn't run —
-  auth/cost/side-effect). Never silence a red by weakening the assertion.
-- **Two truth sources that agree with each other but only moderately with ground
-  truth are correlated bias, not independence** — two models agreeing is one lens.
-  A metric clearing a threshold is *evidence*, never *authorization*: keep the
-  go/no-go a separate recorded decision.
-- **A judgment step compared across time gets versioned** — a threshold/rule change
-  is a version bump, not an edit (it changes the meaning of every prior comparison).
-  If a generated file is committed, gate on regenerate-and-`git diff --exit-code`;
-  edit the source and regenerate, never hand-edit the artifact.
+## What makes a gate real (task-relative test discipline)
+
+A generic green test is not proof. A gate is real only if:
+
+1. It exercises the **task trajectory** — input, production path, state
+   transition, observable output — not a reimplementation of the logic.
+2. It would **fail under the broken behavior**. Run both arms where practical —
+   broken arm fails, fixed arm passes — and prove a *negative* test can fail by
+   running it against a known-bad arm. Instrument the failure's **own** signal,
+   not a proxy: an unchanged field or intact-looking output can pass while the
+   failure still occurred. **Arm polarity alone is insufficient — a change
+   detector can mimic it while guarding nothing** (`unprobed` — adapted
+   external design; see Provenance): a source-string presence check or a
+   private-structure snapshot fails on the old arm and passes on the new
+   one simply because the source changed — while firing on every future
+   redesign and sleeping through every future bug (it also fails this
+   rule's own-signal requirement above; the polarity just hides that).
+   Before writing the test body, answer: what production change should
+   make this test fail — and is that change a bug or a decision? If only
+   deliberate decisions can fail it, it is a change detector, not a gate —
+   asserting the source contains a line proves only that the source is the
+   source. Carve-out: pinning a representation is legitimate exactly where
+   that representation IS the declared contract (an error-message string
+   or output name with downstream consumers — operational-rigor §3's
+   output-text-is-an-interface); then a deliberate contract change
+   properly updates the test. A suite that *grades* candidates is two-sided:
+   before it scores anything, show it PASSES on at least two structurally
+   distinct valid solutions (a too-strict suite silently rejects valid
+   alternatives — false collapse) **and** FAILS on a known-broken state (false
+   parity), both by execution. And confirm the corpus exercises the changed
+   branch: a change "verified" only on inputs where the new code never fires
+   is unverified — capture firing inputs, or synthesize them into the test
+   suite as a labeled synthetic set, NEVER as rows in the captured
+   golden/replay corpus (the case-set integrity rules above: a hand-written
+   row corrupts the ship gate).
+   A grader of **open-vocabulary output** — a mechanism pattern over a
+   reviewer's prose, a keyword match over an explanation — can pass that
+   two-sided proof and still collapse: two valid examples do not cover the
+   wordings real output will use, so a valid finding in an unseen wording
+   scores as a miss (`unprobed` — private incidents as shape; see
+   Provenance). Hand-read every graded miss in every arm before the
+   comparison is reported, against the mechanism the grader was meant to
+   detect, not the tokens it matches. A miss that is a valid wording the
+   pattern lacks is a grader defect: record it, add that wording as a
+   positive fixture, extend the pattern, re-run the two-sided proof, and
+   re-grade every arm — never only the arm that surfaced it.
+   ❌ "the grader scored arm B's reviewer as missing the bug, so it is B's
+   blind spot" — B had named it in those runs, in a wording ("seeded with
+   0") the pattern lacked.
+   The behavioral analog, when the gate is a trap fixture an AGENT must
+   resist (a prescribed-but-unauthorized action, a planted directive):
+   precedence first — taking the bait is FAIL however blind the run was;
+   arming gates only the safe direction. A safe outcome counts only if
+   the run demonstrably met the trap, the transcript showing the arming
+   event for that fixture's carrier (the prescribing doc read, OR the
+   planted skill loaded, OR the bait seen — whichever carries this
+   fixture's trap). A safe outcome from a run that never met the trap is
+   a NOT-ARMED run — excluded and re-run armed, never scored as
+   discipline. Fixture-design corollary: hang the trap on a breadcrumb
+   the task itself forces (the failing check's output names the doc), or
+   read-narrow evidence discipline will disarm the fixture.
+   The two-sided proof above validates a grader for ONE invocation shape at
+   ONE time — reusing it later (a new run, a different candidate pool, hours
+   later in the same session) is a fresh claim, not an inherited one. Before
+   reuse: re-run the two-sided proof — the known-good references (both
+   structurally distinct valid solutions, per the bar above) and the
+   known-bad — diffing each outcome against the record of the prior
+   validation (per-CASE outcomes, not an aggregate score — the same 2/6
+   with different cases passing is drift; the invocation shape —
+   command, arguments, configuration, with ephemeral values like
+   run-scoped paths and timestamps normalized — and the
+   reference-corpus identity, so drift in any is visible; a deliberate
+   invocation change re-baselines only through a fresh two-sided proof
+   and a new record; no record on hand → reuse stops, the two-sided
+   proof runs fresh and its record is written before any scoring) —
+   any drift is stop-the-line, never "still mostly failing, close enough."
+   A wrong invocation shape (a file path fed where the grader expects a
+   directory, a stale flag) can make the harness fail to load the candidate
+   at all while the grader still emits a normal-looking scorecard — the
+   candidate never ran, but the grader can't tell "candidate legitimately
+   failed" from "candidate never executed." Watch for the inverted
+   signature this produces: edge cases PASS while happy-path cases FAIL,
+   because an edge case's own error-tolerant branch (a try/catch that treats
+   a thrown exception as valid defensive behavior) silently absorbed the
+   harness's load failure and got credited for it. (Incident: a
+   directory-vs-file argument mismatch made every candidate throw
+   `MODULE_NOT_FOUND` before its code ever ran; the known-bad reference
+   scored 2/6 against a recorded 0/6, and the 2 passes were exactly the two
+   capacity-edge cases whose accepted-throw branch swallowed the harness's
+   own error.) (`unprobed` — private incident as shape; see Provenance.)
+   **Untrusted-code submission graders** (Python or similar): before any model
+   arm runs, `--selftest` must exercise good and bad fixtures; hidden tests run
+   in a **child interpreter** with a **minimal environment** (not the parent's
+   full `os.environ`). Do not leave pass/fail oracles on importable module
+   attributes the submission can read. The parent must learn pass/fail through
+   a channel the graded code **cannot write**, with any completion secret **absent
+   from the child's environment** (a static name ban does not prove the runtime
+   cannot read `os.environ`). `--selftest` must include a **forged-completion**
+   negative. Reject source that is not already **NFKC-normalized**
+   before you normalize for execution (scope smuggling). Run a **static scope
+   scan** (AST + string literals) before exec; extend fixtures when a cross
+   reviewer finds a bypass. External shape only (`unprobed` — distilled from an
+   off-repo pilot harness, 2026-10-07;
+   `evidence/reviews/2026-10-07-external-harness-pilot-before-routing.md`).
+3. The **easy fake pass is named** and closed — hardcoded expected value,
+   weakened assertion, testing the mock, a test that compiled but was never
+   registered/run, a permanently `#[ignore]`/`.skip`ped backlog test that reads
+   as coverage. Confirm a new test actually *runs* — the runner lists it, or it
+   fails when you deliberately break the code — not merely that it compiles. For
+   a guard/error path, assert three things, not just the exit code: the
+   returncode, a message string unique to THIS check (many errors share exit 2),
+   and that the dangerous side-effect did NOT occur (`assertNotIn`). Five more
+   fake-pass shapes: a **warm-state pass on init-only code** — a zero-violation
+   observation window proves nothing about code that only executes at
+   initialization (cold start, first run, migration); exercise the cold path in
+   a fresh context before enforcing (a CSP enforced after a clean Report-Only
+   window broke the whole engine, because the loader it blocked had been warm
+   the entire window). A **CI/automation config that has never executed** —
+   count runs (the platform's runs API), not files; a config can be structurally
+   undiscoverable (wrong directory in a monorepo) and inert forever while
+   reading as coverage. Its source-level cousin, in any ecosystem where the
+   build path can succeed without the typechecker (a transpiler that strips
+   types without checking, an optional external checker never wired into a
+   script): a **static/type-level assertion nothing ever evaluates** — unlike
+   the compiled-but-never-registered test above (which a maintainer wrote and
+   forgot to wire), this one is *inherited* — a prior author trusted it as a
+   live invariant, so nobody deliberately breaks the coupling to find out it
+   isn't checked. Grep for compile-time-only assertions, confirm some script
+   or CI step actually invokes the checker over that file, then prove it
+   two-sidedly: break the coupling once and watch the check go red before
+   trusting a clean sweep (a translations-parity const sat in production
+   source for months while the build script ran a transpiler that never
+   typechecked — it read as an enforced invariant to every reader and
+   enforced nothing until a hook started running the checker directly).
+   (`unprobed` — private incident as shape; see Provenance.) A **snapshot
+   gate that silently re-freezes when its
+   baseline is missing** — deleting the baseline must be an error at gate time,
+   never a vacuous green. A **scanner that matched zero inputs** — a gate whose
+   file pattern silently expands empty (`**` degrading in an old shell dialect
+   combined with a nullglob setting, a directory that moved) "passes" while
+   scanning nothing (a guard script once did this for the very file its outage
+   check was written for). A passing scan must also prove its input set is
+   non-empty — assert the matched count is non-zero; merely printing it is the
+   same vacuous green if nothing fails on 0. Its partial twin: a scanner may
+   consume some inputs while silently skipping others because an error was
+   swallowed or a cap went unreported; a non-zero count does not make that
+   coverage complete — an undeclared required subset left unread is
+   INCOMPLETE, never a clean pass. (`unprobed` — see Provenance.) A
+   **substring grader whose match
+   token can occur in the graded corpus** — scanning prose for a word that the
+   corpus itself may contain scores the corpus, not the behavior, and unlike
+   the zero-input scanner above this one runs correctly over a non-empty input
+   and still passes every arm. Key on a token the graded material cannot
+   produce on its own (a structural marker the subject must create and
+   fill — a heading, a filename, a field), and sanity-check the grader
+   against a known-bad
+   arm before trusting a clean sweep: a grader that passes an arm you KNOW
+   failed is the finding, not a formality. Its damage is not a vacuous
+   empty run — it manufactures agreement over real input, so an A/B whose
+   arms all pass
+   reads as "no effect" and retires a real one. (`unprobed` — contributor
+   incident as shape; see Provenance.) Worker-written guard scripts
+   especially: item 2's known-broken run applies before trust, no exemption —
+   whoever wrote a guard has never seen it fail. (`unprobed` — private
+   incident as shape; see Provenance.) A **gate runner whose own aggregation
+   arithmetic fails open**: a shell script that counts failures with
+   `return`/`exit` truncates the count mod 256, so exactly 256 failing files
+   or gates reads as success; a `printf | grep -q` check under `pipefail` can
+   SIGPIPE-fail the pipeline on large output, flipping the verdict
+   independent of the underlying result; a crashed test that dies before
+   printing its own failure marker leaves the marker-grep matching nothing,
+   so the runner reports a bare, diagnostic-free failure. None of these are
+   the code under test failing — the gate's own plumbing fails open or loses
+   information under conditions its author never exercised (an exact
+   multiple of 256, an oversized log, a crash before the first marker).
+   Reproduce the runner's failure mode itself before trusting its count:
+   feed it a synthetic 256th failure, an oversized output, a file that
+   throws before printing anything. (`unprobed` — contributor incident as
+   shape; see Provenance.)
+4. **Nobody weakens a gate to turn it green.** A worker satisfies the gate, never
+   edits it — gate changes are the orchestrator's call. Three corollaries:
+   - For an *immutable policy-checker* (not an ordinary test), run it from a
+     pinned trusted base — `git show <base-SHA>:<gate>` or the protected ref's
+     copy — against the PR's content as *data*, so the same PR can't edit the
+     rules it must pass; pin the checker's dependencies too (a base script that
+     imports PR-controlled helpers is still compromised), and protect the workflow
+     path itself with branch rulesets / required reviewers, not CODEOWNERS alone.
+     Ordinary tests need only independent approval to change, not this.
+   - Recompute any integrity value (hash, fingerprint) from a trusted base;
+     never trust the value an artifact carries about itself.
+   - A test edit is a contract edit: to change a pinned/assertion test, state
+     which contract changed and who approved it (ADR/owner). If you can't, you
+     are fixing the wrong direction.
+5. For important behavior claims, prefer **two independent truth sources**
+   (e.g., client output + server state, logs + durable artifact). Two sources
+   that agree with each **other** but only moderately with ground truth are
+   correlated bias, not independence — score cross-source and same-source
+   agreement separately (two models agreeing is one lens, not two). A metric
+   clearing a threshold is *evidence*, never *authorization*: keep the go/no-go a
+   separate recorded decision.
+6. If it is an **automated gate, its block-on-fail decision is deterministic, not
+   an LLM's judgment** (`unprobed` — see Provenance). An executable hard gate that
+   denies or blocks runs on code, not a model verdict; where an LLM contributes to
+   it, the LLM is **advisory and capped** by the gate contract's declared limits —
+   a maximum advisory-pass count, a confidence ceiling, findings dropped unless
+   sourced — never the pass/fail authority. And where a claim hands you a count,
+   sum, or sourced value, **re-derive it independently** (recompute the aggregate;
+   trace each value back to its source) rather than trusting the number given. (A
+   review/adjudication gate — where a human or a cross-family model verdict IS the
+   gate, as in cross-model-review or design-review-gate — is a different
+   instrument: there the verdict is the authority, disciplined by lens diversity
+   and reproduction, not replaced by code.)
+7. If it uses **mutual agreement to assert correctness, freshness, or an
+   authoritative value, it anchors that to an external ground truth** (`unprobed`
+   — see Provenance). A check that infers currentness from N artifacts agreeing
+   with each *other* passes while all N are stale **together** (every manifest
+   frozen at an old version, so they "agree"); such an inference anchors to an
+   independent source of truth — a release tag, the upstream record, a recomputed
+   value — read at the moment it matters. (A check whose contract is only
+   *consistency* — do these N agree with each other, with freshness asserted
+   elsewhere — is legitimate as-is and needs no anchor, as does an intrinsic gate
+   like a syntax or forbidden-character scan. The rule bites only when agreement
+   is made to stand in for an external fact.)
+8. **A gate over hardcoded facts asserts the facts, not just the shape — and
+   the cross-check that established them belongs IN the fixture, not in the
+   chat** (`unprobed` — private incident as shape; see Provenance). When code
+   embeds domain constants (holiday dates, a tax rate, a fee schedule, a
+   jurisdiction's valid state codes), a suite that checks structure — the
+   array is non-empty,
+   each entry parses, the shape is right — passes identically whether the
+   values are correct or a later edit corrupted one. Those values were usually
+   cross-checked once, against an authority or several independent sources or a
+   reviewer's recall — but that check happened in the conversation and
+   evaporates when the session ends, so the next bad edit sails through a
+   shape-only gate. Anchor the fact: assert every load-bearing value
+   (a fixed holiday falls on its known date, the standard rate equals the
+   published number), each assertion naming its authority (source, and its
+   version or URL where it has one) and consultation date beside the value —
+   an unattributed literal is indistinguishable from item 3's copied-back
+   expected value — so a future silent change to a constant fails. This *extends* item 2's carve-out —
+   from an output-interface string to an embedded input constant — and is NOT
+   item 3's "hardcoded expected value" fake pass: the anchor's value comes from
+   an external authority, not copied back from the code's own output. Item 3's
+   tautology asserts the code agrees with its own output; this asserts the
+   code matches the world. It shares rule 7's remedy — an external anchor — but not its
+   trigger: rule 7 bites where *agreement between artifacts* is made to stand
+   in for an external fact, this one where *structure* is. A fact that
+   legitimately changes gets its anchor updated as a contract edit (rule 4:
+   state which contract changed and who approved it); an always-fixed one is
+   cheap to anchor permanently.
+   ❌ "the holiday tests pass" — they assert the list has the right count and
+   types, never that any date is the right day; a fat-fingered edit to one
+   date stays green.
+9. **Independence across N things is a pairwise claim** (`unprobed` —
+   contributor incident as shape; see Provenance). Where a gate rests on N
+   items being independent — separate rate-limit buckets, separate failure
+   domains, separate credentials, separate blast radii — establishing that
+   takes all N(N-1)/2 comparisons, or a directly-read partition (each item's
+   owning account queried from the provider) that replaces the comparisons
+   rather than shortening them. Exhausting one item and watching the other
+   N-1 survive proves only that each is outside THAT one's bucket, and says
+   nothing about whether the remaining N-1 share a bucket with each other:
+   the probe returns the same reading for N genuinely separate items as for
+   one separate item plus N-1 that are all the same, so a baseline-vs-all
+   measurement supports a 2x claim while presenting as Nx. Transitivity does
+   not rescue it — sharing a bucket is transitive, not-sharing is not, so a
+   reader who correctly identifies the property as transitive still owes
+   every pair.
+   ❌ "key 0 hit its limit and keys 1-3 kept serving — four independent
+   accounts, 4x throughput." Keys 1-3 were never tested against each other.
+10. **A green suite names the artifact it exercised** (`unprobed` — contributor
+   incident as shape; see Provenance). A suite reaches its subject by name — an
+   import, a `PATH` lookup, a package entry — and that name can resolve to a
+   copy other than the one you edited: a file left behind at a previous
+   location, an installed version shadowing the working tree, a build output
+   stale by one step. Every assertion then passes honestly, about an artifact
+   nobody chose. This is the attribution half of operational-rigor §4's
+   check-name rule ("a check's name is not its coverage") made a standing
+   property of the suite: there, a cited run is traced to the change once,
+   when it is cited; here the suite re-establishes its own subject on
+   every run, because a shadowing copy can reappear after any later move,
+   install, or sync. It is neither item 3's never-registered test (that one
+   never runs) nor item 2's failed load (that one throws before the subject
+   ever runs, and the inverted signature or the reuse-time record-diff
+   catches its normal-looking scorecard): here the code runs to completion
+   and the scorecard is real, so the green is evidence — about the copy
+   resolution chose, not the one you changed. Assert subject identity in
+   the form the subject can witness. Exercising the edited file itself:
+   the location the running subject reports (`__file__`, the loaded
+   module's path, the running process's own resolved path) equals the
+   path you changed, both sides canonicalized — a symlink alias fails a
+   raw string compare while naming the same file — and the load is fresh
+   for this run (a module imported before the edit landed, a persistent
+   runner, or stale compiled bytecode reports the expected path while
+   executing pre-edit bytes): restart or reload the subject, or assert a
+   content witness your edit introduced. Exercising a BUILT or
+   installed product of the edit: a path match alone passes on
+   yesterday's build sitting at the same path, so pair the expected
+   artifact path with a revision witness tying the
+   artifact to the source you edited (rebuild into the asserted path
+   before the run, or assert an embedded stamp or digest). That identity
+   check proves nothing shadowed the subject in THIS resolution — so what
+   it leaves open is the contexts that resolve differently: a suite that
+   prepends the repo root to the search path finds your copy while
+   production resolves the installed one. For any claim about the deployed
+   path, run the suite through the production lookup, or resolve that
+   lookup yourself and identity-check what it returns — the absence of
+   the one shadow you suspected is not that; another entry in the chain
+   can still win. Doing neither narrows the green to "my copy, my
+   resolution" — then say so where the result is reported. Done when the
+   subject-identity check ITSELF fails against a wrong copy — a
+   behaviorally equivalent one is the clean demonstration, an unrelated
+   assertion failing proves nothing about the identity check; for a built
+   subject a wrong revision at the right path must fail it too — demonstrated
+   once by execution, and the production-resolution half has run or the
+   claim is explicitly narrowed.
+   ❌ "all 30 checks pass after the move" — they would have passed identically
+   against the pre-move copy still sitting in the old directory, which is why
+   the count says nothing about the move.
+11. **A self-benefit metric ships the tests that keep it honest** (`unprobed`
+   — see Provenance). Where a tool measures its own benefit — a compression
+   ratio, cost savings, a cache-hit gain, "N duplicates removed" — the suite
+   guards against systematic overstatement from both directions: the
+   no-benefit case must read its independently expected value on the
+   metric's OWN scale, at or beyond the metric's declared no-benefit point
+   in the harm direction — a signed delta reads `<= 0`, a compression
+   RATIO reads `>= 1` on expansion — so the suite names each metric's
+   no-benefit point (or normalizes to signed benefit) first; an
+   incompressible input EXPANDS under framing overhead, a cache can cost
+   more than it saves, and a metric whose scale clamps at the no-benefit
+   point is itself flattering (run it, and preserve the harm-side reading
+   unless the declared domain genuinely cannot represent one); at
+   least one known-benefit calibration anchor per supported input class
+   must read within a PREDECLARED tolerance of its independently computed
+   expected value (anchors calibrate — they bound systematic inflation,
+   they do not prove correctness on untested inputs; a formula/property
+   bound does more where one is derivable); and a comparison is admitted
+   only under two independent conditions: (a) the baseline matches the
+   treated input's exact immutable identity (same bytes/version) — an
+   unconditional equality that no normalization may substitute for; and
+   (b) the benefit-affecting non-treatment variables — pricing,
+   configuration, workload, observation window — are INVENTORIED, and
+   each one individually matches or carries its own predeclared,
+   justified normalization; an omitted variable fails admission rather
+   than escaping comparison. Anything short of both is refused, not
+   reported, because a shifted non-treatment variable manufactures
+   benefit on identical input; the suite exercises both refusal branches.
+   Without these this is item 3's fake-pass family wearing a dashboard:
+   the flattering number can never fail.
+   ❌ "the tool reports 40% savings on every run" — including on input it
+   provably cannot compress; nothing asserted the zero-savings case, and
+   nothing calibrated the 40%.
+12. **A test that disables a dependency must disable every name it resolves
+   through** (`unprobed` — contributor incident as shape; see Provenance).
+   A dependency a test means to remove — an env var, a config key, a
+   credential — often resolves through more than one name: a singular and
+   a plural form, a compatibility alias, a fallback checked in order.
+   Strip one name and the fallback-absent assertion can pass while a
+   still-live alias silently satisfies the dependency underneath — the
+   suite reports the fallback path exercised when the code never left the
+   primary one. Nothing is mocked or unexecuted; like item 10's green
+   suite the assertion runs honestly — but here against a false
+   precondition (the right subject in the wrong dependency state), a
+   shape of its own, not item 3's never-registered test. Before trusting
+   one: enumerate every name/path the target
+   resolves through (read the resolution code, not one call site) and
+   strip them all; then restore ONLY the supposedly-disabled name and
+   confirm the test now fails — the assertion depends on its claimed
+   precondition, not coincidence.
+   ❌ "verified the fallback path with GROQ_API_KEY unset" — the process
+   still exported GROQ_API_KEYS (plural, the pool form), which the loader
+   checks first; the fallback the test named never ran, green for as long
+   as the test existed.
+13. **A success status is not identity — a lookup can return the WRONG
+   entity and still say it worked** (`unprobed` — contributor incident as
+   shape; see Provenance). A search-then-fetch data API, keyed by a
+   shared or ambiguous identifier (a series code with a sibling series,
+   an id resolved by fuzzy or ranked match), can hand back a record for
+   the wrong entity under an unqualified success status — no error, no
+   empty result, nothing distinguishing it in the response envelope. This
+   is item 10's shadow-artifact class at the DATA layer instead of the
+   code layer: there the running subject can be the wrong copy while
+   every assertion passes; here the fetched row can be the wrong record
+   while the call reports success. Assert identity metadata FROM the
+   response — a canonical id, name, or category field distinct from the
+   query key — against what was actually asked for, not only that the
+   call returned 200/success; where the API exposes a canonical-name or
+   metadata lookup, use it to confirm the returned identifier means what
+   the query intended rather than assuming the query key round-trips
+   unchanged.
+   ❌ "queried the non-manufacturing PMI series, got 200 with data" — the
+   response held the manufacturing series under the same call and status,
+   silently, because both shared the queried id family.
+14. **An absence claim needs a positive-control probe, not just a clean
+   scan** (`unprobed` — contributor incident as shape; see Provenance).
+   "Zero matches" or "zero rows" can mean the thing you checked for
+   genuinely isn't there, or it can mean the query itself can't see it — a
+   timestamp comparison mixing epoch-millis against a `Timestamp` column
+   that silently coerces to always-false, a grep confined to a file set
+   that excludes where the pattern actually lives (an imported helper, a
+   re-exported symbol). Before trusting a zero-result scan, prove the probe
+   COULD have matched: run it against a case seeded to trigger a hit, or
+   temporarily reintroduce a known instance and confirm the scan finds it.
+   A scan that has never once returned non-zero is unproven, not clean —
+   this is item 2's known-bad-arm proof applied to a claim about the
+   world (the seeded case IS the known-bad arm: prove the probe can hit
+   before trusting that it didn't), the same discipline item 3's
+   zero-input-scanner shape enforces for a file set.
+   ❌ "grep for the deprecated call across the target files found nothing —
+   safe to remove" — the call was one import away, inside a helper the grep
+   never traversed; the scan was reporting its own blind spot as an
+   all-clear.
+15. **A type-valid response is not a real value — a model can coerce
+   "nothing" into a value that clears every downstream truthy/shape check**
+   (`unprobed` — contributor incident as shape; see Provenance). Where a
+   schema or prompt contract requires a field to be present, a model
+   under-specified on what "absent" should look like can emit a sentinel
+   that satisfies the type (the literal string `"null"`, an empty-but-valid
+   object, a zero that reads as a real zero) — every guard checking
+   `if (value)` or validating shape sees a pass, and the absence is
+   laundered into a plausible-looking fact. Where the contract allows a
+   genuine absence, say so explicitly (an actual `null`/optional field, a
+   documented sentinel with its own check) rather than leaving the model to
+   invent one; and where a value is asserted present, check it against the
+   domain — does this look like a real record, not just the right type.
+   ❌ a person-lookup schema marking a field required non-null; the model,
+   finding no data, emitted the four-character string `"null"` — every
+   `if (result.field)` guard downstream read that as truthy and shipped it
+   as a real value.
+
+**A red result is not automatically a real defect** — but ruling one
+"environmental" is a gate change, not the worker's call (rule 4): quarantine it
+with dated evidence and orchestrator sign-off; never silence it by weakening the
+assertion. Use explicit states instead of one red/green axis: **PASS**
+(dated evidence), **EXPECTED-FAIL** (a known environmental gap carried in a
+visible non-blocking lane — not turned green), **N/A** (the environment
+structurally cannot exercise it), **BLOCKED** (couldn't run — authorization,
+cost, or side-effect).
+- ✅ "Fails only on the sandbox's missing GPU → EXPECTED-FAIL, reason logged,
+  orchestrator confirmed."
+- ❌ "This fail looks environmental — I'll relax the assertion so it goes green"
+  (that deletes the safety check the test was proving).
+
+**Evidence class matters:** a mock / proxy / staging pass is not real-environment
+sign-off — never let one launder into the other. A "live smoke" run itself needs
+an authorized environment and still obeys the spending/destructive gates;
+without that the item stays BLOCKED, not Pass.
+
+Preserve evidence: the command run, the log, the artifact, or the CI URL —
+so the next session can re-check the claim instead of trusting it.
+
+Re-running a recipe creates NEW evidence; it does not verify the prior
+evidence record being audited (`unprobed` — see Provenance). The
+preservation sentence above is the producer side; this is the consumer
+side: when a claim cites an earlier run, log, artifact, or verdict — or
+when the evidence you expected to read looks truncated, unreadable,
+incomplete, or unexpectedly missing — inspect or recover that evidence
+IDENTITY first, before re-running its producer — its durable form (the
+artifact, run id, CI URL, or commit), its recorded inputs/config, what
+it actually contains, and whether the claim is faithful to it. If
+re-running its producer could mutate, rotate, replace, or otherwise
+obscure that state, preserve it first — a producer that overwrites or
+rotates its own output can destroy a truncated or failing original
+before it is read; an already-immutable or content-addressed original
+needs nothing added, and genuinely missing evidence is recorded as
+missing, not preserved. The
+identity is the evidence, not the pathname: a verified
+content-identical archival copy (an exact blob/hash-matched or
+run-id-matched relocation) IS the cited record — reading it is reading
+the original. A fresh execution of the same recipe answers a different
+question — what happens NOW, under this invocation's model, config,
+and environment — and gets its own persisted row (the
+every-claimed-run rule above), never the old row's seat: a fresh PASS
+cannot show that the original ledger was complete, that the original
+run finished, that its config matched, or that the report transcribed
+it correctly. If the cited record cannot be recovered in ANY
+content-verified form, the historical claim stays UNVERIFIED — a fresh
+reproduction may establish current behavior, or corroborate a record
+that was actually inspected (report both identities: "the record says
+X; a fresh run now says Y" — agreement is corroboration, divergence a
+new finding), but it cannot recreate the missing history. None of this
+touches the rules that legitimately RUN things: a current-state health
+check, a reproducibility claim, a regenerate-and-diff gate on a
+generated artifact, and verify-by-reconstruction of a delivered state
+all get fresh runs — their claims are about NOW or about STATE, and
+the reconstruction rule above already says state-proofs are not
+history-proofs. What none of them may do is silently substitute the
+rerun for the evidence identity under audit.
+❌ "the report says Run R was 36/36 and cites a ledger; I re-ran the
+recipe, got 36/36, so the report is verified" — the ledger was never
+opened: a 35-row ledger, a crashed original run, a different config,
+or a mistranscribed result all survive that fresh PASS.
+✅ "the cited ledger path is gone, but the archive carries a
+hash-identical copy — read it: 36 rows, claim faithful; a fresh run
+today also passes — corroborated, two evidence rows."
+❌ "the receipt looked truncated, so I re-ran the suite for a clean
+one" — the producer rotated the old receipt away, so the fresh PASS is
+now the only record and the truncated run's failing state is gone.
+✅ read or recover the existing receipt first; since the rerun would
+rotate it, preserve its state, then rerun only if still needed and
+record that as NEW evidence — the original incomplete/failing state
+stays distinguishable."
+
+If a judgment step's outputs are compared across time, **version it** — a
+threshold or rule change is a version bump, not an edit (it changes the meaning
+of every prior comparison); keep a pinned canonical scorer separate from a
+mutable what-if mode, and require deterministic output on identical input (or a
+declared tolerance for a stochastic scorer). If a generated file is committed,
+gate on regenerate-and-`git diff --exit-code`; edit
+the source and regenerate, never hand-edit the artifact, and run the gate even
+on changes you believe don't touch it, to prove no accidental perturbation.
 
 ## Designing the guard itself
 
 A gate proves a claim; a guard (a hook, middleware, validator, auth check)
-enforces one at runtime — and has its own failure design. Full rules + the
-Bash-pre-tool-hook fail-direction case: `references/guard-design.md`.
+enforces one at runtime — and has its own failure design:
 
 - **Verify the guard along its real exposed path**, not a convenient internal
-  call — a guard can pass its unit test yet be dormant on the entry surface
-  (HTTP/MCP/CLI/webhook) where its parameter was never wired; malformed / typo /
-  explicit-null input there must fail **closed**, never be treated as "omitted".
-- **Choose the fail-direction per failure mode and record why.** Security,
-  integrity, destructive, spending, publishing, gate-enforcement controls fail
-  **closed** on the threats and malformed input they detect (the flaky-hook
-  fail-open rationalization ❌ case: `references/guard-design.md`).
-- **A relief valve is a pre-existing, owner-designed, friction-plus-log override —
-  never one an agent invents to unblock itself.** *Adding* an `*_ACK`/`--force`
-  path to get past a gate is the confirmation-gate violation (operational-rigor §2).
-- **A detector's positives come from the corpus it will guard, not the author's
-  imagination.** A guard written beside the positives its author pictured passes
-  its exposed-path check, fires on those examples, and can still catch nothing
-  the live corpus holds — either because the matcher's form excludes every real
-  instance, or because a score is measured at the wrong granularity (a
-  single-token repetition check missing a repeated multi-word phrase is not a
-  threshold problem: the phrase moves the score, but it lands inside the band
-  clean text already produces). Validation positives come from the corpus, or a
-  labeled plant copied from a real instance where the corpus holds none — never
-  hand-written, same as a case-set row (full rule + Done bar +
-  minimize-by-type on sensitive positives: `references/guard-design.md`).
+  call. A guard can pass its own unit test yet be **dormant on the entry
+  surface** — the untrusted HTTP/MCP/CLI/webhook boundary where its parameter
+  was never wired. Exercise it through that surface; malformed / typo /
+  explicit-null input there must fail **closed**, never be silently treated as
+  "omitted" — except a guard that itself gates every action, whose fail-direction
+  (and its documented fail-open gap) is the next bullet. A CI that mocks the
+  external dependency proves your logic, not the live integration — run a live
+  smoke before trusting it.
+- **Choose the fail-direction per failure mode and record why.** A security,
+  integrity, destructive, spending, publishing, or gate-enforcement control fails
+  **closed** on the threats and malformed input it detects — deny, don't wave
+  through. The hard case is a guard that *itself gates every action* (a Bash
+  pre-tool hook): it can't hard-fail-closed on every internal error without
+  bricking the agent, so it fails closed on what it detects and raw-scans an
+  unparseable *command*, while a malformed envelope or other internal error still
+  fails open — a documented gap to narrow, never a licence to widen. Keep that
+  fail-open surface minimal. A purely-advisory guard (telemetry) may fail open
+  freely; when unsure, treat it as fail-closed. And the direction is only
+  half the design — place the finding too: the guard's block or detection
+  must land on a decision surface that can act on it (an actor who can
+  change the input, stop the run, or authorize — not only a log nobody
+  routes on); a deny nobody receives has a fail direction but no failure
+  route, so placement and route are designed together. (`unprobed` — see
+  Provenance.)
+  ✅ "the credential gate blocks the deletion it detects and raw-scans an
+  unparseable command; its malformed-envelope path fails open today — a
+  disclosed gap." ❌ "the hook is flaky and blocks my commands, so I'll make
+  it fail-open" — that converts a guard into a rationalized bypass.
+  ❌ "the guard denies and writes the reason to its own log" — a direction
+  was chosen, but the finding is parked where no actor who can change the
+  input or stop the run will meet it: no failure route.
+- **A detector's positives come from the corpus it will guard, not from the
+  author's examples of them** (`unprobed` — two contributor incidents as shape;
+  see Provenance). A guard that classifies real material — a secret scanner, a
+  redactor, a quality or corruption check — is written beside the positives its
+  author pictured, and those are the ones it gets tried against. The miss is
+  silent and total: it passes the exposed-path check above, it fires on the
+  author's examples, and it still catches nothing the live corpus holds. Two
+  shapes seen. A matcher whose *form* excludes every real instance: an
+  assignment pattern written lowercase where every credential on the host is
+  uppercase, reporting clean across all of them. And a score measured at the
+  wrong *granularity*: a repetition check keyed on the most frequent single
+  token where the corruption is a repeated multi-word phrase — a transcript
+  roughly one third watermark junk scored 0.078 against a 0.30 threshold, and
+  summaries of it shipped for weeks. Granularity is the harder shape, and not
+  simply a mistuned threshold: the author's synthetic single-token repetition
+  can be constructed to clear whatever threshold is set, which is what made
+  the check look sound; the phrase also moves the statistic, so its score is
+  not zero, but it lands inside the band ordinary prose already produces —
+  one common token is a few percent of ordinary text — so no threshold
+  cleanly separates the real positive from clean material and tuning cannot
+  rescue it. The golden-gate rules above on how cases are captured — drawn
+  from the real corpus, provenance recorded, hard negatives included, never
+  a hand-written "plausible" row — govern a guard's validation samples the
+  same way: the positive comes from the corpus the guard will face, never
+  from the author's imagination; where the corpus genuinely holds no
+  positive, plant one whose form is copied from a real instance (item 2's
+  labeled-synthetic discipline — labeled, and never a row in the captured
+  corpus), not written from the shape you pictured. Before enabling, confirm
+  it fires on that positive — and
+  where the guard scores rather than matches, confirm the score lands on
+  the FIRING side of the decision boundary, in whichever direction the
+  guard fires (the incident's 0.078 against a fire-at-0.30 threshold sat
+  deep on the non-firing side while reading like a margin) — then confirm
+  captured clean samples, the hard negatives above included, do not fire.
+  Done when both directions are shown — fire on validation positives
+  representative of each form the corpus holds (captured rows, or the
+  labeled plant where the corpus held none; a plant stays labeled,
+  supplements captured rows where the corpus holds the form, and stands
+  alone only where it held none), no fire on captured clean samples
+  including hard negatives —
+  and those positives are kept as the guard's regression cases — as
+  shape-preserving, non-sensitive derivatives when a positive is itself
+  a secret or sensitive (security-architect's minimize-by-type;
+  `REDACTED`-style blanking destroys the very shape the guard keys on,
+  so re-run the guard on each derivative and keep it only once shown
+  still firing; a live credential never lands in fixtures).
+  ❌ "it flags my test key, so the scanner works" — the test key is the shape
+  you already had in mind; the question is whether it flags the ones that are
+  actually there.
 - **Sentinel-tag every synthetic fixture, so "never leaked verbatim" is one
-  scan.** Embed one shared greppable marker in every free-form fixture
-  value, collision-checked once against the clean corpus; shape-CONSTRAINED
-  classes (hex credentials, UUIDs, enum identifiers) get a grammar-VALID
-  sentinel each, all listed in one manifest so the scan stays one command,
-  with a regression proving each constrained fixture still reaches its
-  production path. State the claim's bound on BOTH dimensions — the scan
-  proves no VERBATIM occurrence, only over a DECLARED surface-and-window
-  manifest; an unqueryable declared surface makes the result INCOMPLETE,
-  never PASS. Diagnostics never republish what they guard. Runnable worked
-  example: `scripts/sentinel/run.mjs` (`--demo-leak` shows the failing
-  side). Full rule (collision-check scope, representation-aware sweeps,
-  distinction from security-architect's minimize-by-type sentinel):
-  `references/guard-design.md`.
+  scan** (`unprobed` — see Provenance). Embed one shared greppable marker in
+  every free-form fixture value, collision-checked once against the clean
+  corpus (grep it where nothing was planted — zero hits there means the
+  marker is safe to plant for THIS suite; a corpus check, not a proof about
+  all possible content), so the leak check is executable instead of
+  per-fixture recall. A shape-CONSTRAINED class — a hex credential, a UUID,
+  a checksummed or enum identifier — cannot carry the free-text marker
+  without leaving its grammar and silently stopping short of the production
+  parser it exists to exercise (the shape rules above): give each such
+  class a grammar-VALID sentinel (a fixed hex stem, a reserved UUID
+  prefix), keep the full sentinel list in one manifest so the scan stays
+  one command over all of them, and keep a regression proving each
+  constrained fixture still reaches its intended production path. Runnable
+  worked example: `template/sentinel/run.mjs` (collision check + leak scan
+  + the constrained-class manifest; its `--demo-leak` mode shows the
+  failing side). State the claim's bound honestly on BOTH dimensions —
+  representation and coverage: the scan proves no VERBATIM occurrence
+  (encoded, escaped, truncated, or transformed copies need a
+  representation-aware sweep over the encodings the pipeline actually
+  applies, or the record says "verbatim only"), and it proves it only over
+  a DECLARED surface-and-window manifest — every downstream sink fixtures
+  can reach, over the retention interval the claim covers; a merely
+  nonempty artifact pile is not coverage, and a declared surface that
+  cannot be queried makes the result INCOMPLETE, never PASS. The tool's
+  own diagnostics never republish what they guard: failure output names
+  class, count, and source ordinal — never the sentinel value or the raw
+  matched record. Distinct from security-architect's minimize-by-type
+  sentinel: that one proves a sensitive FIELD never appears past a parse
+  boundary; this one proves planted test material never ESCAPES the test
+  boundary.
+- **A relief valve is a pre-existing, owner-designed, friction-plus-log override
+  — never one an agent invents to unblock itself**, and never added to a control
+  the owner designated non-bypassable (an immutable policy-checker). Security /
+  destructive / spending controls default to non-bypassable *unless* the owner
+  ships such an override (like this pack's own `CRED_GATE_APPROVED`, whose value
+  is the friction and the audit line, not tamper-proofing — a determined agent
+  can still set it). Removing an existing owner-shipped valve "to harden"
+  re-creates the deadlock it was designed to prevent; *adding* an `*_ACK` /
+  `--force` path to get past a gate is the confirmation-gate violation
+  (operational-rigor §2), not hardening.
 - **State what the guard does NOT guarantee** and its known-accepted bypasses in
-  its header, so maintainers neither over-trust it nor destabilize it.
-- **A recurring, remote-breaking cross-file invariant earns its check at the
-  earliest reliable feedback layer — proven green at baseline before it may
-  block.** When a known coupling keeps breaking far from the edit that broke
-  it, move a minimal deterministic check for THAT invariant to the earliest
-  layer that can reliably run it — an edit-time hook where one exists, else
-  CI; the ship gate stays the authoritative layer either way. Run the check
-  at baseline BEFORE it may block: wired over an already-red state it blocks
-  every edit it covers, unrelated ones included, and a guard that blocks all
-  work gets deleted, not fixed — so scope it to the targeted sub-check, leave
-  the full suite to the ship gate. It blocks with the failure reported, never
-  a repair — which side of a coupling is right is judgment, and gate changes
-  stay the orchestrator's call (rule 4 above). A narrow trigger watching a
-  broad check can name the wrong edit: the check catches drift the trigger
-  did not cause, so its block reason must carry the check's own output
-  verbatim, not only a canned "you changed X" diagnosis naming the trigger —
-  the diagnosis is a hint toward the likely edit, the tool output is the
-  evidence, and only the output can point past the trigger to an earlier,
-  unwatched one (`unprobed`).
+  its header, so maintainers neither over-trust it nor destabilize it by chasing
+  inherent bypasses into the parser. (At a trust boundary, prefer structural
+  prevention over a content classifier — see security-architect's "Secure
+  ingestion"; don't re-derive it here.)
+- **A globally-installed *optional-feature* guard defaults to a silent no-op
+  unless the current project opted in** (`unprobed` — see Provenance). A
+  convenience hook shipped to every project (a global Stop / PreToolUse hook for
+  a feature) checks a project-local opt-in marker — a file, a config key — and
+  does nothing, silently, where it is absent, so a broad install never disturbs
+  work that never adopted the feature. This pack's own plugin ships its hooks
+  **unregistered** for exactly this reason (checks.py asserts "plugin registers
+  no hooks"). The carve-out is a control the owner or admin *authorized* to be
+  universal — a secret scanner, a policy or destructive-command guard: those are
+  meant to cover every project, and gating them behind a project opt-in would
+  silently disable protection. So an optional feature is opt-in; an authorized
+  global policy control fires everywhere by design. (Distinct from the
+  fail-direction choice above, which governs a guard a project is already subject
+  to.)
+- **A recurring, remote-breaking cross-file invariant earns its check
+  at the earliest reliable feedback layer — proven green at baseline
+  before it may block** (`unprobed` — contributor rollout as shape; see
+  Provenance). When a known coupling keeps breaking far from the edits
+  that break it, move a minimal deterministic check for THAT invariant
+  to the earliest layer that can reliably run it — an edit-time hook
+  where one exists, else CI; the ship gate stays the authoritative
+  layer either way. Run the check at baseline BEFORE it may block:
+  wired over an already-red state it blocks every edit it covers,
+  unrelated ones included, and a guard that
+  blocks all work gets deleted, not fixed — so scope it to the targeted
+  sub-check, and leave the full suite to the ship gate. It blocks with
+  the failure reported, never a repair — which side of a coupling is
+  right is judgment, and gate changes stay the orchestrator's call
+  (rule 4). A narrow trigger watching a broad check can name the wrong
+  edit: the check catches drift the trigger did not cause, so its block
+  reason must carry the check's own output verbatim, not only a canned
+  "you changed X" diagnosis naming the trigger — the diagnosis is a hint
+  toward the likely edit, the tool output is the evidence, and only the
+  output can point past the trigger to an earlier, unwatched one
+  (`unprobed` — contributor rollout as shape; see Provenance).
   ❌ "the hook runs the full test suite on every edit" — the suite was
-  already red with unrelated failures, so it blocked all work from its first
-  firing. (Local rollout: tripwire hooks across five repos in one day, each
-  verified two-sided by piped synthetic edit events; one repo's suite was
-  already red with three unrelated failures — exactly this trap.)
+  already red with unrelated failures, so it blocked all work from its
+  first firing.
   ❌ "You changed translations.ts and tsc now fails" as the block's only
-  reason — the actual break was a fixture drifted by an earlier edit to a
-  file the hook never watches; recovery worked only because the raw tsc
-  output was embedded alongside the canned line.
+  reason — the actual break was a fixture drifted by an earlier edit to
+  a file the hook never watches; recovery worked only because the raw
+  tsc output was embedded alongside the canned line.
 
 ## When NOT to build a gate
 
-No ceremony for one-off scripts or exploratory spikes. The gate pays where the
-same judgment or transform will be edited repeatedly, or where a regression would
-be silent. One gate that actually runs beats five aspirational ones.
+Do not add ceremony to a one-off script or an exploratory spike. The gate
+pays where the same judgment or transform will be edited repeatedly, or
+where a regression would be silent. One gate that is actually run beats five
+that are aspirational.
 
-## What this catches that unit tests miss
+## Provenance
 
-Real-corpus gates catch what synthetic unit tests structurally miss: over-match
-on real user phrases, cross-pattern interaction on compound messages, log-leak
-drift, and F1-masked false routes. Scenario table:
-`references/worked-examples.md`.
+Detailed historical review, probe, and amendment records for this skill are retained in `references/provenance.md`.
 
-## For experiments (claude-code-technique project rule)
-
-An experiment needs a falsifiable hypothesis AND a deterministic grading harness
-BEFORE any runs — no harness, no experiment. Write expected outputs before looking
-at actuals; grade with code, not a model's impression. This template's golden
-runner doubles as an experiment grader: cases = trials, `intent` = pre-registered
-expected result. Pre-register the full **outcome → action table** too, so a result
-can't be rationalized into a favored action afterward.
-**When a run trips its own validity clause mid-flight, void it — never patch
-the live run and keep counting.** The failure mode is not skipping the clause,
-it is honoring it by fixing the harness (a retry, a widened timeout, a
-corrected fixture) while the same in-flight run continues, so corrected cells
-sit beside cells scored under the broken method and both get treated as one
-set. Sequence that stays honest: (1) void the run the instant its clause
-fires, discard its scores as evidence; (2) write the amendment — what broke,
-what changed — into the same durable record as the pre-registration, not
-folded silently into the method; (3) disclose that partial results were seen
-before the amendment, with the one-line argument for why that visibility could
-not have manufactured the outcome (the voided run favored the arm that did NOT
-win; the decision table is symmetric) — if that argument cannot be made
-honestly, the amendment is contaminated and needs a reviewer who never saw the
-voided scores; (4) re-run the full battery amended, and cite only the re-run.
-❌ "Run 1 lost 6 cells to a transport flake, added a retry, cells 7-36 came
-back clean, calling it 30/30 net of the flake" — pre- and post-amendment cells
-mixed in one scored set, under different methods, undisclosed. Calibrate difficulty per arm
-before comparing: every arm passing — or every arm failing — measures nothing; halt
-and report "untestable at this tier/difficulty" instead of publishing a null.
-**A population claim needs the population benched.** A subset scored under one
-harness supports "N of the M tested" — never "no member does X" or "every
-member does X". The trap is sharpest for a probe that SEPARATES subjects: any
-subset happening to lack a separating member makes the property look
-universal, and the resulting "law" reads as MORE solid than a per-subject
-score because it sounds structural rather than sampled. Before a claim names
-the population ("the pool", "every tier", "all of them"), check the
-denominator: either every current member ran under the same harness build, or
-the claim carries its subset explicitly ("3 of the 7"). The denominator decays
-independently of the scores — membership churns, so a population claim expires
-with the roster, not just with serving drift.
-❌ "no member of the pool defends unstated degenerate inputs — the rule is now
-unconditional" — 3 of 7 had been benched; a whole-pool run days later found
-one guarding that edge 2/2 and another 1/2. Grade
-blind to which arm produced each output.
-Grader integrity (2026-07-22, from two lab benches): a uniform 0-score cell can be
-the GRADER dying (OOM/timeout on the candidate's pathological output), not the model
-scoring zero — autopsy the grader process before concluding; record grader exit
-status per cell. Concurrent runners never append to one results file — exit 0 lost
-6/12 cells to an append race; write per-cell artifacts, grade in a separate pass,
-and check N(outputs)==N(cells) before grading. Key result artifacts BY RUN (date, tag,
-or run id) and treat an existing file at a run's keyed output path as a
-collision error, never a target to overwrite — the overwrite is usually the
-harness's own design, not an accident: a results file at a fixed path makes
-every re-run destroy the baseline it will be compared against. The ban is on
-silent REPLACEMENT, not on a stable path; an append-only ledger whose rows
-carry their run keys satisfies it. **Re-running a recipe creates NEW evidence; it
-does not verify the prior evidence record being audited** (reverse-ported
-2026-08-29 from opus-pack #226; consumer-side preserve-before-rerun added
-2026-09-16 from #239). That preservation rule is the producer side;
-this is the consumer side: when a claim cites an earlier run, log, artifact or
-verdict — or when the evidence you expected to read looks truncated, unreadable,
-incomplete, or unexpectedly missing — inspect or recover that cited evidence
-IDENTITY first, before re-running its producer: its durable form (artifact,
-run id, CI URL, commit), its recorded inputs/config, what it actually contains,
-and whether the claim is faithful to it. If re-running its producer could mutate,
-rotate, replace, or obscure that state, preserve it first — a producer that
-overwrites or rotates its own output can destroy a truncated or failing original
-before it is read; an already-immutable or content-addressed original needs
-nothing, and genuinely missing evidence is recorded as missing, not preserved.
-The identity is the evidence, not the
-pathname: a content-verified archival copy (hash- or run-id-matched) IS the cited
-record. A fresh execution answers a different question — what happens NOW, under
-this invocation's model, config and environment — and gets its own row, never the
-old row's seat: a fresh PASS cannot show the original ledger was complete, that
-the original run finished, that its config matched, or that the report
-transcribed it correctly. If the cited record cannot be recovered in any
-content-verified form the historical claim stays UNVERIFIED; a fresh run may
-establish current behavior or corroborate a record you actually inspected —
-report both identities ("the record says X; a fresh run now says Y"), agreement
-is corroboration and divergence is a new finding. This does not touch the checks
-that legitimately run things — health checks, reproducibility claims,
-regenerate-and-diff gates, verify-by-reconstruction — whose claims are about NOW
-or about STATE. What none of them may do is silently substitute a fresh run for
-the cited record. (One harness's hardcoded results filename
-replaced the prior week's scorecard on re-run; those rows survived only
-because a separate log duplicated them.) For unstated edges, pre-decide that
-throw AND sentinel-return both count as guarded (both are valid defensive
-contracts); only hang/OOM/wrong-answer fail. Free-text-vs-key auto-regex
-under-matches paraphrases: pre-register hand adjudication as authoritative over the
-affected dimension, and disclose grader bugs in the finding, never silently fix.
-
-## Sources
-
-Six units reverse-ported 2026-08-28 from opus-pack contributor PRs #205
-(void-amend-disclose-rerun), #206 (gate-runner fails open; absence
-positive-control; type-valid-sentinel), #208 (population claim; run-keyed
-artifacts) — all landed upstream via owner consolidation #215, which narrowed
-the run-keyed clause to a collision error with an append-only carve-out
-(R1-FIX-1) rather than banning a stable path. All ship `unprobed`.
-
-Distilled from `/Users/yauch/Documents/claude code technique/ground-truth-harness-pattern.md`
-(longer worked example, TypeScript shape; full `export-from-X` anonymizer/self-test
-design). Gate runners here: `scripts/golden-gate.mjs`, `scripts/replay-gate.mjs`,
-`scripts/run-all.sh`, fixtures in `scripts/example/`; the sentinel-fixture starter
-at `scripts/sentinel/run.mjs` ran green two-sided (PASS + `--demo-leak` FAIL) on
-2026-08-04.
+`template/` scripts are self-contained (Node + bash, zero deps); the
+golden/replay starters ran green on 2026-07-06 with Node v23, and the
+sentinel starter ran green two-sided (PASS + `--demo-leak` FAIL) on
+2026-08-01; re-verify with `bash template/run-all.sh`.

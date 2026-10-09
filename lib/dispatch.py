@@ -30,7 +30,7 @@ SECRET_SHAPES = [r"sk-[A-Za-z0-9_-]{16,}", r"xai-[A-Za-z0-9]{16,}", r"nvapi-[A-Z
                  r"-----BEGIN [A-Z ]*PRIVATE KEY-----"]
 # the loose phrases must sit near a line START: a short successful answer saying "was not found" is not
 # an error envelope (grok review 2026-09-22)
-STDOUT_ERR = re.compile(r"^\s*(\x1b\[[0-9;]*m)*(Error|error|ERROR)\b"
+STDOUT_ERR = re.compile(r"^\s*(\x1b\[[0-9;]*m)*(Error:|ERROR:|error:)"
                         r"|^[^\n]{0,15}\b(Not signed in|not (available|found|callable)|unknown model|invalid model|No payment method)"
                         r"|^\s*\{\s*\"(error|detail|message)\"\s*:", re.M)   # JSON error envelope, rc=0
 # phrases, not bare words: codex prints "approval: never" in its stderr banner on every run, and the
@@ -43,6 +43,18 @@ RATE = re.compile(r"\b429\b|rate.?limit|quota|usage limit", re.I)   # codex: "hi
 # stderr, and a packet quoting "Usage: python3 x.py" once turned a quota error into LAUNCH_ERROR
 USAGE = re.compile(r"usage:|unrecognized|unknown (option|argument|flag|command)|conflicts with"
                    r"|(required|invalid value|unexpected argument|argument .* required)", re.I)
+
+
+def _text_outside_markdown_fences(text):
+    lines_out = []
+    in_fence = False
+    for line in text.splitlines():
+        if line.strip().startswith("```"):
+            in_fence = not in_fence
+            continue
+        if not in_fence:
+            lines_out.append(line)
+    return "\n".join(lines_out)
 
 
 def scan_secrets(texts):
@@ -142,10 +154,25 @@ def classify(rc, out, err, elapsed, cap, timed_out, pong):
         return "STDERR_DENIAL"
     # an error envelope LEADS the output whatever its length; the anywhere-match stays short-only so a
     # long review that merely quotes "Error:" is not misread (review 2026-09-22: the <2000 gate alone
-    # let "Error: "+1993 chars read PASS)
-    first = out.strip().splitlines()[0]
-    if STDOUT_ERR.search(first) or (len(out) < 2000 and STDOUT_ERR.search(out)):
-        return "STDOUT_ERROR"
+    # let "Error: "+1993 chars read PASS). Ignore fenced code blocks (plan r54: Error: in model Python).
+    outer = _text_outside_markdown_fences(out)
+    if outer.strip():
+        _expl = re.compile(r"corrected below|the seed", re.I)
+        if "```" in out:
+            nonempty = [ln for ln in outer.splitlines() if ln.strip()]
+            for idx, ln in enumerate(nonempty):
+                if not STDOUT_ERR.search(ln):
+                    continue
+                if idx == 0:
+                    if not _expl.search(ln):
+                        return "STDOUT_ERROR"
+                break
+        else:
+            first = outer.strip().splitlines()[0]
+            if STDOUT_ERR.search(first) or (
+                len(outer) < 2000 and STDOUT_ERR.search(outer)
+            ):
+                return "STDOUT_ERROR"
     if pong:
         # digit-bounded: "14200" must not satisfy 420, prose around the number may
         return "PASS" if re.search(rf"(?<!\d){pong}(?!\d)", out) else "PONG_FAIL"
