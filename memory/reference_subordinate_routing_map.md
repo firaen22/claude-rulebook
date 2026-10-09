@@ -6,7 +6,7 @@ metadata:
   type: reference
 ---
 
-# Subordinate routing map — 2026-09-06
+# Subordinate routing map — 2026-10-09
 
 Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 [[workflow-codex-subordinate]] [[workflow-agy-subordinate]] [[workflow-grok-subordinate]]
@@ -14,7 +14,7 @@ Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 
 > 📌 **VERSION STAMP — binaries checked 2026-10-09 via each `--version` (no `dispatch.py --pong` this pass):**
 > `grok 1.0.50 (c58f321264ba)` · `codex-cli 0.162.0` · `opencode 2.0.26` · `agy 1.3.2`.
-> (2026-10-09: codex 0.161.0→0.162.0 — **MINOR** bump; codex rc/ceiling claims stay **UNVERIFIED on 0.162.x** (was UNVERIFIED on 0.160.x/0.161.x). grok 1.0.46→1.0.50 — patch-only; grok rc/edge/schema claims stay **UNVERIFIED on 1.0.50** (was UNVERIFIED on 1.0.41+). agy 1.3.1→1.3.2 — patch-only. opencode 2.0.24→2.0.26 — patch-only (first upgrade attempt failed, retry OK). §2 route-to rows unchanged — no re-bench. 2026-10-07: agy 1.2.17→1.3.0 — MINOR; opencode 2.0.22→2.0.24 patch; codex 0.160.0→0.160.1 patch; grok unchanged. 2026-10-05 late: all five + TypeSafe `jev-1.13.0` passed `dispatch.py --pong` / one-call probe. Claims stay flagged against the minor versions below.)
+> (2026-10-09: codex 0.161.0→0.162.0 — **MINOR** bump; codex rc/ceiling claims stay **UNVERIFIED on 0.162.x** (was UNVERIFIED on 0.160.x/0.161.x). grok 1.0.46→1.0.50 — patch-only; grok rc/edge/schema claims stay **UNVERIFIED on 1.0.50** (was UNVERIFIED on 1.0.41+). agy 1.3.1→1.3.2 — patch-only. opencode 2.0.24→2.0.26 — patch-only (first upgrade attempt failed, retry OK). **2026-10-09 late — agy Gemini Flash catalog:** owner intel + routing update — **only 3.8 Flash remains**; §2 agy model IDs moved to `gemini-3.8-flash-{low,medium,high}`; all 3.6/3.7 numbers below are **historical on retired IDs** until re-bench → [[finding-agy-flash-38-only-catalog-2026-10-09]]. 2026-10-07: agy 1.2.17→1.3.0 — MINOR; opencode 2.0.22→2.0.24 patch; codex 0.160.0→0.160.1 patch; grok unchanged. 2026-10-05 late: all five + TypeSafe `jev-1.13.0` passed `dispatch.py --pong` / one-call probe. Claims stay flagged against the minor versions below.)
 > Every rc / ceiling / bug-status claim in this file and the linked playbooks is
 > **VERSION-BOUND**. codex jumped another minor version since the last stamp
 > (0.157.0→0.159.2, upgraded 2026-09-30 via `codex update`; standalone install, not brew/npm) — agy
@@ -28,9 +28,11 @@ Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 > ceiling §2a, `gpt-5.6-luna` default behavior, the astra-vs-luna E4 scale finding) was
 > measured on 0.153.4 and is **UNVERIFIED on 0.162.x** (0.160.x/0.161.x included) until re-run — treat codex
 > findings from this point forward as provisional pending a re-bench. Every agy
-> rc/pin/edge claim below (the 3.6-flash-medium / 3.7-flash pins, K1 edge results,
-> empty-return-is-permission-deny finding) was measured through 1.1.x and remains
-> **UNVERIFIED on 1.2.x and 1.3.x** (1.3.2 installed 2026-10-09; no re-bench). Every grok rc/edge/schema
+> rc/pin/edge claim below on **3.6/3.7 Flash IDs** was measured through 1.3.x and is
+> **historical** — operational pins are **3.8 Flash** (2026-10-09 catalog regime;
+> [[finding-agy-flash-38-only-catalog-2026-10-09]]). The empty-return-is-permission-deny
+> finding is process, not model-ID-specific. **No 3.8 Flash route number is current** until
+> re-bench. Every grok rc/edge/schema
 > claim below was measured on 1.0.13 and remains **UNVERIFIED on 1.0.50** (was UNVERIFIED on 1.0.41+;
 > no re-bench). **Re-run `--version` before trusting a number.**
 
@@ -49,8 +51,10 @@ out costs one line and grok then guards 11/11.
 **Corollary: the "spec the edges" rule has been over-generalized and retracted TWICE**
 (08-04, 08-15) — say "no tier is reliable", never "no model can".
 **R-A stands as of 2026-08-28, and is now UNCONDITIONAL for the free pool** (above).
-Partial exception: `agy 3.7-flash-low` at 15/20 — best
-NON-FREE edge behavior measured on any tier, still below the K1 ≥4/5-per-paraphrase bar
+Partial exception (historical ID): `agy 3.7-flash-low` at 15/20 — best
+NON-FREE edge behavior measured on any tier **on 3.7-low**; operational unstated-edge pick is
+`gemini-3.8-flash-low` (**UNVERIFIED** — Sept 2025 partial bench had 3.8-low 14/20 vs 3.7-low 12/20,
+p=0.74). Still below the K1 ≥4/5-per-paraphrase bar
 (P1_terse 1/4 even for `-low` — [[workflow-agy-subordinate]]), exempts nothing. Measurement rule: **never
 compare an edge-guard number against a prior measured on a different prompt phrasing**
 (`-medium`, same model, same day: 9/10 on a new phrasing vs 4/20 on the frozen set,
@@ -126,15 +130,15 @@ is not.
 | Tight-spec pure function, no file edit needed | **NIM direct curl** | fan-out at 40rpm×3 keys; opencode wrapper is ~6/min |
 | Same, but needs the file actually edited | **opencode** (only free tier with an agent layer) | 4/4 clean on simple single-file |
 | Enumerating ambiguities in a spec BEFORE building | **codex as spec-reviewer** | MEASURED N=1016; run this pass first. Model slug unmeasured astra-vs-luna here — the R1 "not luna for review" line (§3) does NOT apply to spec review |
-| Adversarial edge-hunting, PRE-implementation | **agy** `gemini-3.7-flash-medium` | 24/24 recall, 0/32 fabrication w/ escape clause |
-| **IF** agy reviews a large real-repo packet (e.g. as an extra lens), which agy model | **agy** `gemini-3.6-flash-high` (review pin) | pin held on measurement, N=30, p=1.000 — but that sweep compared 3.7-high vs 3.6-high ONLY (22/30 vs 23/30), never agy vs codex. This row picks the agy MODEL; whether agy reviews post-impl at all is the "NOT agy" row below (reworded 2026-09-06 to remove the apparent conflict both cross-model reviewers flagged) |
+| Adversarial edge-hunting, PRE-implementation | **agy** `gemini-3.8-flash-medium` | **historical on 3.7-medium:** 24/24 recall, 0/32 fabrication w/ escape clause — **UNVERIFIED on 3.8** |
+| **IF** agy reviews a large real-repo packet (e.g. as an extra lens), which agy model | **agy** `gemini-3.8-flash-high` (review pin) | **historical on 3.6-high:** N=30 sweeps on 3.6 vs 3.7 — **UNVERIFIED on 3.8** (Sept 2025: 3.8-high weakest review arm). This row picks the agy MODEL; whether agy reviews post-impl at all is the "NOT agy" row below (reworded 2026-09-06 to remove the apparent conflict both cross-model reviewers flagged) |
 | Structured/JSON-schema fan-out, N verdicts parsed | **grok** | 16/16 (08-23 regraded) + 15/16 (08-27 fresh) adherence + free cost telemetry (SINGLE-ARM). Read `.structuredOutput` from the WHOLE buffer; a null `structuredOutput` is a failed rep — drop it, never rescue from `.text` |
 | Third review lens after codex (diff/rules-file review) | **grok — pick the shape by the MATERIAL: reviewing FILES ⇒ STAGE them in `--cwd` and tell it to read them (🔴 never inline a review target); judgement on already-inline material ⇒ keep it inline + `--json-schema`. Isolated HOME either way** | ⛔ the "always inline" form of this row is RETRACTED 2026-08-28. Three INLINED-code review packets gave schema-valid-empty / 0 bytes / narration; attempt 4 on the staged-files recipe gave 5.4KB, 5 findings, 3 real. The 0/3 "idle" was MY packet error — grok was hunting for files never written. [[finding-misroutewatch-grok-review-2026-08-28]]. Its finds are real; its all-clears are void (R-B corollary) |
 | Second reviewer AFTER codex on the same artifact | **grok on the staged-files recipe — they are COMPLEMENTARY, not redundant** | MEASURED 2026-08-28, byte-identical brief + same pre-fix file: **zero overlap on 3 real defects.** codex finds mechanism/contract bugs via contrived inputs; grok finds the realistic corpus path that actually fires them. codex missed both of grok's; grok missed codex's. n=1 file, 2 reviewers. Neither alone was sufficient |
 | Ordinary spec'd implementation, want to spare codex quota | **free pool first** (`muse-spark-1.2-contributor-free`), grok if the free pool is unavailable | MEASURED 08-23 same-window five-way: free 10/10 > grok-default 9/10 > grok-isolated/NIM/big-pickle 8/10. ⚠️ **The 10/10 is retracted** (08-28 re-bench: 9/10, edge 1/2) — the ROUTING order survives, the margin does not |
 | **Live X / social retrieval** (what was posted, by whom, when) | **grok — the only tier with it** | NEW 2026-08-27. Native `x_keyword_search`/`x_semantic_search`/`x_user_search`/`x_thread_fetch`; keyword search VERIFIED live against a known account. On by default, survives `--disable-web-search`. A RETRIEVAL lane only — it does nothing for grok's judgement weaknesses. 🔴 Cannot be run contained (see R-D) |
 | Anything with a loop / iteration / termination edge | codex or agy — or grok WITH the edge stated | PROVISIONAL, n=3, p=0.17 pooled |
-| Same, but the edge CANNOT be stated (unstated-edge exposure is the risk) | **agy `gemini-3.7-flash-low`** — then verify by execution regardless | 15/20 fresh-day repeat (prior 14/20, p=1.000); `-medium` 4/20 same day. NOT safe, just least-bad |
+| Same, but the edge CANNOT be stated (unstated-edge exposure is the risk) | **agy `gemini-3.8-flash-low`** — then verify by execution regardless | **historical on 3.7-low:** 15/20 fresh-day repeat; `-medium` 4/20 same day. NOT safe, just least-bad — **UNVERIFIED on 3.8-low** |
 | Post-implementation code review on a real repo | **NOT agy** | adoption 0/5, 0/5, 1/5, 3/8 across 4 sweeps. Scope note 2026-08-25: on a SMALL single-file seeded-defect review, codex and agy TIED 8/8 vs 8/8 (saturated instrument) — this row does not generalize down to small single-file review, stays scoped to large real-repo packets → [[finding-step4-seeded-review-2026-08-25]] |
 | Pre-commit / post-impl review of SMALL code with unstated hazards (the R1 shape) | **codex `-m gpt-6.1-sol -c model_reasoning_effort=medium` WITH the astra pack prefixed** (pack text, then `\n\n---\n\n`, then the brief — recipe in `workflow_codex_subordinate.md`; default since 2026-09-30). Alternate: `-m gpt-5.6-luna` medium + pack (sol quota-blocked, or a second pass when a miss is catastrophic). Not bare luna (held-out r2 4/15). **JS only** — other languages unmeasured: there use `gpt-6.1-sol` medium. ⛔ `gpt-6-astra` only on the owner's explicit command for that task (owner 2026-09-29; drains the codex limit) | Owner-approved 2026-09-25 on astra-pack bench stage 1 (N=5, PREREG D4), corrected the same day after a five-lens cross-model review + re-grade: 5.6-luna+pack r1 15/15, r2 15/15; sol+pack 15/15 on both too (the first-reported "sol no lift 12→11" was a grader keyword miss, 'nested…RangeError'). astra ran in that bench on r2 only: **tied astra on r2 only**, at the score ceiling, so "equals astra" is not shown; r1/e4 astra numbers are other benches. 0 grader-flagged fp on r2 (r1: 1 flag). PROVISIONAL: two tiny JS subjects, one held out, pack as prompt prefix only. Supersedes the 2026-09-23 sol-routine/astra-gate split. Same scope limits as before (not large real-repo packets, not spec review) → [[finding-astra-pack-stage1-2026-09-24]]. **2026-09-30 (codex 0.159.2):** review slots that named `gpt-6-sol` moved to `gpt-6.1-sol` (owner go) — bare R1 6.1 15/15 vs 6-sol 12/15; with pack (r1+r2, N=5) 6.1+pack, bare 6.1 and 6-sol+pack all 30/30 by hand (ceiling), 6.1+pack ~41 % fewer r1 tokens and ~1.6× faster than 6-sol+pack; luna+pack default and the JS scale-implementation slot NOT re-measured, unchanged → [[finding-codex-gpt61-sol-bench-2026-09-30]]. **2026-09-30 addendum 2 (owner go):** JS review default moved to `gpt-6.1-sol`+pack, luna+pack now alternate — r1+r2 N=5: 6.1+pack 30/30 vs luna+pack 28/30 (+2 = the registered bar exactly; luna misses are r1 sumTo; crediting one borderline cell would tie); ~47 % fewer r1 tokens, ~30 % slower. JS scale slot re-measured and STAYS `gpt-6-sol`+pack: 50/50 vs 6.1+pack 36/50 with 14 silent wrong (6.1 returns `Number(exact BigInt)`) → [[finding-codex-gpt61-sol-bench-2026-09-30]]. |
 | Multi-file / long-horizon agentic work | **none of them — do it yourself** | UNMEASURED on all five; opencode 0 edits on 20/20 hard |
@@ -185,7 +189,7 @@ bad answer became 0 bytes).
   never routed**: owner 2026-09-29, "astra will only be used on my command" (it drains the codex limit) — one command
   covers that task only. The measured astra numbers below stay as evidence, not as a route;
   this is a model pick, not a family route: astra was never benched against agy, so the §2
-  agy-low row still owns unstated-edge routing) — the only judgment tier. 5.5/5.6/astra all saturate H1/H2/H3 (36/36 + 27/27, 2026-09-05/06),
+  agy `3.8-flash-low` row still owns unstated-edge routing — UNVERIFIED on 3.8) — the only judgment tier. 5.5/5.6/astra all saturate H1/H2/H3 (36/36 + 27/27, 2026-09-05/06),
   so for ordinary coding pick on cost not capability — BUT bare astra SEPARATES from bare luna/sol on two measured
   axes (with the astra pack, luna and sol tie astra's review score at the ceiling on JS, 2026-09-25, §2) (2026-09-06, N=3, [[finding-codex-56-family-2026-07-22]] Tests 6–7): unstated-scale
   edges (E4 astra 9/9 vs luna 4/9 — luna's `sumTo(1e9)` loop MATCHES the happy-path spec and is
@@ -200,14 +204,13 @@ bad answer became 0 bytes).
   4/6·5/6·4/6 on E4 (recursive flatten failed 2/3) and 5/8/6 on R1. Replicate outside H1–H3.
   *Weakness:* silently fills spec gaps — never hand it an ambiguous brief; quota strands
   mid-batch with no error; long final answers can vanish from captured stdout.
-- **agy** `3.7-flash-medium` (review: `3.6-flash-high`; **unstated-edge exposure:
-  `3.7-flash-low`, 15/20 vs medium's 4/20 same day — effort is NON-monotonic on edges,
-  so this is a per-task pick, not a tier upgrade**) — free, fast, best PRE-impl adversary,
-  zero fabrication with the escape clause. *Weakness:* useless post-impl on real repos;
-  17% empty returns at ~8KB (ALWAYS retry, an empty is not "no findings"); bare `agy -p`
-  is not the pinned model — always pass `--model`. `-low` is NOT promoted to general
-  default: medium's justification is transport, and `-low` had the worst transport of the
-  3.6 arms (3 timeouts/35 vs medium's 1); 3.7-low transport is unmeasured at scale.
+- **agy** `3.8-flash-medium` (review: `3.8-flash-high`; **unstated-edge exposure:
+  `3.8-flash-low` — UNVERIFIED; historical 3.7-low 15/20 vs medium's 4/20 same day**)
+  — free, fast, PRE-impl adversary lane; **24/24 recall etc. measured on 3.7-medium only**.
+  *Weakness:* useless post-impl on real repos; empty stdout is usually permission auto-deny
+  (prepend no-tool preamble — do not retry blindly); bare `agy -p` is not the pinned model —
+  always pass `--model`. Catalog: Gemini **3.8 Flash only** going forward
+  ([[finding-agy-flash-38-only-catalog-2026-10-09]]).
 - **grok** `grok-4.7` (pin moved from `grok-4.6` 2026-09-22: review-task 9/9 vs 4/9 N=3, impl parity, faster — PROVISIONAL; numbers in this entry were measured on 4.6) — third option at ceiling, best structured output, SUBSCRIPTION-billed
   (SuperGrok flat plan — the ~$0.005/run telemetry is reported, not billed; the metered path
   is `openrouter/x-ai/grok-4.6`, a separate product), effort tiers are FLAT (don't build effort routing). *Weakness:* slowest of

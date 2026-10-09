@@ -1,15 +1,20 @@
 ---
 name: workflow-agy-subordinate
-description: "Playbook for calling the Antigravity CLI (`agy`, Gemini Flash family) as a subordinate tool from Claude sessions to offload pattern-discovery and decode-reading work. Established 2026-05-20 after empirical experiment on BF67. DEFAULT 2026-08-14: gemini-3.7-flash-medium (N=175, ties 3.6 + wins transport); review-dispatch pin stays gemini-3.6-flash-high."
+description: "Playbook for calling the Antigravity CLI (`agy`, Gemini 3.8 Flash family) as a subordinate tool from Claude sessions to offload pattern-discovery and decode-reading work. Established 2026-05-20 after empirical experiment on BF67. DEFAULT 2026-10-09: gemini-3.8-flash-medium; review-dispatch pin gemini-3.8-flash-high; unstated-edge pick gemini-3.8-flash-low (3.6/3.7 IDs retired — see finding-agy-flash-38-only-catalog-2026-10-09)."
 metadata: 
   node_type: memory
   type: workflow
   originSessionId: d0fc7ada-52e0-4711-bae0-899ed2f8e5ae
 ---
 
-# Calling `agy` (Gemini 3.5 / 3.6 Flash) as a subordinate
+# Calling `agy` (Gemini 3.8 Flash) as a subordinate
 
-> 📌 **CLI VERSION (2026-10-09):** agy **1.3.2** at `~/.local/bin/agy` (was 1.3.1). Patch-only — no re-bench. Every measured rc/pin/edge claim stays **UNVERIFIED on 1.3.x**. Route-to rows unchanged — `reference_subordinate_routing_map.md` VERSION STAMP 2026-10-09. Last fleet `dispatch.py --pong`: 2026-10-05. Log: `reference_cli_version_log.md`.
+> 📌 **CLI VERSION (2026-10-09):** agy **1.3.2** at `~/.local/bin/agy` (was 1.3.1). Patch-only — no re-bench on 3.8 pins. Every measured score on **3.6/3.7 Flash IDs** is **historical**; operational pins are **3.8** — `reference_subordinate_routing_map.md` VERSION STAMP 2026-10-09 + [[finding-agy-flash-38-only-catalog-2026-10-09]]. Last fleet `dispatch.py --pong`: 2026-10-05. Log: `reference_cli_version_log.md`.
+
+> 📌 **CATALOG (2026-10-09):** agy keeps **only Gemini 3.8 Flash** (`gemini-3.8-flash-{low,medium,high}`).
+> **Default dispatch:** `--model gemini-3.8-flash-medium`. **Review lens (if used):**
+> `gemini-3.8-flash-high`. **Unstated-edge exposure:** `gemini-3.8-flash-low`. Re-run `agy models`
+> before dispatch if you get unknown-model errors (3.6/3.7 may still list until EOL).
 
 > # ⛔ READ FIRST — 2026-09-04: "agy returned nothing" is a PERMISSION DENY, not transport
 > agy chose to invoke a shell tool, headless mode could not prompt, it auto-denied, and
@@ -121,7 +126,9 @@ metadata:
 > All agy numbers carry a CLI-VERSION shelf life: v1.1.14 measurements are not valid
 > for v1.1.24.
 
-> **Model default (updated 2026-08-14):** pin **`--model gemini-3.7-flash-medium`**
+> ⛔ **SUPERSEDED 2026-10-09 — operational pins are 3.8 Flash (banner above).** Archived log below.
+
+> **Model default (updated 2026-08-14, retired 2026-10-09):** pin **`--model gemini-3.7-flash-medium`**
 > for general subordinate use — N=175 five-arm probe (`finding_agy_37_subordinate_2026-08-14.md`),
 > agy v1.1.12. 3.7 ties 3.6 on adversary recall (24/24 both), fabrication (0), and
 > contract compliance, and wins only on transport: 0 failures in 105 calls vs 3.6's
@@ -160,7 +167,7 @@ metadata:
 
 ## Invocation
 ```
-agy --model gemini-3.7-flash-medium --dangerously-skip-permissions -p "<prose prompt>"
+agy --model gemini-3.8-flash-medium --dangerously-skip-permissions -p "<prose prompt>"
 ```
 - Returns in ~5–7s on small prompts
 - Auth: Google login via the Antigravity IDE, persists across sessions
@@ -170,7 +177,7 @@ agy --model gemini-3.7-flash-medium --dangerously-skip-permissions -p "<prose pr
   effect (3.5 vs 3.6 produced systematically different code under byte-identical prompts —
   see the 3.6 regression section — so it is not being silently ignored).
   ```
-  agy --model gemini-3.7-flash-medium -p "<prose prompt>"
+  agy --model gemini-3.8-flash-medium -p "<prose prompt>"
   agy models          # list callable models
   ```
   **`--effort` — VERIFIED 2026-09-22 (supersedes the earlier UNVERIFIED note):** the flag
@@ -182,7 +189,7 @@ agy --model gemini-3.7-flash-medium --dangerously-skip-permissions -p "<prose pr
   forwards `--effort` only for an un-suffixed slug and reports `effort_applied` in the
   result JSON.
   ```
-  python3 ~/.claude/lib/dispatch.py agy --model gemini-3.6-flash-high \
+  python3 ~/.claude/lib/dispatch.py agy --model gemini-3.8-flash-high \
     --prompt-file brief.md --outdir <scratch> --name a1 [--pong]
   ```
 - **Lineup snapshot 2026-07-22** (`agy models`, volatile fact — re-run before relying):
@@ -191,7 +198,7 @@ agy --model gemini-3.7-flash-medium --dangerously-skip-permissions -p "<prose pr
   `gpt-oss-120b-medium`. Measured tiers: **3.5-flash-medium** (the playbook baseline)
   and **3.6-flash-medium** (2026-07-21 N=60 probe — see regression section). Everything
   else was unmeasured as of 07-21; 3.6-low/medium/high were later measured N=140
-  (2026-07-22, see below) and 3.6-flash-high is the standing review-dispatch pin.
+  (2026-07-22, see below); review-dispatch pin is now **`gemini-3.8-flash-high`** (2026-10-09).
   The claude-* / gpt-oss entries route non-Gemini models through agy — untested on this
   path; first-party Claude delegation stays on native subagents, not agy.
 - **STALE (pre-v1.1.5, corrected 2026-07-21):** the old rule "model switching only works in
@@ -289,7 +296,7 @@ Net verified findings (artifacts: `claude-code-technique/experiments/tool-compar
 ```bash
 # Prompt in a file (avoid HEREDOC + zsh-eval escaping issues)
 agy --add-dir /Users/yauch/Documents/moira/moira-web \
-    --model gemini-3.7-flash-medium \
+    --model gemini-3.8-flash-medium \
     --dangerously-skip-permissions \
     -p "$(cat /tmp/agy-prompt.txt)" \
     > /tmp/agy-output.txt 2>&1 &
@@ -324,7 +331,7 @@ Keep for claude:
 
 - **Analysis tasks** (read-only, expected < 60s): run sync with a `until` poll loop:
   ```bash
-  agy --model gemini-3.7-flash-medium --dangerously-skip-permissions -p "$(cat /tmp/prompt.txt)" > /tmp/out.txt 2>&1 &
+  agy --model gemini-3.8-flash-medium --dangerously-skip-permissions -p "$(cat /tmp/prompt.txt)" > /tmp/out.txt 2>&1 &
   PID=$!
   until ! ps -p $PID > /dev/null 2>&1; do sleep 5; done
   cat /tmp/out.txt
@@ -535,7 +542,8 @@ overlapping surface, every finding adjudicated by execution/read-back.
   `-medium`: 4 findings → 1 real (shared w/ high), 1 adopted-defensive, **2 fabricated
   cross-file contract claims** (invented a callee's lookup key; claimed a locale key missing
   that exists — both about files NOT in the packet, despite instructions not to speculate).
-- **Rules:** for agy review dispatches prefer `--model gemini-3.6-flash-high`. Treat ANY
+- **Rules:** for agy review dispatches prefer `--model gemini-3.8-flash-high` (3.6-high numbers
+  below are historical). Treat ANY
   agy claim about a file not inlined in the packet as fabricated until read yourself —
   3.6 did not fix this. The 2026-07-19 "route agy PRE-impl" discount stands for medium;
   high earned a partial exception (2/5 adopted) but still below codex precision.

@@ -12,6 +12,7 @@ Append-only. Each line is `--version` unless noted. Route-to table changes only 
 
 | Date | Component | Change | Notes |
 |---|---|---|---|
+| 2026-10-09 | agy catalog | Gemini Flash → **3.8 only** | pins → `gemini-3.8-flash-{low,medium,high}`; [[finding-agy-flash-38-only-catalog-2026-10-09]] |
 | 2026-10-09 | codex | 0.161.0 → **0.162.0** | MINOR; claims UNVERIFIED on 0.162.x; restart Codex |
 | 2026-10-09 | grok | 1.0.46 → **1.0.50** | patch; claims UNVERIFIED on 1.0.50; restart Grok |
 | 2026-10-09 | agy | 1.3.1 → **1.3.2** | patch; still UNVERIFIED on 1.3.x |

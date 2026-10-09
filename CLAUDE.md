@@ -81,7 +81,7 @@ HOW.** Then route with `~/.claude/memory/reference_subordinate_routing_map.md` a
 open the playbook before dispatching. Filenames below are in `~/.claude/memory/`.
 Every tier shares one weakness — **unstated edge cases**: spec it, no tier substitutes.
 - **codex** = spec'd implementer + REVIEWER (loads the skill first) → `workflow_codex_subordinate.md`
-- **agy** (Gemini Flash) = adversary / edge-finder → `workflow_agy_subordinate.md`
+- **agy** (Gemini 3.8 Flash; `gemini-3.8-flash-medium`) = adversary / edge-finder → `workflow_agy_subordinate.md`
 - **grok** (xAI) = structured/JSON-schema output → `workflow_grok_subordinate.md`
 - **opencode** = free models, full agent, **EDITS FILES** → `workflow_opencode_subordinate.md`
   (NIM backend → `reference_nim_via_opencode.md`)
