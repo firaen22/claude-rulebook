@@ -21,6 +21,8 @@ Applies when the **Agent** in Cursor (Composer / default coding agent) runs muta
 ## Loop cap (escalation)
 
 - **Two** edit attempts max for the **same error signature** (same failing test name, same stderr tail, same exit code). After that: stop, summarize repro + hypothesis, and recommend **Opus** or **codex gpt-6.1-sol** (or the user) — do not start attempt 3 on the same signature.
+- **Long loops** (review → fix → re-gate) are allowed only when the user names a **terminal oracle** you can check (e.g. dual-family `PROCEED`, all harness rows exit 0, PREREG decision table). Without that stop condition, the two-attempt cap applies — no open-ended “try again” on the same failure class.
+- External review output (`FIX`, finding lists): **batch** fixes, then **re-run the full gate** once; do not chase one finding per chat round.
 - If the task is harness/grader closure, adversarial scope, or load-bearing doctrine: suggest tier escalation **before** round 2 when progress is unclear.
 
 ## Context
