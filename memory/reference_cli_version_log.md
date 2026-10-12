@@ -1,6 +1,6 @@
 ---
 name: reference-cli-version-log
-description: "Dated one-line CLI upgrade notes — housekeeping only, not bench findings. Canonical routing stamp lives in reference_subordinate_routing_map.md."
+description: "Dated one-line CLI upgrade notes — housekeeping only, not bench findings. Canonical routing stamp: ~/.cursor/rulebook/memory/reference_subordinate_routing_map.md (mirror ~/.claude/memory/ for Obsidian sync until sync script retargets)."
 metadata:
   node_type: memory
   type: reference
@@ -10,8 +10,24 @@ metadata:
 
 Append-only. Each line is `--version` unless noted. Route-to table changes only when a finding says so.
 
+## After a fleet / CLI upgrade (Cursor migration)
+
+Edit in **`~/.cursor/rulebook/memory/`** in this order:
+
+1. `reference_subordinate_routing_map.md` — VERSION STAMP (patch/minor: §2 route-to usually unchanged).
+2. This file — append a table row.
+3. Each touched `workflow_<tool>_subordinate.md` — `CLI VERSION` line.
+4. Recompile lab repo `.claude/skills/delegation-routing` + `build-and-env` (or your compile script).
+5. Mirror changed files to `~/.claude/memory/` if `sync-to-obsidian.sh` still sources there.
+6. Optional on material bumps: `python3 ~/.claude/lib/dispatch.py … --pong`.
+
 | Date | Component | Change | Notes |
 |---|---|---|---|
+| 2026-10-12 | agy | 1.3.2 → **1.3.3** | patch; 3.8 pins unchanged; UNVERIFIED on 1.3.x |
+| 2026-10-12 | opencode | 2.0.26 → **2.0.27** | patch; first `opencode upgrade` failed, retry OK |
+| 2026-10-12 | grok | 1.0.50 | unchanged |
+| 2026-10-12 | uv | 0.12.24 → **0.13.0** | not a subordinate |
+| 2026-10-11 | codex | 0.162.0 → **0.162.1** | patch via `codex update`; `dispatch.py --pong` luna + 6.1-sol PASS |
 | 2026-10-09 | agy catalog | Gemini Flash → **3.8 only** | pins → `gemini-3.8-flash-{low,medium,high}`; [[finding-agy-flash-38-only-catalog-2026-10-09]] |
 | 2026-10-09 | codex | 0.161.0 → **0.162.0** | MINOR; claims UNVERIFIED on 0.162.x; restart Codex |
 | 2026-10-09 | grok | 1.0.46 → **1.0.50** | patch; claims UNVERIFIED on 1.0.50; restart Grok |

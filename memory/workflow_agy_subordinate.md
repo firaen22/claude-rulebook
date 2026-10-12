@@ -9,7 +9,7 @@ metadata:
 
 # Calling `agy` (Gemini 3.8 Flash) as a subordinate
 
-> 📌 **CLI VERSION (2026-10-09):** agy **1.3.2** at `~/.local/bin/agy` (was 1.3.1). Patch-only — no re-bench on 3.8 pins. Every measured score on **3.6/3.7 Flash IDs** is **historical**; operational pins are **3.8** — `reference_subordinate_routing_map.md` VERSION STAMP 2026-10-09 + [[finding-agy-flash-38-only-catalog-2026-10-09]]. Last fleet `dispatch.py --pong`: 2026-10-05. Log: `reference_cli_version_log.md`.
+> 📌 **CLI VERSION (2026-10-12):** agy **1.3.3** at `~/.local/bin/agy` (was 1.3.2). Patch-only — no re-bench on 3.8 pins. Every measured score on **3.6/3.7 Flash IDs** is **historical**; operational pins are **3.8** — canonical stamp `~/.cursor/rulebook/memory/reference_subordinate_routing_map.md` + [[finding-agy-flash-38-only-catalog-2026-10-09]]. Log: `reference_cli_version_log.md`.
 
 > 📌 **CATALOG (2026-10-09):** agy keeps **only Gemini 3.8 Flash** (`gemini-3.8-flash-{low,medium,high}`).
 > **Default dispatch:** `--model gemini-3.8-flash-medium`. **Review lens (if used):**
@@ -185,11 +185,11 @@ agy --model gemini-3.8-flash-medium --dangerously-skip-permissions -p "<prose pr
   `--effort low|medium|high` and errors without it; a suffixed slug (`gemini-3.6-flash-high`)
   **rejects** a `--effort` that disagrees with its suffix (`--effort medium` + `-high` =
   error). Either pin the suffix and omit the flag, or pass the bare slug + flag — never
-  both. `~/.claude/lib/dispatch.py agy` (rulebook `8423af8`) implements exactly that:
+  both. `~/.cursor/rulebook/lib/dispatch.py agy` (rulebook `8423af8`) implements exactly that:
   forwards `--effort` only for an un-suffixed slug and reports `effort_applied` in the
   result JSON.
   ```
-  python3 ~/.claude/lib/dispatch.py agy --model gemini-3.8-flash-high \
+  python3 ~/.cursor/rulebook/lib/dispatch.py agy --model gemini-3.8-flash-high \
     --prompt-file brief.md --outdir <scratch> --name a1 [--pong]
   ```
 - **Lineup snapshot 2026-07-22** (`agy models`, volatile fact — re-run before relying):

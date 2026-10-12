@@ -6,7 +6,7 @@ metadata:
   type: reference
 ---
 
-> 📌 **CLI VERSION (2026-10-09):** grok **1.0.50** at `~/.grok/bin/grok` (was 1.0.46). Patch-only — no re-bench. Every rc/edge/schema claim below stays **UNVERIFIED on 1.0.50** (measured through 1.0.13). `reference_subordinate_routing_map.md` VERSION STAMP 2026-10-09. Log: `reference_cli_version_log.md`.
+> 📌 **CLI VERSION (2026-10-12):** grok **1.0.50** at `~/.grok/bin/grok` (unchanged since 2026-10-09). Patch-only — no re-bench. Every rc/edge/schema claim below stays **UNVERIFIED on 1.0.50** (measured through 1.0.13). Canonical stamp: `~/.cursor/rulebook/memory/reference_subordinate_routing_map.md`. Log: `reference_cli_version_log.md`.
 
 Grok CLI (`~/.grok/bin/grok`, **v1.0.13 (5e9a58528b76) as of 2026-08-31** — was v1.0.5; every rc/signature claim below is version-bound, re-probe before trusting) as a subordinate.
 Evidence for every number here: [[finding-grok-cli-bench-2026-08-23]],
@@ -22,7 +22,7 @@ This file is orders only.
 > ⚠️ **Grok ≠ Groq.** Groq is SUSPENDED (NordVPN egress IP blocklisted, 403s before auth)
 > and has no CLI at all. Nothing about that applies here. Never type `groq`.
 
-## Wrapper: `~/.claude/lib/dispatch.py grok` (2026-09-22, rulebook `8423af8`)
+## Wrapper: `~/.cursor/rulebook/lib/dispatch.py grok` (2026-09-22, rulebook `8423af8`)
 
 Encodes this whole file's recipe — staged `00-BRIEF.md` in `--cwd`, HOME isolated AND
 rsync-seeded from `~/.grok` (the two-file copy returned "Not signed in" on a fresh
@@ -35,7 +35,7 @@ in `--cwd`; two dispatches started in the same directory both read whichever bri
 staged last — a "part 1" blind-rank job returned part 2's rankings. Not a grok fault, a
 staging collision. Give every parallel dispatch its own directory.
 ```
-python3 ~/.claude/lib/dispatch.py grok --model grok-4.7 --prompt-file brief.md \
+python3 ~/.cursor/rulebook/lib/dispatch.py grok --model grok-4.7 --prompt-file brief.md \
   --outdir <scratch> --name g1 --timeout 1800 [--pong]
 ```
 🔴 **Review cap ≥ 1800 s, not 900.** A 20 KB review packet took **857 s** on 4.7
@@ -98,7 +98,7 @@ must be a real built-in: **one typo voids the whole allowlist silently, rc=0**
 ## ⚡ PRE-FLIGHT: check auth BEFORE any dispatch (2026-08-31)
 
 ```bash
-python3 ~/.claude/lib/grok_preflight.py --quiet || echo "grok auth dead — do not dispatch"
+python3 ~/.cursor/rulebook/lib/grok_preflight.py --quiet || echo "grok auth dead — do not dispatch"
 ```
 Exit **0** usable · **1** NOT usable · **2** usable but <30 min left (refresh before a
 long fan-out). Add `--json` for scripting, `--self-test` to prove the verdicts (8 fixtures).
@@ -158,7 +158,7 @@ Single-turn headless (the delegation form):
 
 ## ⚠️ MANDATORY for any benchmark or A/B: isolate HOME
 
-`grok inspect` shows the CLI ingests **`~/.claude/Claude.md` (~1692 tokens of R0-R8
+`grok inspect` shows the CLI ingests **`~/.cursor/rulebook/Claude.md` (~1692 tokens of R0-R8
 doctrine), your user Claude skills, and `settings.local.json` permissions** by default.
 
 - **For MEASUREMENT** this is contamination — grok-with-your-harness vs a bare comparator

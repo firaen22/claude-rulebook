@@ -7,7 +7,7 @@ metadata:
   originSessionId: 909ab1a7-504d-490d-976b-c8b1450aec01
 ---
 
-> 📌 **CLI VERSION (2026-10-09):** codex-cli **0.162.0** at `~/.local/bin/codex` (was 0.161.0). **MINOR bump — no re-bench.** Every rc/ceiling claim below stays **UNVERIFIED on 0.162.x**. `reference_subordinate_routing_map.md` VERSION STAMP 2026-10-09. Log: `reference_cli_version_log.md`.
+> 📌 **CLI VERSION (2026-10-12):** codex-cli **0.162.1** at `~/.local/bin/codex` (unchanged since 2026-10-11). **Patch — no re-bench.** Every rc/ceiling claim below stays **UNVERIFIED on 0.162.x**. `dispatch.py --pong` PASS on `gpt-5.6-luna` and `gpt-6.1-sol` (ChatGPT account rejects bare `gpt-5.3-codex`). Canonical stamp: `~/.cursor/rulebook/memory/reference_subordinate_routing_map.md`. Log: `reference_cli_version_log.md`.
 
 Codex CLI (`/Users/yauch/.local/bin/codex`, v0.153.4 as of 2026-09-06; playbook default `-m gpt-5.6-luna` — always pass it, the bare config default is NOT the measured model) as a coding subordinate.
 
@@ -60,7 +60,7 @@ Codex CLI (`/Users/yauch/.local/bin/codex`, v0.153.4 as of 2026-09-06; playbook 
 - **Vision / image input:** `-i, --image <FILE>...` attaches images. **GOTCHA (verified 2026-06-02):** the flag is greedy (`<FILE>...`), so a positional prompt placed AFTER `-i` is consumed as a second image path → codex falls back to reading the prompt from stdin and errors "No prompt provided via stdin." Fix: pipe the prompt via stdin — `echo "<prompt>" | codex exec -m gpt-5.6-luna --skip-git-repo-check -i img.png` (or put the prompt before `-i`). Confirmed reading a controlled screenshot (random token + number + status) exactly. Use for OCR, screenshot-to-bug, diagram/chart reads. Multiple `-i` flags work for A/B comparison (`... -i img1 -i img2 -`, prompt via stdin) — a viable vision-REVIEW mode, but codex's vision has blind spots (it missed edge arcs agy caught); adjudicate any vision disagreement against a pixel crop, never on one model's read.
 - Cross-model code review: `codex exec review` / `codex review`.
 - Must be in a trusted dir OR pass `--skip-git-repo-check`.
-- **Wrapper (2026-09-22, rulebook `8423af8`):** `python3 ~/.claude/lib/dispatch.py codex
+- **Wrapper (2026-09-22, rulebook `8423af8`):** `python3 ~/.cursor/rulebook/lib/dispatch.py codex
   --model gpt-6-sol --effort medium --prompt-file brief.md --outdir <scratch> --name c1
   [--pong]` — prompt on stdin (`-`), `--sandbox read-only`, `-o <name>-final.txt`, secret
   scan before launch, named status out. Served model is confirmable: stderr carries a

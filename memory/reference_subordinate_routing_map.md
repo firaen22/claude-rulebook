@@ -1,20 +1,20 @@
 ---
 name: reference-subordinate-routing-map
-description: "Which of the 5 subordinates (codex / agy / grok / opencode / NIM) to route a task to, and why. Spine: 7 same-task-set comparisons exist across the fleet (7th added 2026-08-25) — this file separates those from reasoned defaults. THE cross-fleet rule: no tier is safe on unstated edges, and no tier's self-report is evidence."
+description: "Which of the 5 subordinates (codex / agy / grok / opencode / NIM) to route a task to, and why. Canonical path (Cursor migration): ~/.cursor/rulebook/memory/reference_subordinate_routing_map.md — mirror here for Obsidian sync until sync script retargets. Spine: 7 same-task-set comparisons exist across the fleet (7th added 2026-08-25) — this file separates those from reasoned defaults. THE cross-fleet rule: no tier is safe on unstated edges, and no tier's self-report is evidence."
 metadata:
   node_type: memory
   type: reference
 ---
 
-# Subordinate routing map — 2026-10-09
+# Subordinate routing map — 2026-10-12
 
 Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 [[workflow-codex-subordinate]] [[workflow-agy-subordinate]] [[workflow-grok-subordinate]]
 [[workflow-opencode-subordinate]] [[workflow-splash-qwen]] [[reference-nim-via-opencode]]
 
-> 📌 **VERSION STAMP — binaries checked 2026-10-09 via each `--version` (no `dispatch.py --pong` this pass):**
-> `grok 1.0.50 (c58f321264ba)` · `codex-cli 0.162.0` · `opencode 2.0.26` · `agy 1.3.2`.
-> (2026-10-09: codex 0.161.0→0.162.0 — **MINOR** bump; codex rc/ceiling claims stay **UNVERIFIED on 0.162.x** (was UNVERIFIED on 0.160.x/0.161.x). grok 1.0.46→1.0.50 — patch-only; grok rc/edge/schema claims stay **UNVERIFIED on 1.0.50** (was UNVERIFIED on 1.0.41+). agy 1.3.1→1.3.2 — patch-only. opencode 2.0.24→2.0.26 — patch-only (first upgrade attempt failed, retry OK). **2026-10-09 late — agy Gemini Flash catalog:** owner intel + routing update — **only 3.8 Flash remains**; §2 agy model IDs moved to `gemini-3.8-flash-{low,medium,high}`; all 3.6/3.7 numbers below are **historical on retired IDs** until re-bench → [[finding-agy-flash-38-only-catalog-2026-10-09]]. 2026-10-07: agy 1.2.17→1.3.0 — MINOR; opencode 2.0.22→2.0.24 patch; codex 0.160.0→0.160.1 patch; grok unchanged. 2026-10-05 late: all five + TypeSafe `jev-1.13.0` passed `dispatch.py --pong` / one-call probe. Claims stay flagged against the minor versions below.)
+> 📌 **VERSION STAMP — binaries checked 2026-10-12 via each `--version` (no `dispatch.py --pong` this pass):**
+> `grok 1.0.50 (c58f321264ba)` · `codex-cli 0.162.1` · `opencode 2.0.27` · `agy 1.3.3`.
+> (2026-10-12: §2 route-to rows unchanged — no re-bench. codex 0.162.0→0.162.1, agy 1.3.2→1.3.3, opencode 2.0.26→2.0.27 — all patch-only (opencode first upgrade failed, retry OK); grok unchanged. **Edit stamp in `~/.cursor/rulebook/memory/` first** (post-migration canonical); mirror this file under `~/.claude/memory/` for `sync-to-obsidian.sh`. `dispatch.py` stays at `~/.claude/lib/` — if missing, re-clone `firaen22/claude-rulebook`. Housekeeping checklist: `reference_cli_version_log.md`. 2026-10-09: codex 0.161.0→0.162.0 — **MINOR** bump; codex rc/ceiling claims stay **UNVERIFIED on 0.162.x** (was UNVERIFIED on 0.160.x/0.161.x). grok 1.0.46→1.0.50 — patch-only; grok rc/edge/schema claims stay **UNVERIFIED on 1.0.50** (was UNVERIFIED on 1.0.41+). agy 1.3.1→1.3.2 — patch-only. opencode 2.0.24→2.0.26 — patch-only (first upgrade attempt failed, retry OK). **2026-10-09 late — agy Gemini Flash catalog:** owner intel + routing update — **only 3.8 Flash remains**; §2 agy model IDs moved to `gemini-3.8-flash-{low,medium,high}`; all 3.6/3.7 numbers below are **historical on retired IDs** until re-bench → [[finding-agy-flash-38-only-catalog-2026-10-09]]. 2026-10-07: agy 1.2.17→1.3.0 — MINOR; opencode 2.0.22→2.0.24 patch; codex 0.160.0→0.160.1 patch; grok unchanged. 2026-10-05 late: all five + TypeSafe `jev-1.13.0` passed `dispatch.py --pong` / one-call probe. Claims stay flagged against the minor versions below.)
 > Every rc / ceiling / bug-status claim in this file and the linked playbooks is
 > **VERSION-BOUND**. codex jumped another minor version since the last stamp
 > (0.157.0→0.159.2, upgraded 2026-09-30 via `codex update`; standalone install, not brew/npm) — agy
@@ -22,7 +22,7 @@ Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 > (dispatch.py fixed: subprocess `cwd=` + `--standalone`), and default mode talks to a shared
 > background service where a timeout-killed client's run keeps going server-side (verified
 > 2026-09-27) — `--standalone` contains it. Every opencode/NIM rc/pin/parallelism/free-pool
-> score below was measured on 1.x and is **UNVERIFIED on 2.0.x** (installed 2.0.26 as of 2026-10-09) until re-benched; the
+> score below was measured on 1.x and is **UNVERIFIED on 2.0.x** (installed 2.0.27 as of 2026-10-12) until re-benched; the
 > opencode default model moved to `nvidia/nvidia/nemotron-3-ultra-550b-a55b` (gpt-oss-120b 410 EOL).
 > Every codex rc/ceiling/bug-status claim below (the ~30KB inline-review
 > ceiling §2a, `gpt-5.6-luna` default behavior, the astra-vs-luna E4 scale finding) was

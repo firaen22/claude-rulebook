@@ -7,7 +7,7 @@ metadata:
 
 # opencode CLI Subordinate Playbook
 
-> 📌 **CLI VERSION (2026-10-09):** opencode **v2.0.26** at `~/.opencode/bin/opencode` (was 2.0.24). Patch-only; scores measured on **1.x** remain **UNVERIFIED on 2.0.x**. Use `opencode run --standalone` with `</dev/null>` (§Operational guardrails #3a; `build-and-env`). Canonical stamp: `reference_subordinate_routing_map.md` 2026-10-09. Last fleet `dispatch.py --pong`: 2026-10-05. Log: `reference_cli_version_log.md`.
+> 📌 **CLI VERSION (2026-10-12):** opencode **v2.0.27** at `~/.opencode/bin/opencode` (was 2.0.26). Patch-only; scores measured on **1.x** remain **UNVERIFIED on 2.0.x**. Use `opencode run --standalone` with `</dev/null>` (§Operational guardrails #3a; `build-and-env`). Canonical stamp: `~/.cursor/rulebook/memory/reference_subordinate_routing_map.md`. Log: `reference_cli_version_log.md`.
 
 ## TL;DR — the delegation decision (benchmarked, 3 rounds, 2026-06-11)
 
@@ -24,7 +24,7 @@ Operational guardrails (non-negotiable, see Benchmark findings below):
 1. Default SEQUENTIAL (shared SQLite db → "database is locked" under naive parallel — re-confirmed 2026-07-03). **Parallel IS possible**: give each instance its own `XDG_DATA_HOME` with auth.json copied in (see Benchmark findings #1) — verified 3-way parallel file-edits, all on-disk correct, 15s wall.
 2. Run in an ISOLATED scratch dir (`--auto` = full read+write; it roams).
 3. `timeout 180`-wrap every call (free models hang).
-3a. **Every hand-run `opencode run` gets `</dev/null`** (or a piped prompt). It reads stdin to EOF when stdin is not a TTY, and the Bash tool's stdin never closes → 0 bytes until timeout, in service AND `--standalone` mode (v2.0.21 + v2.0.22, 2026-10-05). Hook `~/.claude/hooks/gate-opencode-stdin.py` blocks the bare form. [[reference-nim-via-opencode]]
+3a. **Every hand-run `opencode run` gets `</dev/null`** (or a piped prompt). It reads stdin to EOF when stdin is not a TTY, and the Bash tool's stdin never closes → 0 bytes until timeout, in service AND `--standalone` mode (v2.0.21 + v2.0.22, 2026-10-05). Hook `~/.cursor/rulebook/hooks/gate-opencode-stdin.py` blocks the bare form. [[reference-nim-via-opencode]]
 4. Prefer native `opencode/*` (Zen) over `openrouter/*:free` (rate-limits + hangs).
 5. Verify output yourself; parse BOTH inline code blocks AND files the agent wrote.
 
@@ -57,7 +57,7 @@ rc=1 in 0.7 s with stderr `File not found: <your prompt text>` (hit live 09-22 b
 wrapper; it reads like a missing attachment, it is the prompt). Pass attachments as
 ABSOLUTE paths — the child resolves relative ones against `--dir`/`$PWD`, not your cwd.
 
-**Wrapper (2026-09-22, rulebook `8423af8`):** `python3 ~/.claude/lib/dispatch.py opencode
+**Wrapper (2026-09-22, rulebook `8423af8`):** `python3 ~/.cursor/rulebook/lib/dispatch.py opencode
 --model opencode/muse-spark-1.2-contributor-free --prompt-file brief.md --outdir <scratch>
 --name o1 [--files ...] [--pong]` (`nim` is the same lane with an `nvidia/<vendor>/<model>`
 slug). Stages the brief as `00-BRIEF.md` in an isolated `--dir`, sets `PWD`, resolves
