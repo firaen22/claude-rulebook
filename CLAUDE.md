@@ -2,6 +2,8 @@
 
 Current-state orders only — evidence, history, and retractions live in the file each line points at.
 
+**Mirror only** — edit doctrine in `~/.cursor/rulebook/` first (same git: `firaen22/claude-rulebook`); this tree is path-rewritten for Claude Code + sync. README **Dual home**.
+
 ## The harness system — read the file that matches your situation
 
 | Situation | Read |
@@ -86,9 +88,7 @@ Every tier shares one weakness — **unstated edge cases**: spec it, no tier sub
 - **opencode** = free models, full agent, **EDITS FILES** → `workflow_opencode_subordinate.md`
   (NIM backend → `reference_nim_via_opencode.md`)
 - **spawn_task** sessions = user-gated in-repo delegates → `workflow_spawned_session_subordinate.md`
-- **grok is NOT Groq** — different vendor, and grok IS live. If the user says "grok"
-  they mean the entry above. **Groq itself is ⛔ SUSPENDED 2026-07-30, do not call**,
-  and no `groq` binary exists to call; use NIM. → `reference_groq_direct_api.md`
+- **grok ≠ Groq** (live xAI CLI). **Groq ⛔ SUSPENDED 2026-07-30** — use NIM. → `reference_groq_direct_api.md`
 
 ## Read BEFORE using the tool, not after it misbehaves
 Browser pane / claude-in-chrome → `~/.claude/memory/reference_browser_pane_gotchas.md`;

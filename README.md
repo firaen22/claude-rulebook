@@ -1,8 +1,8 @@
 # claude-rulebook
 
-The versioned part of one person's `~/.claude` — the standing orders a Claude Code
-session reads before it does anything, plus the hooks that enforce some of them and
-the evidence trail behind both.
+**Claude Code runtime mirror** of [`firaen22/claude-rulebook`](https://github.com/firaen22/claude-rulebook).
+**Edit doctrine in `~/.cursor/rulebook/` first** — this tree uses `~/.claude/...` paths for
+Claude Code sessions, hooks, and Obsidian sync. See **Dual home**.
 
 This is a working corpus, not a distribution. It is published so the rules can be
 read, argued with, and borrowed from; it is not packaged for drop-in use, and some
@@ -33,8 +33,8 @@ The core rules it carries, in one line each:
 | Path | What it is |
 |---|---|
 | [`CLAUDE.md`](CLAUDE.md) | Always-loaded orders + routing table. 100-line hard ceiling. |
-| [`harness/`](harness/) | **Source of truth for doctrine.** Numbered by situation: `10-orchestration`, `20-judgment-rubrics`, `30-delegation-templates`, `40-maintenance` (permissions + growth limits), `50-letter-to-future-sessions`. `00-DIAGNOSIS` is frozen history. |
-| [`skills/`](skills/) | Skill caches — doctrine compiled into loadable form. On any conflict with `harness/`, the harness wins (R8). |
+| [`harness/`](harness/) | **Mirrored doctrine** from `~/.cursor/rulebook/harness/` — edit the Cursor tree first, then mirror here. Numbered by situation: `10-orchestration` … `50-letter-to-future-sessions`. `00-DIAGNOSIS` is frozen history. |
+| Skill caches | `~/.claude/skills/` on disk (mirror of `~/.cursor/skills/`). Not a `skills/` directory inside this repo. Harness wins on conflict (R8). |
 | [`memory/`](memory/) | Global reference and workflow files: subordinate playbooks (codex, agy, grok, opencode, spawned sessions), routing map, tool gotchas. |
 | [`memory/reference_cursor_composer_execution.md`](memory/reference_cursor_composer_execution.md) | Canonical **Cursor User Rule** text for Composer execution (repro, oracle, two-attempt loop cap). Not loaded by Claude Code — paste into Cursor Settings → Rules. |
 | [`hooks/`](hooks/README.md) | The executable side — commit gates, a credential-destruction gate, compaction observability, and the mutation-validated verification harnesses under [`hooks/harness/`](hooks/harness/README.md) (contract suites, passive VOID reconciliation, an experiment pre-registration floor gate). Has its own README; read it before registering anything. |
@@ -75,6 +75,18 @@ supersede an earlier entry by name.
 - Session transcripts, caches, credentials, runtime logs.
 - Per-project memory (`projects/*/memory/`) — private working notes.
 - Model lineups and API specifics beyond what a playbook needs, because they rot fast.
+
+## Dual home (Cursor vs Claude Code)
+
+| Role | Path |
+|------|------|
+| **Edit doctrine** | `~/.cursor/rulebook/` |
+| **This clone** | `~/.claude/` — path-rewritten mirror for Claude Code + `sync-to-obsidian.sh` |
+| **After edits** | Copy changed harness/memory (and skills if needed) from Cursor rulebook → here before CC-only work or vault sync |
+
+## Opus Pack promotion (distilled skills only)
+
+Ship shared skills via PR to [`firaen22/opus-pack`](https://github.com/firaen22/opus-pack) (`ops-pack/skills/`, version bump) — not by publishing this whole corpus. Dev copies: `~/.cursor/skills/` → mirror `~/.claude/skills/`. Details in `~/.cursor/rulebook/README.md`.
 
 ## Using any of this
 
