@@ -82,7 +82,7 @@ supersede an earlier entry by name.
 |------|------|
 | **Edit doctrine** | `~/.cursor/rulebook/` |
 | **This clone** | `~/.claude/` — path-rewritten mirror for Claude Code + `sync-to-obsidian.sh` |
-| **After edits** | Copy changed harness/memory (and skills if needed) from Cursor rulebook → here before CC-only work or vault sync |
+| **After edits** | Copy changed harness/memory to here before CC-only work; Obsidian sync reads `~/.cursor/rulebook/` for doctrine |
 
 ## Opus Pack promotion (distilled skills only)
 
