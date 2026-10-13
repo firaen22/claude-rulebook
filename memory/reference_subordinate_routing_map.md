@@ -6,15 +6,15 @@ metadata:
   type: reference
 ---
 
-# Subordinate routing map — 2026-10-12
+# Subordinate routing map — 2026-10-13
 
 Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 [[workflow-codex-subordinate]] [[workflow-agy-subordinate]] [[workflow-grok-subordinate]]
 [[workflow-opencode-subordinate]] [[workflow-splash-qwen]] [[reference-nim-via-opencode]]
 
-> 📌 **VERSION STAMP — binaries checked 2026-10-12 via each `--version` (no `dispatch.py --pong` this pass):**
-> `grok 1.0.50 (c58f321264ba)` · `codex-cli 0.162.1` · `opencode 2.0.27` · `agy 1.3.3`.
-> (2026-10-12: §2 route-to rows unchanged — no re-bench. codex 0.162.0→0.162.1, agy 1.3.2→1.3.3, opencode 2.0.26→2.0.27 — all patch-only (opencode first upgrade failed, retry OK); grok unchanged. **Edit stamp in `~/.cursor/rulebook/memory/` first** (post-migration canonical); mirror this file under `~/.claude/memory/` for `sync-to-obsidian.sh`. `dispatch.py` stays at `~/.claude/lib/` — if missing, re-clone `firaen22/claude-rulebook`. Housekeeping checklist: `reference_cli_version_log.md`. 2026-10-09: codex 0.161.0→0.162.0 — **MINOR** bump; codex rc/ceiling claims stay **UNVERIFIED on 0.162.x** (was UNVERIFIED on 0.160.x/0.161.x). grok 1.0.46→1.0.50 — patch-only; grok rc/edge/schema claims stay **UNVERIFIED on 1.0.50** (was UNVERIFIED on 1.0.41+). agy 1.3.1→1.3.2 — patch-only. opencode 2.0.24→2.0.26 — patch-only (first upgrade attempt failed, retry OK). **2026-10-09 late — agy Gemini Flash catalog:** owner intel + routing update — **only 3.8 Flash remains**; §2 agy model IDs moved to `gemini-3.8-flash-{low,medium,high}`; all 3.6/3.7 numbers below are **historical on retired IDs** until re-bench → [[finding-agy-flash-38-only-catalog-2026-10-09]]. 2026-10-07: agy 1.2.17→1.3.0 — MINOR; opencode 2.0.22→2.0.24 patch; codex 0.160.0→0.160.1 patch; grok unchanged. 2026-10-05 late: all five + TypeSafe `jev-1.13.0` passed `dispatch.py --pong` / one-call probe. Claims stay flagged against the minor versions below.)
+> 📌 **VERSION STAMP — binaries checked 2026-10-13 via each `--version` (no `dispatch.py --pong` this pass):**
+> `grok 1.0.52 (0920c8169e27)` · `codex-cli 0.162.1` · `opencode 2.0.27` · `agy 1.3.3`.
+> (2026-10-13: §2 route-to rows unchanged — no re-bench. grok 1.0.50→1.0.52 via `grok update` — patch-only; grok rc/edge/schema claims stay **UNVERIFIED on 1.0.52** (was UNVERIFIED on 1.0.50). codex/agy/opencode/uv unchanged (`codex update`, `uv self update`, `opencode upgrade` already latest; first opencode check hit 503). npm global `npm update -g` refreshed packages; brew upgraded simdjson only. 2026-10-12: §2 route-to rows unchanged — no re-bench. codex 0.162.0→0.162.1, agy 1.3.2→1.3.3, opencode 2.0.26→2.0.27 — all patch-only (opencode first upgrade failed, retry OK); grok unchanged. **Edit stamp in `~/.cursor/rulebook/memory/` first** (post-migration canonical); mirror this file under `~/.claude/memory/` for `sync-to-obsidian.sh`. `dispatch.py` stays at `~/.claude/lib/` — if missing, re-clone `firaen22/claude-rulebook`. Housekeeping checklist: `reference_cli_version_log.md`. 2026-10-09: codex 0.161.0→0.162.0 — **MINOR** bump; codex rc/ceiling claims stay **UNVERIFIED on 0.162.x** (was UNVERIFIED on 0.160.x/0.161.x). grok 1.0.46→1.0.50 — patch-only; grok rc/edge/schema claims stay **UNVERIFIED on 1.0.50** (was UNVERIFIED on 1.0.41+). agy 1.3.1→1.3.2 — patch-only. opencode 2.0.24→2.0.26 — patch-only (first upgrade attempt failed, retry OK). **2026-10-09 late — agy Gemini Flash catalog:** owner intel + routing update — **only 3.8 Flash remains**; §2 agy model IDs moved to `gemini-3.8-flash-{low,medium,high}`; all 3.6/3.7 numbers below are **historical on retired IDs** until re-bench → [[finding-agy-flash-38-only-catalog-2026-10-09]]. 2026-10-07: agy 1.2.17→1.3.0 — MINOR; opencode 2.0.22→2.0.24 patch; codex 0.160.0→0.160.1 patch; grok unchanged. 2026-10-05 late: all five + TypeSafe `jev-1.13.0` passed `dispatch.py --pong` / one-call probe. Claims stay flagged against the minor versions below.)
 > Every rc / ceiling / bug-status claim in this file and the linked playbooks is
 > **VERSION-BOUND**. codex jumped another minor version since the last stamp
 > (0.157.0→0.159.2, upgraded 2026-09-30 via `codex update`; standalone install, not brew/npm) — agy
@@ -33,7 +33,7 @@ Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 > [[finding-agy-flash-38-only-catalog-2026-10-09]]). The empty-return-is-permission-deny
 > finding is process, not model-ID-specific. **No 3.8 Flash route number is current** until
 > re-bench. Every grok rc/edge/schema
-> claim below was measured on 1.0.13 and remains **UNVERIFIED on 1.0.50** (was UNVERIFIED on 1.0.41+;
+> claim below was measured on 1.0.13 and remains **UNVERIFIED on 1.0.52** (was UNVERIFIED on 1.0.41+/1.0.50;
 > no re-bench). **Re-run `--version` before trusting a number.**
 
 ## 0. Two rules that override every row below

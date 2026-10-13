@@ -23,6 +23,10 @@ Edit in **`~/.cursor/rulebook/memory/`** in this order:
 
 | Date | Component | Change | Notes |
 |---|---|---|---|
+| 2026-10-13 | grok | 1.0.50 → **1.0.52** | patch via `grok update`; claims UNVERIFIED on 1.0.52; restart Grok |
+| 2026-10-13 | codex / agy / opencode / uv | unchanged | already latest after `codex update`, `uv self update`, `opencode upgrade` |
+| 2026-10-13 | npm (global) | `npm update -g` | 1048 packages touched; not subordinates |
+| 2026-10-13 | brew | simdjson 5.0.3 → **5.0.4** | not a subordinate |
 | 2026-10-12 | agy | 1.3.2 → **1.3.3** | patch; 3.8 pins unchanged; UNVERIFIED on 1.3.x |
 | 2026-10-12 | opencode | 2.0.26 → **2.0.27** | patch; first `opencode upgrade` failed, retry OK |
 | 2026-10-12 | grok | 1.0.50 | unchanged |
