@@ -23,6 +23,10 @@ Edit in **`~/.cursor/rulebook/memory/`** in this order:
 
 | Date | Component | Change | Notes |
 |---|---|---|---|
+| 2026-10-14 | opencode | 2.0.27 → **2.0.28** | patch via `opencode upgrade`; 2.0.x scores still UNVERIFIED |
+| 2026-10-14 | codex / grok / agy / uv | unchanged | already latest |
+| 2026-10-14 | npm (global) | `npm update -g` | not subordinates |
+| 2026-10-14 | brew | openssl@3 3.6.5 → **3.5.9** | bottle downgrade pin; not a subordinate |
 | 2026-10-13 | grok | 1.0.50 → **1.0.52** | patch via `grok update`; claims UNVERIFIED on 1.0.52; restart Grok |
 | 2026-10-13 | codex / agy / opencode / uv | unchanged | already latest after `codex update`, `uv self update`, `opencode upgrade` |
 | 2026-10-13 | npm (global) | `npm update -g` | 1048 packages touched; not subordinates |
