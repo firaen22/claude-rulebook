@@ -23,6 +23,10 @@ Edit in **`~/.cursor/rulebook/memory/`** in this order:
 
 | Date | Component | Change | Notes |
 |---|---|---|---|
+| 2026-10-15 | fleet (upgrade pass) | unchanged | subordinates already latest; `npm update -g`; brew simdjson 5.0.4→**5.0.5** |
+| 2026-10-15 | opencode | 2.0.28 → **2.0.29** | patch; 2.0.x UNVERIFIED |
+| 2026-10-15 | agy | 1.3.3 → **1.3.5** | patch; UNVERIFIED on 1.3.x |
+| 2026-10-15 | uv | 0.13.0 → **0.13.1** | not a subordinate |
 | 2026-10-14 | opencode | 2.0.27 → **2.0.28** | patch via `opencode upgrade`; 2.0.x scores still UNVERIFIED |
 | 2026-10-14 | codex / grok / agy / uv | unchanged | already latest |
 | 2026-10-14 | npm (global) | `npm update -g` | not subordinates |
