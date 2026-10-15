@@ -11,6 +11,7 @@ metadata:
 Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 [[workflow-codex-subordinate]] [[workflow-agy-subordinate]] [[workflow-grok-subordinate]]
 [[workflow-opencode-subordinate]] [[workflow-splash-qwen]] [[reference-nim-via-opencode]]
+[[workflow-cursor-subordinate]]
 
 > 📌 **VERSION STAMP — binaries checked 2026-10-14 via each `--version` (no `dispatch.py --pong` this pass):**
 > `grok 1.0.52 (0920c8169e27)` · `codex-cli 0.162.1` · `opencode 2.0.28` · `agy 1.3.3`.
@@ -249,6 +250,10 @@ bad answer became 0 bytes).
   ~0.4 s per call (probe 2026-10-05). *Weakness:* conservative on ambiguous items (all 6 urgency
   misses on the `ambig` tier); review-lens output is noise. Cursor's auto-review blocks the raw
   call (key → third-party API) — expect an approval prompt.
+- **cursor-agent** (`2026.10.14-941492e`, added 2026-10-15 on user order) — available,
+  **UNROUTED**: owns no §2 row until a same-task-set comparison exists (routing it = ASK USER).
+  Smoke-verified: `-p --trust --mode ask` read-only (refused a write), `--force` edits.
+  Pin `--model` (e.g. `composer-2.5`); its Claude slugs are NOT a second family. → [[workflow-cursor-subordinate]]
 
 ## 4. Compose them: routing beats any single tool
 
