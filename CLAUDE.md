@@ -85,8 +85,8 @@ Every tier shares one weakness — **unstated edge cases**: spec it, no tier sub
 - **codex** = spec'd implementer + REVIEWER (loads the skill first) → `workflow_codex_subordinate.md`
 - **agy** (Gemini 3.8 Flash; `gemini-3.8-flash-medium`) = adversary / edge-finder → `workflow_agy_subordinate.md`
 - **grok** (xAI) = structured/JSON-schema output → `workflow_grok_subordinate.md`
-- **opencode** = free models, full agent, **EDITS FILES** → `workflow_opencode_subordinate.md`
-  (NIM backend → `reference_nim_via_opencode.md`)
+- **opencode** = free models, full agent, **EDITS FILES** → `workflow_opencode_subordinate.md` (NIM → `reference_nim_via_opencode.md`)
+- **cursor-agent** = available, UNROUTED; `--mode ask` read-only → `workflow_cursor_subordinate.md`
 - **spawn_task** sessions = user-gated in-repo delegates → `workflow_spawned_session_subordinate.md`
 - **grok ≠ Groq** (live xAI CLI). **Groq ⛔ SUSPENDED 2026-07-30** — use NIM. → `reference_groq_direct_api.md`
 
