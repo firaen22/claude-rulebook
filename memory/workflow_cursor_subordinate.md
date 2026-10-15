@@ -13,9 +13,9 @@ metadata:
 
 ## TL;DR
 
-- **Status: available, UNROUTED.** Smoke-probed only; no task-set comparison against
-  codex/agy/grok/opencode exists. It owns no task shape in
-  [[reference-subordinate-routing-map]] until one is measured — routing it is an ASK USER change.
+- **Status: available, UNROUTED.** Benched 2026-10-15 on the free-pool task set (below):
+  **8/10 ×2 blocks = the pool's modal profile**, no edge over free `big-pickle`, ~2× slower.
+  It owns no task shape in [[reference-subordinate-routing-map]] — routing it is an ASK USER change.
 - **Distinct value:** Cursor-native `composer-2.5`, plus one CLI reaching several vendor
   families under one login. Same weakness as every tier: **unstated edge cases** — spec them.
 - **Self-report is not evidence** (global R0): read files back, run the oracle yourself.
@@ -44,6 +44,21 @@ python3 -I -c "import json;d=json.load(open('out.json'));print(d['is_error'], d[
 JSON keys: `type, subtype, is_error, duration_ms, duration_api_ms, result, session_id,
 request_id, usage`. Smoke wall time: 12 s (ask), 19 s (write). `timeout`-wrap every call.
 
+## Bench 2026-10-15 (N=16 composer + 16 same-day pool runs; claude-code-technique `experiments/cursor-composer-bench-2026-10-15/`)
+
+| Arm | Score | Edge `size<=0` | Median latency |
+|---|---|---|---|
+| `composer-2.5` (`--force`) | **8/10, 8/10** (2 blocks) | 0/4 — infinite loop every rep | 18–22 s |
+| `big-pickle` (control) | 8/10 | 0/2 | 10 s |
+| `muse-spark-1.3-contributor-free` | 9/10 | 1/2 | 9 s |
+
+Stated work 16/16; honoured "do not modify" under `--force` (0/8 touched). Token-heavy:
+~16k input + ~62k cache-read for a 4-line edit. **Not measured:** multi-file / repo-scale work,
+Cursor indexing — the only place a distinct edge could still show.
+
+**Pack ablation 2026-10-15 (N=16+16):** `cursor-pack/AGENTS.md` in the workspace (loaded: +2.5k input
+tokens/call) vs bare → **8/10 ×2 both arms, edge 0/4 both** — no lift on this set; FIX-packet batching still unprobed.
+
 ## Models
 
 `cursor-agent --list-models` is the live source — slugs churn; never hard-code from memory.
@@ -64,5 +79,6 @@ session; do not count its doctrine-following as independent.
 
 ## What would change this file
 
-- A same-task-set comparison vs the other subs (→ routing map row, ASK USER).
+- A multi-file / repo-scale bench where composer beats codex or the free pool (→ routing row, ASK USER);
+  a later build guarding the `size<=0` edge in ≥2 consecutive runs.
 - `--mode plan` or `-w` probed; a write in `--mode ask` ever observed (→ downgrade the table).

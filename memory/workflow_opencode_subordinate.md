@@ -41,8 +41,8 @@ Operational guardrails (non-negotiable, see Benchmark findings below):
 opencode run --auto -m opencode/muse-spark-1.3-contributor-free "<prompt>"
 ```
 > 2026-10-15: `muse-spark-1.2-contributor-free` is **delisted** (`Model unavailable`, rc=1, 1 s);
-> default moved to **1.3** — benched 10/10 on 2026-09-23 (CLI 1.18.31), **UNVERIFIED on 2.0.x**;
-> PONG-verified on 2.0.28 2026-10-15.
+> default moved to **1.3** — 09-23 (CLI 1.18.31) two runs: 10/10 then 9/10; 2026-10-15 on 2.0.29:
+> **9/10, edge 1/2** (N=2, cursor-composer-bench). Edge oscillates — spec it.
 ⚠️ **Re-list before every run** (`opencode models`) — the pool churns within hours and this
 id has a PAID bare twin; the `-contributor-free` suffix is load-bearing.
 
