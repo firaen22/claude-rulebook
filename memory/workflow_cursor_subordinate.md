@@ -59,6 +59,10 @@ Cursor indexing — the only place a distinct edge could still show.
 **Pack ablation 2026-10-15 (N=16+16):** `cursor-pack/AGENTS.md` in the workspace (loaded: +2.5k input
 tokens/call) vs bare → **8/10 ×2 both arms, edge 0/4 both** — no lift on this set; FIX-packet batching still unprobed.
 
+**Composer card bench 2026-10-15 (N=24+24):** `cursor-pack/COMPOSER.md` (229 words, +550 tokens/call) vs bare →
+P2 `size<=0` edge **4/4 vs 0/4** (design probe), held-out scale **16/40 both** (past 2^53, deep, wide unmoved) → **not adopted**;
+route magnitude-sensitive implementation away from Composer (unstated bound → gpt-6-sol + astra v1; stated → bare gpt-5.6-luna).
+
 ## Models
 
 `cursor-agent --list-models` is the live source — slugs churn; never hard-code from memory.
