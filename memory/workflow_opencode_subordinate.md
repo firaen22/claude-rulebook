@@ -38,14 +38,17 @@ Operational guardrails (non-negotiable, see Benchmark findings below):
 
 **Headless one-shot (⚠️ `--auto` = full read+WRITE in cwd — use an isolated scratch dir):**
 ```bash
-opencode run --auto -m opencode/muse-spark-1.2-contributor-free "<prompt>"
+opencode run --auto -m opencode/muse-spark-1.3-contributor-free "<prompt>"
 ```
+> 2026-10-15: `muse-spark-1.2-contributor-free` is **delisted** (`Model unavailable`, rc=1, 1 s);
+> default moved to **1.3** — benched 10/10 on 2026-09-23 (CLI 1.18.31), **UNVERIFIED on 2.0.x**;
+> PONG-verified on 2.0.28 2026-10-15.
 ⚠️ **Re-list before every run** (`opencode models`) — the pool churns within hours and this
 id has a PAID bare twin; the `-contributor-free` suffix is load-bearing.
 
 **Code-writing (backgrounded, isolated + timeout-wrapped):**
 ```bash
-SCRATCH=$(mktemp -d) && cd "$SCRATCH" && timeout 180 opencode run --auto -m opencode/muse-spark-1.2-contributor-free "$(cat /tmp/opencode-prompt.txt)" > /tmp/opencode-out.txt 2>&1 &
+SCRATCH=$(mktemp -d) && cd "$SCRATCH" && timeout 180 opencode run --auto -m opencode/muse-spark-1.3-contributor-free "$(cat /tmp/opencode-prompt.txt)" > /tmp/opencode-out.txt 2>&1 &
 ```
 
 **With file attachments — prompt BEFORE `-f` (corrected 2026-09-22):**
@@ -58,7 +61,7 @@ wrapper; it reads like a missing attachment, it is the prompt). Pass attachments
 ABSOLUTE paths — the child resolves relative ones against `--dir`/`$PWD`, not your cwd.
 
 **Wrapper (2026-09-22, rulebook `8423af8`):** `python3 ~/.cursor/rulebook/lib/dispatch.py opencode
---model opencode/muse-spark-1.2-contributor-free --prompt-file brief.md --outdir <scratch>
+--model opencode/muse-spark-1.3-contributor-free --prompt-file brief.md --outdir <scratch>
 --name o1 [--files ...] [--pong]` (`nim` is the same lane with an `nvidia/<vendor>/<model>`
 slug). Stages the brief as `00-BRIEF.md` in an isolated `--dir`, sets `PWD`, resolves
 attachments to absolute paths and scans them, and takes an exclusive `flock` across every
