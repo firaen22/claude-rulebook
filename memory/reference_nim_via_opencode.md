@@ -9,7 +9,7 @@ metadata:
 
 ## 2026-10-03 — `mistral-nemotron` 410 EOL; `opencode run` hangs on an open stdin (corrected 10-05)
 From the omp-vs-opencode bench pre-flight ([[finding-omp-vs-opencode-2026-10-03]]):
-- `mistralai/mistral-nemotron` → **HTTP 410 EOL** (2026-09-28). Not in nimroute.py (grep 10-03: no hit).
+- `mistralai/mistral-nemotron` → **HTTP 410 EOL** (2026-09-28). ~~Not in nimroute.py (grep 10-03: no hit).~~ **Corrected 2026-10-16:** it IS in `claude-code-technique/nimroute.py` as PARITY[0] and FAST (lines 97, 134), re-confirmed 410 that day — owner fix pending.
 - opencode **v2.0.21** has **no `--dir`**: set the subprocess cwd and `$PWD`.
 - ⛔ **RETRACTED 10-05: "the background service hangs on NIM, `--standalone` fixes it".** Real cause:
   `opencode run` **reads stdin to EOF whenever stdin is not a TTY**, in BOTH modes. A Bash-tool shell's stdin
