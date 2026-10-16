@@ -1,6 +1,6 @@
 ---
 name: workflow-agy-subordinate
-description: "Playbook for calling the Antigravity CLI (`agy`, Gemini 3.8 Flash family) as a subordinate tool from Claude sessions to offload pattern-discovery and decode-reading work. Established 2026-05-20 after empirical experiment on BF67. DEFAULT 2026-10-09: gemini-3.8-flash-medium; review-dispatch pin gemini-3.8-flash-high; unstated-edge pick gemini-3.8-flash-low (3.6/3.7 IDs retired — see finding-agy-flash-38-only-catalog-2026-10-09)."
+description: "Playbook for calling the Antigravity CLI (`agy`, Gemini 3.8 Flash family) as a subordinate tool from Claude sessions to offload pattern-discovery and decode-reading work. Established 2026-05-20 after empirical experiment on BF67. DEFAULT 2026-10-09: gemini-3.8-flash-medium; review-dispatch pin gemini-3.8-flash-medium with the no-tool preamble and a >=300 s wall (2026-10-16; was 3.8-high); unstated-edge pick gemini-3.8-flash-low (3.6/3.7 IDs retired — see finding-agy-flash-38-only-catalog-2026-10-09)."
 metadata: 
   node_type: memory
   type: workflow
@@ -13,8 +13,14 @@ metadata:
 
 > 📌 **CATALOG (2026-10-09):** agy keeps **only Gemini 3.8 Flash** (`gemini-3.8-flash-{low,medium,high}`).
 > **Default dispatch:** `--model gemini-3.8-flash-medium`. **Review lens (if used):**
-> `gemini-3.8-flash-high`. **Unstated-edge exposure:** `gemini-3.8-flash-low`. Re-run `agy models`
+> `gemini-3.8-flash-medium` (2026-10-16, was `-high`; see REVIEW PIN below). **Unstated-edge exposure:** `gemini-3.8-flash-low`. Re-run `agy models`
 > before dispatch if you get unknown-model errors (3.6/3.7 may still list until EOL).
+
+> 📌 **REVIEW PIN (2026-10-16, agy 1.4.0): `gemini-3.8-flash-medium` + no-tool preamble + wall ≥ 300 s.**
+> Grid with the preamble, P1/P2/P3/P6 × 2 reps, N=8 per arm, one window: medium/240 s 1/8 dead, medium/600 s
+> 0/8 (slowest answer 247.5 s), high/240 s 3/8 (NOT USABLE), high/600 s 2/8 (both P2, dead at 600 s). 0/32 empty.
+> `dispatch.py agy` defaults to `--timeout 900`; never pass less than 300. Hand-rolled callers: subprocess
+> `timeout>=300` (`--print-timeout` is ignored in a hang, see below). Auto-recall is not ranked at N=8. → [[finding-agy-38-rebench-and-dead-cell-diag-2026-10-16]]
 
 > # ⛔ READ FIRST — 2026-09-04: "agy returned nothing" is a PERMISSION DENY, not transport
 > agy chose to invoke a shell tool, headless mode could not prompt, it auto-denied, and
@@ -47,20 +53,24 @@ metadata:
 > **CONFIRMED AT SWEEP SCALE 2026-09-04:** full 6-packet review sweep, 54 calls, all
 > three -high arms, preamble on -> **0 empty returns**, including the two bash packets
 > that were 6/6 and 5/6 dead without it. The 3 remaining deaths are `__TIMEOUT__` at the
-> 240s wall (all `gemini-3.8-flash-high`) — a DIFFERENT, still-undiagnosed mode; do not
-> merge it into the empty-return story.
+> 240s wall (all `gemini-3.8-flash-high`) — a DIFFERENT mode; do not merge it into the
+> empty-return story. (Characterised 2026-10-16: budget-sensitive for high, concentrated on packet P2,
+> not cured by 600 s; root cause still open → [[finding-agy-38-rebench-and-dead-cell-diag-2026-10-16]].)
 > **Review pin RESOLVED, stays `gemini-3.6-flash-high`** (27/30 vs 3.7 25/30 vs 3.8
 > 21/30; 3.6-vs-3.8 margin 6 but p=0.1042 -> NO SEPARATION).
 > **`gemini-3.8-flash-high` is no longer "unmeasured for review" — it is just the WORST
 > arm**: lowest recall AND the noisiest (97 extra-claim lines vs 67). Stop re-testing it
-> for review work. See `finding_agy_review_preamble_sweep_2026-09-04.md`.
+> for review work. Evidence: `claude-code-technique/experiments/agy-review-preamble-2026-09-04/`
+> (`ADJUDICATION.md`, `results.json`; no separate finding file was ever written).
 >
 > **Diagnosis rule: `capture_output=True` then READ `r.stderr` — never test only
 > `r.stdout.strip()`.** A "silent" agy failure is almost never silent.
 > Rates are still real and still ordered (CLI/bash packets and higher effort levels
 > invoke tools more, so they fail more) — but the CAUSE is tool permission, so the fix is
 > the preamble, not chunking, not a lower effort level, not a different arm.
-> See `finding_agy_empty_return_is_permission_deny_2026-09-04.md`.
+> Evidence: `claude-code-technique/experiments/agy-review-preamble-2026-09-04/PREREG.md` (no separate
+> finding file was ever written). Re-confirmed on agy 1.4.0, 2026-10-16: the stderr now names the deny →
+> [[finding-agy-38-rebench-and-dead-cell-diag-2026-10-16]].
 
 > **2026-09-03, agy v1.1.24 — 3.8-flash is listed and callable but does NOT move
 > either pin.** Frozen chunk(arr,0) battery, 40 calls, execution grader:
@@ -189,7 +199,7 @@ agy --model gemini-3.8-flash-medium --dangerously-skip-permissions -p "<prose pr
   forwards `--effort` only for an un-suffixed slug and reports `effort_applied` in the
   result JSON.
   ```
-  python3 ~/.cursor/rulebook/lib/dispatch.py agy --model gemini-3.8-flash-high \
+  python3 ~/.cursor/rulebook/lib/dispatch.py agy --model gemini-3.8-flash-medium \
     --prompt-file brief.md --outdir <scratch> --name a1 [--pong]
   ```
 - **Lineup snapshot 2026-07-22** (`agy models`, volatile fact — re-run before relying):
@@ -198,7 +208,7 @@ agy --model gemini-3.8-flash-medium --dangerously-skip-permissions -p "<prose pr
   `gpt-oss-120b-medium`. Measured tiers: **3.5-flash-medium** (the playbook baseline)
   and **3.6-flash-medium** (2026-07-21 N=60 probe — see regression section). Everything
   else was unmeasured as of 07-21; 3.6-low/medium/high were later measured N=140
-  (2026-07-22, see below); review-dispatch pin is now **`gemini-3.8-flash-high`** (2026-10-09).
+  (2026-07-22, see below); review-dispatch pin was **`gemini-3.8-flash-high`** (2026-10-09), now **`gemini-3.8-flash-medium`** (2026-10-16).
   The claude-* / gpt-oss entries route non-Gemini models through agy — untested on this
   path; first-party Claude delegation stays on native subagents, not agy.
 - **STALE (pre-v1.1.5, corrected 2026-07-21):** the old rule "model switching only works in
@@ -542,8 +552,8 @@ overlapping surface, every finding adjudicated by execution/read-back.
   `-medium`: 4 findings → 1 real (shared w/ high), 1 adopted-defensive, **2 fabricated
   cross-file contract claims** (invented a callee's lookup key; claimed a locale key missing
   that exists — both about files NOT in the packet, despite instructions not to speculate).
-- **Rules:** for agy review dispatches prefer `--model gemini-3.8-flash-high` (3.6-high numbers
-  below are historical). Treat ANY
+- **Rules:** for agy review dispatches use `--model gemini-3.8-flash-medium` with the no-tool preamble
+  and a ≥ 300 s wall (2026-10-16; 3.6-high numbers below are historical). Treat ANY
   agy claim about a file not inlined in the packet as fabricated until read yourself —
   3.6 did not fix this. The 2026-07-19 "route agy PRE-impl" discount stands for medium;
   high earned a partial exception (2/5 adopted) but still below codex precision.
