@@ -159,6 +159,18 @@ Implementation or multi-file agentic work via Splash Qwen: **not routed** — us
 (free pool / opencode / codex / **none of them — do it yourself** for multi-file); coding
 quality unmeasured.
 
+### 2c. Optional local Strata implementer (available, not routed)
+
+**Not a sixth subordinate**: it is not in `dispatch.py` and is never a default route. Added 2026-10-16 on the
+owner's order. Harness artifact: `claude-code-technique` `experiments/strata-local-bench-2026-10-16/`.
+
+| Task | Optional lane (not dispatch.py) | Basis |
+|---|---|---|
+| **Private / offline** single-file implementation with a tight spec, or a short "is this code correct?" check, when Strata is already up | **Local Strata, single-shot**: `POST http://127.0.0.1:8080/v1/chat/completions`, model `qwen3.8-flash-next-q2_0`, `reasoning_effort=medium`. Inline the seed files and ask for `FILE: name` plus a fence. You apply the files (`bench_strata.py` `apply_files`) and run the tests yourself. | MEASURED 2026-10-16: S1 P1–P4 4/4, happy 24/24, 0 stray files or protocol violations, median 25.6 s. **Effectively N=1** (greedy, byte-identical reps). Edge 0/4 and scale 16/40 = bare Composer: spec every edge and magnitude bound. ~12 tok/s, 8k context, no tools. Server down ⇒ fail closed → [[finding-strata-local-bench-2026-10-16]] |
+
+Unstated edges, magnitude-sensitive work, multi-file or agent work, or more than ~6k tokens of context through
+Strata: **not routed**. Use the §2 rows.
+
 ### 2a. Review packet SHAPE — codex and grok need OPPOSITE shapes
 
 Measured, both directions, one task family. Getting it backwards costs a whole run and
