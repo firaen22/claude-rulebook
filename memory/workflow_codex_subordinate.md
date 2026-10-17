@@ -7,7 +7,7 @@ metadata:
   originSessionId: 909ab1a7-504d-490d-976b-c8b1450aec01
 ---
 
-> 📌 **CLI VERSION (2026-10-12):** codex-cli **0.162.1** at `~/.local/bin/codex` (unchanged since 2026-10-11). **Patch — no re-bench.** Every rc/ceiling claim below stays **UNVERIFIED on 0.162.x**. `dispatch.py --pong` PASS on `gpt-5.6-luna` and `gpt-6.1-sol` (ChatGPT account rejects bare `gpt-5.3-codex`). Canonical stamp: `~/.cursor/rulebook/memory/reference_subordinate_routing_map.md`. Log: `reference_cli_version_log.md`.
+> 📌 **CLI VERSION (2026-10-17):** codex-cli **0.163.0** at `~/.local/bin/codex` (was 0.162.1). **MINOR — no re-bench.** Every rc/ceiling claim below stays **UNVERIFIED on 0.163.x**. `dispatch.py --pong` PASS on `gpt-5.6-luna` and `gpt-6.1-sol` (ChatGPT account rejects bare `gpt-5.3-codex`). Canonical stamp: `~/.cursor/rulebook/memory/reference_subordinate_routing_map.md`. Log: `reference_cli_version_log.md`.
 
 Codex CLI (`/Users/yauch/.local/bin/codex`, v0.153.4 as of 2026-09-06; playbook default `-m gpt-5.6-luna` — always pass it, the bare config default is NOT the measured model) as a coding subordinate.
 
