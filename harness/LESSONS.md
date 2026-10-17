@@ -129,3 +129,57 @@ all 3 rounds — a tooling degradation, not a packet problem:
 - Status: noted
 
 - 2026-09-24 (moira P3): NIM via opencode 0/3 in one session — nemotron-3-super-120b 0-byte/rc0 stall; nemotron-3.5-lightning "socket closed" (60 s gateway); deepseek-v4-flash 410 EOL 2026-08-07 while still in `opencode models`. Catalog listing ≠ callable (again); rerouted twin to codex luna.
+
+## 2026-10-16 — frozen harness replayed against a newer CLI: control arm died on argv drift
+- What happened: sub-rebench lane C1 and the 08-23 five-way re-run replayed frozen harnesses that call
+  `opencode run --auto --dir <cwd>`. opencode 2.0.x dropped `--dir`, so the control printed usage, rc=1 in 0.0 s
+  on every cell → both lanes VOID. Found only after the full battery ran (claude-code-technique
+  `experiments/sub-rebench-2026-10-16/RESULT.md` Lane C).
+- Root cause: a frozen harness pins its own code, not the CLI it shells out to; a flag removal turns every
+  cell into the same instant failure, which reads like a model result until the raw `__out.txt` is opened.
+- Rule change needed: NONE (experiment-protocol Rule 2's driver gate covers it). Practice: before replaying a
+  frozen harness on a newer CLI, run ONE control cell and open its raw output; rc≠0 in <1 s = argv drift.
+- Status: noted
+
+## 2026-10-16 — a dead primary hid behind a fallback chain for 18 days (nimroute FAST)
+- What happened: `nimroute.py` PARITY[0]/FAST was `mistralai/mistral-nemotron`, HTTP 410 since its 2026-09-28
+  EOL. Every routed call fell through to the next model, so callers saw answers and nobody saw the 410.
+  Found by the 10-16 rebench's liveness probe; fixed in claude-code-technique PR #30 (`c4b92c6`).
+- Root cause: a fallback chain converts a permanent failure of its first entry into silent extra latency;
+  "catalog listing ≠ callable" (09-24 entry above, `reference_nim_via_opencode.md` "Catalog LIES") is the
+  same family, but here the id was hard-coded, so no catalog read was involved at all.
+- Rule change needed: proposed — `nimroute-operations` skill / `reference_nim_via_opencode.md`: a
+  permanent status (404/410) on any chain entry is logged loudly and fails the probe, not fallen through.
+  Needs the owner's go (code change in nimroute.py + doc line).
+- Status: noted
+
+## 2026-10-17 — "the pack" named three different texts; a rebench measured the wrong one
+- What happened: 10-16 A2 labelled gpt-6-sol "+pack" DOWN (45/50). Its wrapper asserted the WORKING
+  `astra-pack/AGENTS.md` (sha `bec8c00a`), but the live route prefixes the pin `67eb3ce` (sha `55941cca`);
+  the 09-30 bench used a third text (`4a15952a`). Caught 10-17 while freezing the v1-vs-v2 PREREG, and
+  TypeSafe's premise gate scored the "v1 was silent in both benches" claim 0.21 for the same reason.
+- Root cause: a file path was treated as the identity of a prompt prefix; the route's identity is a commit +
+  sha, and the working file drifts from it by design ("editing AGENTS.md changes no route").
+- Rule change needed: NONE. Practice: every pack arm names its sha in the PREREG and the runner asserts that
+  sha; an arm meant to measure a route pulls the text from the pinned commit, never the working file.
+- Status: noted
+
+## 2026-10-17 — zsh `"$r:astra-pack/…"` ate the path: `:a` is a history modifier
+- What happened: `git show "$r:astra-pack/AGENTS.md"` in a zsh loop expanded `$r:a` (absolute-path modifier)
+  → `fatal: ambiguous argument '/Users/…/67eb3cestra-pack/AGENTS.md'`; with `2>/dev/null` it silently hashed
+  empty input (sha `e3b0c442…`) for every commit.
+- Root cause: zsh applies `:a`, `:h`, `:t`, `:r`, `:e` modifiers to `$var:x`; bash does not.
+- Rule change needed: NONE. Practice: brace every variable before a colon (`"${r}:path"`), and treat
+  `e3b0c44298fc…` (sha256 of empty input) as a failed read, never a hash.
+- Status: noted
+
+## 2026-10-17 — a GREEN selftest hid an analyzer that crashed on its own report
+- What happened: `analyze.py --selftest` (21 → 44 checks, mutation-tested) only called `score()`/`decide()`;
+  `report()` formatted `Fraction` with `:.2f`, which raises on Python 3.9.6. The bench would have crashed on the
+  real results. Two cross-family review rounds missed it; an end-to-end fixture run (fake results → handread →
+  merge → analyze) found it in one try.
+- Root cause: the selftest covered the decision logic, not the entry point that prints it.
+- Rule change needed: NONE (experiment-protocol Rule 2's driver gate already covers it). Practice: before a freeze,
+  run the real entry points end to end on fake data (driver + analyzer), and include the print path in the
+  selftest.
+- Status: noted

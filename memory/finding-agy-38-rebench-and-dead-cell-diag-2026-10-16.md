@@ -40,9 +40,9 @@ All labels are proposed; the routing map and playbook are unchanged pending the 
   the mode is now characterised (budget-sensitive for high, packet-concentrated on P2, not cured by 600 s) but its
   root cause (slow generation vs stall) is still open: a killed process leaves no stderr.
 - Today's 1.4.0 changelog item ("Eligibility check failed" lockouts) is unrelated: no attempt in the grid wrote stderr.
-- The playbook cites `finding_agy_empty_return_is_permission_deny_2026-09-04.md` and
-  `finding_agy_review_preamble_sweep_2026-09-04.md`; **neither file exists** in `~/.cursor/rulebook/memory/` or
-  `~/.claude/memory/` (checked 2026-10-16). The 09-04 data lives in `experiments/agy-review-preamble-2026-09-04/`.
+- The playbook cited `finding_agy_empty_return_is_permission_deny_2026-09-04.md` and
+  `finding_agy_review_preamble_sweep_2026-09-04.md`; neither file existed (checked 2026-10-16). **Fixed in
+  `7449ea0`:** the playbook now points at `experiments/agy-review-preamble-2026-09-04/`, where the 09-04 data lives.
 
 ## What would change this
 - A second window where 3.8-high/600 s dies on ≥ 3/8 (or ≤ 1/8).
@@ -50,8 +50,10 @@ All labels are proposed; the routing map and playbook are unchanged pending the 
 - Any agy CLI release after 1.4.0 (it auto-updates; re-check `agy --version` before relying on these numbers).
 - A medium/240 s run where answers cross 240 s more often (today's margin was 8 s).
 
-## Proposed (owner's go needed, not applied)
-- Review-dispatch pin: `gemini-3.8-flash-high` → `gemini-3.8-flash-medium` with the preamble and `--print-timeout`
-  ≥ 300 s; or keep high only with ≥ 600 s and accept ~2/8 dead.
-- Edge-hunt row: 3.8-medium re-confirmed on 3.8 (with the fabrication caveat).
-- Fix the two dangling 09-04 finding links in `workflow_agy_subordinate.md`.
+## Applied (owner's go, 2026-10-16, rulebook `7449ea0`)
+- Review-dispatch pin: `gemini-3.8-flash-high` → `gemini-3.8-flash-medium` with the preamble and wall ≥ 300 s.
+- The two dangling 09-04 links in `workflow_agy_subordinate.md` (see Retractions).
+
+## Still proposed (not applied)
+- Edge-hunt row: 3.8-medium re-confirmed on 3.8 (with the fabrication caveat); the routing-map row still reads
+  "UNVERIFIED on 3.8".
