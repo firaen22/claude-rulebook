@@ -1,6 +1,6 @@
 ---
 name: finding-astra-v2-bigint-gpt6sol-2026-10-17
-description: "astra pack v2 vs the v1 route pin on gpt-6-sol, JS exact-integer probes past 2^53 (2026-10-17, N=5/arm/task, PREREG r3 hash-frozen, 3 review rounds): v2 RECOMMEND — silent wrong 0/40 vs v1 7/40 (I1 −7, threshold −5), exact passes 40 vs 33, no HARM on scale/size/happy/domain/escape. Thin margin: 6 of v1's 7 on e5 sumSquares (Number(exact BigInt)). Pin moved to v2 2026-10-17 (owner go) after the review route measured NON-INFERIOR."
+description: "astra pack v2 vs the v1 route pin on gpt-6-sol, JS exact-integer probes past 2^53 (2026-10-17, N=5/arm/task, PREREG r3 hash-frozen, 3 review rounds): v2 RECOMMEND — silent wrong 0/40 vs v1 7/40 (I1 −7, threshold −5), exact passes 40 vs 33, no HARM on scale/size/happy/domain/escape. Thin margin: 6 of v1's 7 on e5 sumSquares (Number(exact BigInt)). Pin moved to v2 2026-10-17 (owner go) after the review route measured NON-INFERIOR. REPLICATED in window 2 (same day, frozen design): I1 −6 (v1 6/40 silent, all e5 sumSquares; v2 0/40)."
 metadata:
   node_type: memory
   type: finding
@@ -8,7 +8,7 @@ metadata:
 
 # astra v2 vs v1 pin on gpt-6-sol — silent-wrong BigInt answers (2026-10-17)
 
-**Date:** 2026-10-17, codex-cli 0.163.0, node v26.12.0, `gpt-6-sol` medium, one window.
+**Date:** 2026-10-17, codex-cli 0.163.0, node v26.12.0, `gpt-6-sol` medium, two windows (see Replication).
 **Evidence:** `claude-code-technique/experiments/astra-v2-bigint-2026-10-17/` — `PREREG.md` (r3, frozen as
 `PREREG.sha256` sha256 `1da4e7c5…`), `RESULT.md`, `analyze.txt`, `results.jsonl`, `outs/`, `reviews/`
 (gpt-6.1-sol ×3 rounds, grok-4.7 ×2 rounds with served identity UNCONFIRMED, TypeSafe jev-1.13.0 premise scores;
@@ -48,6 +48,21 @@ round-trip form, so `got 333333833333500000` looks equal to the expected value (
   attribute the drop": in this window the pin is also silent (7 vs wk 9), so "the drop came from the working-file
   edits" is not supported — but there is no crossed pack-by-window design, so the drop stays unattributed.
 
+## Replication (window 2, 2026-10-17)
+**Evidence:** `claude-code-technique/experiments/astra-v2-bigint-rep-2026-10-17/` — `REPLICATION.md` (decision
+table registered and frozen as `REPLICATION.sha256` in commit `fadc9f4` before any run), `RESULT.md`, `analyze.txt`.
+Byte-identical window-1 harness, new sandbox, window 2 scored alone.
+- **REPLICATED: RECOMMEND v2.** I1 −6 (v1 6/40 silent, v2 0/40), exact passes 34 vs 40, I2 +6, I2b 0, I3 0, I4 +25,
+  no escape. Again all passes, no loud.
+- Harness: 7 t5 cells quota-excluded in invocation 1, each given its one `--only` rerun (all clean); 45 scored
+  cells, rc 0, served gpt-6-sol ×45, latency ≤ 133 s, digest stable across both invocations, 0 exact-probe
+  THROW/CRASH. Re-grading all 45 `outs/` files reproduced every recorded probe.
+- v1's 6 silent points: all e5 `sumSquares` (t2, t4, t5), same `Number(exact BigInt)` mechanism. wk 6/40.
+- Pooled report-only: v1 13/80 vs v2 0/80; 12 of v1's 13 on e5 `sumSquares`.
+- Still thin per window (−6 vs −5; one fewer silent v1 rep → KEEP v1) and concentrated on one function: read it as
+  "v2 stops unguarded `Number()` on exact BigInt results", not as broad correctness.
+
 ## What would change this
-A second window where v1's e5 silent count falls (I1 > −5 → KEEP v1); a new codex CLI or gpt-6-sol revision;
-float-valued subjects; any claim about the review route (untested here).
+A further window or new subject where v1's silent answers fall below the LIFT line, or where v2 shows any silent
+answer; a new codex CLI or gpt-6-sol revision; float-valued subjects; any claim about the review route (untested
+here).
