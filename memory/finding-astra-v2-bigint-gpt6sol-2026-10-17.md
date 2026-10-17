@@ -1,6 +1,6 @@
 ---
 name: finding-astra-v2-bigint-gpt6sol-2026-10-17
-description: "astra pack v2 vs the v1 route pin on gpt-6-sol, JS exact-integer probes past 2^53 (2026-10-17, N=5/arm/task, PREREG r3 hash-frozen, 3 review rounds): v2 RECOMMEND — silent wrong 0/40 vs v1 7/40 (I1 −7, threshold −5), exact passes 40 vs 33, no HARM on scale/size/happy/domain/escape. Thin margin: 6 of v1's 7 on e5 sumSquares (Number(exact BigInt)). Pin NOT moved; v2 also changes the review route's prefix, unmeasured there."
+description: "astra pack v2 vs the v1 route pin on gpt-6-sol, JS exact-integer probes past 2^53 (2026-10-17, N=5/arm/task, PREREG r3 hash-frozen, 3 review rounds): v2 RECOMMEND — silent wrong 0/40 vs v1 7/40 (I1 −7, threshold −5), exact passes 40 vs 33, no HARM on scale/size/happy/domain/escape. Thin margin: 6 of v1's 7 on e5 sumSquares (Number(exact BigInt)). Pin moved to v2 2026-10-17 (owner go) after the review route measured NON-INFERIOR."
 metadata:
   node_type: memory
   type: finding
@@ -13,8 +13,8 @@ metadata:
 `PREREG.sha256` sha256 `1da4e7c5…`), `RESULT.md`, `analyze.txt`, `results.jsonl`, `outs/`, `reviews/`
 (gpt-6.1-sol ×3 rounds, grok-4.7 ×2 rounds with served identity UNCONFIRMED, TypeSafe jev-1.13.0 premise scores;
 every finding's disposition in `reviews/DISPOSITIONS.md`).
-**Status:** decision of record = RECOMMEND v2. **Proposed only** — no pin, pack or routing-map change without the
-owner's go.
+**Status:** decision of record = RECOMMEND v2. **Pin moved to v2 2026-10-17 (owner go)** for both pack slots, after
+[[finding-astra-v2-review-gpt61sol-2026-10-17]]; recipe and rollback pin in `workflow_codex_subordinate.md`.
 
 ## Verdict
 | arm (pack sha) | exact silent+other /40 | exact pass /40 | scale /110 | domain /25 |
@@ -39,7 +39,7 @@ round-trip form, so `got 333333833333500000` looks equal to the expected value (
 - **Scope of any pin move:** `astra-pack/AGENTS.md` is also the prefix of the JS REVIEW route (`gpt-6.1-sol`+pack).
   This bench measures only the scale-implementation slot on `gpt-6-sol`. Moving the shared pin to v2 would change
   the review route unmeasured; a scoped option is a v2 pin for the scale slot only, review stays on `55941cca`
-  until an R1-style review rerun.
+  until an R1-style review rerun. (Resolved 2026-10-17: the review rerun read NON-INFERIOR; shared pin moved.)
 - v2 domain 25/25 is the designed guard (it says so), not an independent finding.
 
 ## Supersedes / corrects

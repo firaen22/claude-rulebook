@@ -1,6 +1,6 @@
 ---
 name: finding-astra-v2-review-gpt61sol-2026-10-17
-description: "astra pack v2 vs the v1 route pin on the JS REVIEW route (gpt-6.1-sol medium, 2026-10-17, N=5/arm × 3 subjects, PREREG r2 hash-frozen, 3 pre-run review rounds): v2 NON-INFERIOR — both 75/75 recall, 65/65 found, 0 FP/scope/escape by blind hand read (ceiling; no lift claimable). Removes the 'review route unmeasured' blocker on a shared pin move to v2. Pin NOT moved."
+description: "astra pack v2 vs the v1 route pin on the JS REVIEW route (gpt-6.1-sol medium, 2026-10-17, N=5/arm × 3 subjects, PREREG r2 hash-frozen, 3 pre-run review rounds): v2 NON-INFERIOR — both 75/75 recall, 65/65 found, 0 FP/scope/escape by blind hand read (ceiling; no lift claimable). Removes the 'review route unmeasured' blocker on a shared pin move to v2. Pin moved to v2 2026-10-17 (owner go)."
 metadata:
   node_type: memory
   type: finding
@@ -14,8 +14,8 @@ N=5 per arm on 3 subjects (r1 09-04, r2 09-24, r3 09-30), 30 runs.
 `PREREG.sha256`), `RESULT.md`, `analyze.txt`, `results.jsonl`, `outs/`, `handread/` (+ `NOTES.md`), `void-run1/`
 (void, unscored), `reviews/` (gpt-6.1-sol ×3, grok-4.7 ×3 with served identity UNCONFIRMED, TypeSafe; every finding
 in `DISPOSITIONS.md`).
-**Status:** decision of record = v2 NON-INFERIOR. **Proposed only:** no pin, pack or routing-map change without the
-owner's go.
+**Status:** decision of record = v2 NON-INFERIOR. **Pin moved to v2 2026-10-17 (owner go)** for both pack slots;
+recipe and rollback pin in `workflow_codex_subordinate.md`.
 
 ## Verdict
 | arm (pack sha) | recall /75 | found /65 | other /10 | FP | scope | escape |
@@ -37,7 +37,7 @@ v2 r1 t4); the hand read gives 75.
 ## Effect on the pin decision
 [[finding-astra-v2-bigint-gpt6sol-2026-10-17]] RECOMMENDed v2 for the JS scale slot but held the shared pin because
 the review route was unmeasured. That route is now measured: v2 is non-inferior there. A shared pin move to v2 is no
-longer blocked by the review route. It still needs the owner's go.
+longer blocked by the review route. Owner go 2026-10-17: pin moved to v2.
 
 ## What would change this
 A HARM label in a second window; a new codex CLI or gpt-6.1-sol revision; a non-saturated review subject; other
