@@ -42,6 +42,8 @@ exact-probe THROW/CRASH, so there was nothing to hand-read and the default mode 
 A new pre-registered window, with the owner's go, in which v2 on luna keeps the I1 lift with happy 55/55. For
 example, a v2 revision whose guard clause says "guard only what the spec excludes". Re-scoring this window, or
 loosening I3 after the fact, would not count.
+Follow-up run the same day: [[finding-astra-v21-impl-luna-2026-10-18]], which tested that exact wording. It ended
+KEEP bare (HARM: DOM), so this conclusion stands.
 
 ## Routing implication
 None. Keep "state the bound for luna", and send unstated-bound JS to gpt-6-sol + v2. The size of the I1 gap (38 → 0)
