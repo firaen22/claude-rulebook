@@ -23,6 +23,10 @@ Edit in **`~/.cursor/rulebook/memory/`** in this order:
 
 | Date | Component | Change | Notes |
 |---|---|---|---|
+| 2026-10-19 | agy | 1.4.0 → **1.4.2** | patch; stamp catch-up; UNVERIFIED on 1.4.x |
+| 2026-10-19 | codex / grok / opencode / uv | unchanged | upgrade pass already latest |
+| 2026-10-19 | npm (global) | `npm update -g` | not subordinates |
+| 2026-10-19 | brew | sqlite, z3, coreutils, simdutf, libunistring, pkgconf, libx11, libxrender, ollama-app | not subordinates |
 | 2026-10-17 | grok | 1.0.60 → **1.0.62** | patch via `grok update`; UNVERIFIED on 1.0.62 |
 | 2026-10-17 | opencode | 2.0.30 → **2.0.32** | patch; 2.0.x UNVERIFIED |
 | 2026-10-17 | agy | 1.3.6 → **1.4.0** | MINOR; UNVERIFIED on 1.4.x |
