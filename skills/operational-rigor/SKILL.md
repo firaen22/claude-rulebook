@@ -677,6 +677,36 @@ When rigor conflicts with finishing sooner, rigor wins.
   shape; see Provenance.)
 - Mid-task tripwire: a "small fix" crossing roughly 3 files or 100 changed lines
   stops for disclosure before continuing.
+- **Bounded ship with a live broader-review finding requires
+  delta-independence.** A bounded delta may proceed under its existing §2
+  authorization while a broader review stays live only on positive evidence
+  that the delta neither depends on nor can invalidate any live finding
+  bearing on its load-bearing assumptions, dependencies, invariants, or
+  execution boundary. A finding is live while unresolved at the relevant
+  scope — deferred, pre-existing-but-applicable, or administratively
+  scope-frozen all still count as live; administrative labels (`defer`,
+  `scope-freeze`, "outside this packet") do not establish independence. A
+  finding that is fixed, or evidence-backed `rejected-with-reason` /
+  invalidated by the canonical review process, is no longer live — do not
+  call that closure "independence", and a bare label is insufficient: the
+  disposition must itself be evidence-backed. If a live finding is directly
+  or indirectly load-bearing for the delta, the bounded-independence path is
+  blocked — filename/path disjointness is not independence. Proceeding
+  despite that dependency is not a delta-independence claim at all: it needs
+  a separate explicit owner exception naming the live dependency and the
+  accepted residual risk, and it is never inferred from those administrative
+  labels, ordinary reconciliation, or generic waiver language. Such an
+  exception remains subordinate to higher-priority and independently
+  mandatory constraints: it accepts residual risk only within authority
+  that can actually be waived, and does not override the `Priority when
+  rules collide` order or any otherwise non-waivable requirement. Shipping
+  an independent delta leaves the broader finding live at its actual scope.
+  Evaluate cumulative/aggregate dependency across related bounded packets, so
+  salami-slicing cannot implement a disputed plan piecemeal. Freshness and
+  applicability are resolved by the canonical review process; deterministic
+  self-tests establish harness state, not reviewer judgment
+  (`cross-model-review §5b`); Planning may record dispositions and residual
+  state but does not grant shipment (`plan-reconciliation INV-1`).
 - Changing a schema, enum, status value, or interface: sweep every call site
   before editing (grep every touchpoint), leave no site on the old shape,
   and report any sibling defect found per log-don't-fix — a partial sweep
@@ -975,27 +1005,26 @@ When rigor conflicts with finishing sooner, rigor wins.
   only observed execution proves anything ran. The asymmetry covers
   rendering too (`unprobed` — private incident as shape; see
   Provenance): for a visual effect the task exists to deliver, a
-  computed style, a running animation's name or clock, or any DOM/state
-  read is what the page asked the engine to draw, never what it drew.
-  The observation is the pixels on each supported target — every
-  browser engine and every device class the task, product, or user
-  names, and for whichever of the two nothing names, every one the
-  product ships to. The same engine on another device class is another
-  target, and an emulated device is its host's paint, never the
-  device's — a phone drawn by a desktop build is a desktop observation.
-  For cyclic motion, capture the effect's region at least twice, a
-  quarter of its cycle or more apart and never a whole number of cycles
-  apart; for a one-shot change, capture before it starts, at least once
-  while it should be mid-way, and after it should have finished — the
-  mid-way frame is what shows it moved rather than snapped. Keep motion
-  enabled in both the page's preference and the capture tool and nothing
-  else in the region changing; identical cyclic captures mean frozen or
-  sampled in phase — resample at another spacing before calling it
-  frozen. Under a reduced-motion preference, the correct paint is the
-  effect's specified reduced-motion behavior, not whatever you see.
-  Report each observation as covering its own target only — "the effect
-  works" only once every target is observed; a target you cannot reach
-  stays unverified — say so and name what the user must run.
+  computed style, an animation's name or clock, or any DOM/state read is
+  only what the page asked the engine to draw — the proof is the painted
+  pixels. Observe them on every target the task, product, or user names
+  — each browser engine and device class — and, where nothing names
+  them, every one the product ships to; a convenient single target is
+  not the required scope. The same engine on another device class is a
+  separate target, and an emulated device is only its host's paint — a
+  phone drawn by a desktop build is a desktop observation, not the
+  phone's. For cyclic motion, sample the region at least twice, a
+  quarter-cycle or more apart and never a whole number of cycles apart,
+  since same-phase samples prove nothing; for a one-shot change, capture
+  before, mid-way, and after — the mid-way frame is what tells real
+  motion from an instant snap. Keep motion enabled in both the page
+  preference and the capture tool with nothing else in the region
+  changing, and resample suspiciously identical captures instead of
+  calling them frozen. Under a reduced-motion preference, the correct
+  paint is the behavior the spec requires, not whatever rendered. Claim
+  each observation for its own target only — "the effect works" only
+  once every required target and state is observed; an unreached one
+  stays unverified, so say so and name what must be run to close it.
   ❌ "the registry shows the package because I pushed it" — checked while
   still logged in as the publisher.
   ❌ "the animation name reads back and its angle advanced 222→235
