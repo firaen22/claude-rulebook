@@ -23,6 +23,12 @@ Edit in **`~/.cursor/rulebook/memory/`** in this order:
 
 | Date | Component | Change | Notes |
 |---|---|---|---|
+| 2026-10-21 | opencode | 2.0.32 → **2.1.2** | MINOR; UNVERIFIED on 2.1.x |
+| 2026-10-21 | agy | 1.4.2 → **1.4.3** | patch; stamp catch-up |
+| 2026-10-21 | uv | 0.13.1 → **0.13.4** | not a subordinate |
+| 2026-10-21 | codex / grok | unchanged | already latest |
+| 2026-10-21 | npm (global) | `npm update -g` | not subordinates |
+| 2026-10-21 | brew | openjdk@17/21, gh, ollama-app, ca-certificates, … | not subordinates |
 | 2026-10-19 | agy | 1.4.0 → **1.4.2** | patch; stamp catch-up; UNVERIFIED on 1.4.x |
 | 2026-10-19 | codex / grok / opencode / uv | unchanged | upgrade pass already latest |
 | 2026-10-19 | npm (global) | `npm update -g` | not subordinates |
