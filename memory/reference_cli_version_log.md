@@ -23,6 +23,20 @@ Edit in **`~/.cursor/rulebook/memory/`** in this order:
 
 | Date | Component | Change | Notes |
 |---|---|---|---|
+| 2026-10-22 | Claude Code (native) | 2.1.302 → **2.1.308** | security-priority; not a routing-map subordinate; past recent Claude Code CVEs |
+| 2026-10-22 | agy | 1.4.3 → **1.4.5** | patch (via 1.4.4); UNVERIFIED on 1.4.x |
+| 2026-10-22 | grok | 1.0.62 → **1.0.67** | patch; UNVERIFIED on 1.0.67 |
+| 2026-10-22 | uv | 0.13.4 → **0.13.5** | not a subordinate |
+| 2026-10-22 | opencode / codex | unchanged | 2.1.2 / 0.163.0 already latest |
+| 2026-10-22 | npm (global) | npm 12.2.1; firebase-tools 15.34.1 | node brew bump had reset npm to 11.20.0 |
+| 2026-10-22 | brew | gh 2.103.0, node 26.12.1, llvm, brotli, ollama-app, python@3.14 | not subordinates |
+| 2026-10-22 | supply-chain check | clean | no tensorlake@0.5.144, no LiteLLM 1.107.0, no Gemini CLI |
+| 2026-10-21 | opencode | 2.0.32 → **2.1.2** | MINOR; UNVERIFIED on 2.1.x |
+| 2026-10-21 | agy | 1.4.2 → **1.4.3** | patch; stamp catch-up |
+| 2026-10-21 | uv | 0.13.1 → **0.13.4** | not a subordinate |
+| 2026-10-21 | codex / grok | unchanged | already latest |
+| 2026-10-21 | npm (global) | `npm update -g` | not subordinates |
+| 2026-10-21 | brew | openjdk@17/21, gh, ollama-app, ca-certificates, … | not subordinates |
 | 2026-10-19 | agy | 1.4.0 → **1.4.2** | patch; stamp catch-up; UNVERIFIED on 1.4.x |
 | 2026-10-19 | codex / grok / opencode / uv | unchanged | upgrade pass already latest |
 | 2026-10-19 | npm (global) | `npm update -g` | not subordinates |

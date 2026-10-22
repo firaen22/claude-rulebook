@@ -1,15 +1,33 @@
 ---
 name: reference-nim-via-opencode
-description: "How NVIDIA NIM is wired as a subordinate (model backend behind opencode, not a standalone agent CLI) + benchmarked model picks, IDs, and the catalog-lies/probe gotcha. Catalog 82 ids as of 09-23 — minimax-m3 410 EOL, removed from PARITY 09-23; 60 s non-stream gateway cutoff (was 81 on 09-08, 81 on 09-06, 82 on 08-29, 95 on 08-25); nimroute.py PATCHED 09-08 — the 4 dead ids (gpt-oss-120b, llama-3.1-70b-instruct, nemotron-3-nano-30b-a3b, inkling) removed from PARITY, list reordered fastest-first"
+description: "How NVIDIA NIM is wired as a subordinate (model backend behind opencode, not a standalone agent CLI) + benchmarked model picks, IDs, and the catalog-lies/probe gotcha. Catalog 81 ids as of 10-16 — mistral-nemotron 410 EOL, removal from PARITY/FAST in PR #30 (10-16); catalog 82 ids as of 09-23 — minimax-m3 410 EOL, removed from PARITY 09-23; 60 s non-stream gateway cutoff (was 81 on 09-08, 81 on 09-06, 82 on 08-29, 95 on 08-25); nimroute.py PATCHED 09-08 — the 4 dead ids (gpt-oss-120b, llama-3.1-70b-instruct, nemotron-3-nano-30b-a3b, inkling) removed from PARITY, list reordered fastest-first"
 metadata: 
   node_type: memory
   type: reference
   originSessionId: 9d9ceaff-475d-47a4-871b-5bc9ce1b2498
 ---
 
+## 2026-10-16 — `mistral-nemotron` removed from nimroute; FAST → `nemotron-3-super`
+Liveness probe 2026-10-16, 3 PONG rounds per id through `nimroute.call` (3 keys); catalog 81 ids:
+| id | catalog | PONG |
+|---|---|---|
+| `mistralai/mistral-nemotron` (was PARITY[0]/FAST) | absent | HTTP 410 |
+| `nvidia/nemotron-3-ultra-550b-a55b` | listed | **0/3** — RemoteDisconnected at 60 s each |
+| `nvidia/nemotron-3-super-120b-a12b` | listed | **3/3**, 1.1–3.0 s |
+| `poolside/laguna-xs-2.1` | listed | 1/3 — two instant 0.4 s EMPTYs, one 21 s |
+
+- `nimroute.py` (claude-code-technique, PR #30, open as of 10-16 — not on main until merged): mistral-nemotron
+  removed; PARITY = super → ultra → laguna; FAST = super; every MODEL_MAP type now primaries on FAST (parsing/dp
+  moved off ultra so a dead ultra no longer costs each call a 60 s disconnect). Latency/liveness swap only, not a
+  capability claim. Move parsing/dp back to ultra once it PONGs steadily.
+- ⚠️ **Single point of failure:** only super answered reliably today. Adding ids needs a parity battery with a live
+  control, and both former controls (`deepseek-v4-pro`, `gpt-oss-120b`) are 410 → no control instrument exists
+  (`claude-code-technique/experiments/sub-rebench-2026-10-16/RESULT.md` Lane D).
+- What would change this: a sweep where ultra PONGs ≥ 2/3, or super starts failing (then the chain has no live member).
+
 ## 2026-10-03 — `mistral-nemotron` 410 EOL; `opencode run` hangs on an open stdin (corrected 10-05)
 From the omp-vs-opencode bench pre-flight ([[finding-omp-vs-opencode-2026-10-03]]):
-- `mistralai/mistral-nemotron` → **HTTP 410 EOL** (2026-09-28). ~~Not in nimroute.py (grep 10-03: no hit).~~ **Corrected 2026-10-16:** it IS in `claude-code-technique/nimroute.py` as PARITY[0] and FAST (lines 97, 134), re-confirmed 410 that day — owner fix pending.
+- `mistralai/mistral-nemotron` → **HTTP 410 EOL** (2026-09-28). ~~Not in nimroute.py (grep 10-03: no hit).~~ **Corrected 2026-10-16:** it IS in `claude-code-technique/nimroute.py` as PARITY[0] and FAST (lines 97, 134), re-confirmed 410 that day — removal in PR #30, see the section above.
 - opencode **v2.0.21** has **no `--dir`**: set the subprocess cwd and `$PWD`.
 - ⛔ **RETRACTED 10-05: "the background service hangs on NIM, `--standalone` fixes it".** Real cause:
   `opencode run` **reads stdin to EOF whenever stdin is not a TTY**, in BOTH modes. A Bash-tool shell's stdin
