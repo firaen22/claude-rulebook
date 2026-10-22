@@ -47,6 +47,9 @@ A third wording tested here would be in-sample tuning: the clause is already fit
 tasks. Only a new pre-registered window on a different task set (owner's go), where a revised v2 keeps I1, happy
 55/55 and full required-guard coverage, would reopen luna + v2.x. Re-scoring this window or relaxing DOM would not.
 
+Held-out window 2026-10-22 ([[finding-astra-guard-heldout-luna-2026-10-22]]): v2.1 FAIL (UNDER) again, domain 89/115,
+3 of 15 cells with no guard. Two windows agree; this conclusion stands.
+
 ## Routing implication
 None. Keep "state the bound for luna", and send unstated-bound JS to gpt-6-sol + v2. Across both 10-18 windows the
 exact-result rule transfers to luna (I1 38 → 0, 39 → 0); the input-guard bullet is the unstable part on luna, too
