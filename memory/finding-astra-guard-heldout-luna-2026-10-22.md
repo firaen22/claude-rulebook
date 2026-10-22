@@ -8,7 +8,7 @@ metadata:
 
 # luna guard held-out bench (2026-10-22): v2 PASS, opus PASS, v2.1 FAIL (UNDER)
 
-**Date:** 2026-10-22, codex-cli 0.163.0, node v26.12.1, `gpt-5.6-luna` medium, one window, 60 cells (+1 rerun), run on
+**Date:** 2026-10-22, codex-cli 0.163.0, node v26.12.0 (hand re-reads on v26.12.1), `gpt-5.6-luna` medium, one window, 60 cells (+1 rerun), run on
 the owner's go.
 **Evidence:** `claude-code-technique/experiments/astra-guard-heldout-2026-10-22/` (`PREREG.md` frozen as
 `PREREG.sha256`, 45 files OK after the run; `RESULT.md`, `analyze.txt`, `results.jsonl`, `outs/`, `OWNER-NOTE.md`,
