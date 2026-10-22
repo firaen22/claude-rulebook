@@ -6,7 +6,7 @@ metadata:
   type: reference
 ---
 
-> 📌 **CLI VERSION (2026-10-17):** grok **1.0.62** at `~/.grok/bin/grok` (was 1.0.60). Patch-only via `grok update` — no re-bench. Every rc/edge/schema claim below stays **UNVERIFIED on 1.0.62** (measured through 1.0.13). Canonical stamp: `~/.cursor/rulebook/memory/reference_subordinate_routing_map.md`. Log: `reference_cli_version_log.md`.
+> 📌 **CLI VERSION (2026-10-22):** grok **1.0.67** at `~/.grok/bin/grok` (was 1.0.62). Patch-only via `grok update` — no re-bench. Every rc/edge/schema claim below stays **UNVERIFIED on 1.0.67** (measured through 1.0.13). Canonical stamp: `~/.cursor/rulebook/memory/reference_subordinate_routing_map.md`. Log: `reference_cli_version_log.md`.
 
 Grok CLI (`~/.grok/bin/grok`, **v1.0.13 (5e9a58528b76) as of 2026-08-31** — was v1.0.5; every rc/signature claim below is version-bound, re-probe before trusting) as a subordinate.
 Evidence for every number here: [[finding-grok-cli-bench-2026-08-23]],
