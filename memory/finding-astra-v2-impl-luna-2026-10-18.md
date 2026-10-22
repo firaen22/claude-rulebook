@@ -45,6 +45,9 @@ loosening I3 after the fact, would not count.
 Follow-up run the same day: [[finding-astra-v21-impl-luna-2026-10-18]], which tested that exact wording. It ended
 KEEP bare (HARM: DOM), so this conclusion stands.
 
+Held-out window 2026-10-22 ([[finding-astra-guard-heldout-luna-2026-10-22]]): v2 PASS on new tasks, 0 of 15 cells
+over-guarded, domain 115/115. The two windows disagree on the guard clause; neither re-scores this one.
+
 ## Routing implication
 None. Keep "state the bound for luna", and send unstated-bound JS to gpt-6-sol + v2. The size of the I1 gap (38 → 0)
 says the pack's exact-result rule transfers to luna. The guard clause is what failed, in 1 of 15 v2 cells.
