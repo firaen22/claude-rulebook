@@ -1,6 +1,6 @@
 ---
 name: finding-astra-guard-sol-and-luna-window3-2026-10-23
-description: "Two frozen guard windows run 2026-10-23 (N=5/arm/task, 45 cells each, 3 capped cross-family pre-run rounds): gpt-6-sol on the 10-22 tasks g1–g3 and gpt-5.6-luna window 3 on new tasks g4–g6, bare vs astra v2 vs bare + opus-pack packet contract. All four wording arms PASS (lift): exact silent+other 80/105 (sol) and 105/105 (luna) → 0, domain 115/115, 0 over-guard. v2 now holds both ways on 2 of 3 luna windows; the stated contract passed in all three windows it ran. No pin or route change."
+description: "Two frozen guard windows run 2026-10-23 (N=5/arm/task, 45 cells each, 3 capped cross-family pre-run rounds): gpt-6-sol on the 10-22 tasks g1–g3 and gpt-5.6-luna window 3 on new tasks g4–g6, bare vs astra v2 vs bare + opus-pack packet contract. All four wording arms PASS (lift): exact silent+other 80/105 (sol) and 105/105 (luna) → 0, domain 115/115, 0 over-guard. v2 now holds both ways on 2 of 3 luna windows; the stated contract passed in all three windows it ran. Owner go 2026-10-23: luna + v2 routed for flat integer JS; pin unchanged."
 metadata:
   node_type: memory
   type: finding
@@ -49,7 +49,8 @@ window over-guarding; a newer codex CLI or model revision; a different author fo
 1-in-15 OVER cell rate a clean 15-cell window still comes up ≈ 0.36 of the time [assumed, binomial].
 
 ## Routing implication
-None applied. Proposals awaiting the owner's go: luna + v2 for unstated-bound JS of flat integer functions and array
-reductions (window-3 PREREG); extend the 10-22 opus note (`astra-pack/README.md`, cursor-pack §6) from luna to sol; an
-upstream provenance-only PR for "Edge behavior named" (draft: `experiments/upstream-provenance-pr-draft.md`).
+Applied 2026-10-23 on the owner's go ("proceed"): luna + v2 for unstated-bound JS of flat integer functions and array
+reductions (`workflow_codex_subordinate.md` FLAT-INTEGER ROUTE; nested stays `gpt-6-sol`+v2); the 10-22 opus note
+(`astra-pack/README.md`, cursor-pack §6) extended from luna to sol and window 3. Upstream provenance-only PR for "Edge
+behavior named": F-e-u-e-r/skills#294.
 Supersedes the "results on gpt-6-sol are unmeasured" line in [[finding-astra-guard-heldout-luna-2026-10-22]].

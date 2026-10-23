@@ -198,7 +198,7 @@ bad answer became 0 bytes).
 - **codex** `gpt-5.6-luna` (implementation default; R-shape review of JS WITH the astra pack = alternate since 2026-09-30, default is `gpt-6.1-sol`+pack) / **`gpt-6-sol`**
   medium (review pick outside JS → **`gpt-6.1-sol`** since 2026-09-30; and WITHIN codex, once codex is already the chosen tool — implementation where a
   numeric-magnitude / recursion-depth bound can't be spec'd up front: JS with the astra pack, owner pick 2026-09-25,
-  scale bench N=5: 45/50 vs astra 35/50; recipe + evidence in workflow_codex_subordinate.md). ⛔ **`gpt-6-astra` is
+  scale bench N=5: 45/50 vs astra 35/50; since 2026-10-23 (owner go) flat integer functions / array reductions go to `gpt-5.6-luna`+v2 instead, nested stays sol; recipe + evidence in workflow_codex_subordinate.md). ⛔ **`gpt-6-astra` is
   never routed**: owner 2026-09-29, "astra will only be used on my command" (it drains the codex limit) — one command
   covers that task only. The measured astra numbers below stay as evidence, not as a route;
   this is a model pick, not a family route: astra was never benched against agy, so the §2
