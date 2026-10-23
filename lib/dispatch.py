@@ -17,6 +17,8 @@ Status (stdout, last line, also <outdir>/<name>-result.json):
   LAUNCH_ERROR · ERROR · SECRET_BLOCK
 Exit code 0 only on PASS. A status is a classification of the bytes, not a diagnosis
 of the model — read <name>-err.txt / <name>-out.txt before naming a cause.
+grok runs with --output-format json: <name>-out.txt holds the answer text, <name>-raw.json the
+envelope, and served_model the modelUsage key(s), comma-joined when there is more than one.
 NEVER prints secret values.
 """
 import argparse, fcntl, json, os, re, shutil, subprocess, sys, tempfile, time
@@ -108,7 +110,7 @@ def build(tool, a, prompt_text, cwd):
         argv = [os.path.expanduser("~/.grok/bin/grok"), "-p",
                 "Read ./00-BRIEF.md with read_file and carry out what it says. Print the full result to stdout.",
                 "-m", a.model, "--cwd", str(cwd), "--always-approve", "--disable-web-search",
-                "--no-subagents", "--output-format", "plain", "--tools", "read_file,grep,list_dir"]
+                "--no-subagents", "--output-format", "json", "--tools", "read_file,grep,list_dir"]
         return argv, env, None
     if tool in ("opencode", "nim"):
         staged = Path(cwd) / "00-BRIEF.md"
@@ -124,6 +126,20 @@ def build(tool, a, prompt_text, cwd):
             argv += ["-f", f]
         return argv, env, None
     raise SystemExit(f"unknown tool {tool}")
+
+
+def unwrap_grok(out):
+    """grok JSON envelope -> (answer text, served model ids). Unparseable bytes pass through unchanged,
+    so a timeout's partial stdout or a crash still reaches classify as-is."""
+    try:
+        j = json.loads(out)
+    except ValueError:
+        return out, None
+    if not isinstance(j, dict):
+        return out, None
+    if j.get("type") == "error":   # e.g. {"type":"error","message":"Not signed in..."} with rc=0
+        return f"Error: {j.get('message', '')}", None
+    return str(j.get("text") or ""), ",".join(sorted(j.get("modelUsage") or {})) or None
 
 
 def served_model(tool, err):
@@ -233,6 +249,10 @@ def run_one(tool, a, prompt_text, argv_override=None, stdin_override=None):
     dec = lambda b: b.decode(errors="replace") if isinstance(b, bytes) else (b or "")
     out, err = dec(out), dec(err)
     elapsed = round(time.time() - t0, 1)
+    served = served_model(tool, err)
+    if tool == "grok":
+        (outdir / f"{a.name}-raw.json").write_text(out)
+        out, served = unwrap_grok(out)
     (outdir / f"{a.name}-out.txt").write_text(out)
     (outdir / f"{a.name}-err.txt").write_text(err)
     status = classify(rc, out, err, elapsed, a.timeout, timed_out, pong)
@@ -240,7 +260,7 @@ def run_one(tool, a, prompt_text, argv_override=None, stdin_override=None):
         status = "ERROR"; res["home_leak"] = str(home)   # a PASS must never leave an auth copy behind
     res.update(status=status, rc=rc,
                elapsed=elapsed, out_bytes=len(out), err_bytes=len(err),
-               served_model=served_model(tool, err), out=str(outdir / f"{a.name}-out.txt"),
+               served_model=served, out=str(outdir / f"{a.name}-out.txt"),
                err=str(outdir / f"{a.name}-err.txt"), cwd=str(cwd),
                # --effort reaches codex and un-suffixed agy only; grok --reasoning-effort and
                # opencode's -m provider/model#variant exist but every pin was measured without them — visible, not forwarded
@@ -331,8 +351,10 @@ def selftest():
     fake_home = d / "home"; (fake_home / ".grok" / "bin").mkdir(parents=True)
     (fake_home / ".grok" / "auth.json").write_text('{"fixture": true}')
     fg = fake_home / ".grok" / "bin" / "grok"
-    fg.write_text('#!/bin/sh\ntest -f "$HOME/.grok/auth.json" || { echo "Not signed in"; exit 0; }\n'
-                  'echo "HOME=$HOME"; cat ./00-BRIEF.md\n'); fg.chmod(0o755)
+    fg.write_text('#!/bin/sh\ncase "$*" in *"--output-format json"*) ;; *) echo "plain mode"; exit 0;; esac\n'
+                  'test -f "$HOME/.grok/auth.json" || { echo \'{"type":"error","message":"session expired"}\'; exit 0; }\n'
+                  'printf \'{"text":"HOME=%s %s","modelUsage":{"g-served":{"modelCalls":1}}}\' "$HOME" "$(cat ./00-BRIEF.md)"\n')
+    fg.chmod(0o755)
     fo = d / "bin"; fo.mkdir(); (fo / "opencode").write_text('#!/bin/sh\nfor f in "$@"; do :; done; cat "$f"\n')
     (fo / "opencode").chmod(0o755)
     os.environ["HOME"], os.environ["PATH"] = str(fake_home), f"{fo}:{real_path}"
@@ -343,6 +365,12 @@ def selftest():
         out = Path(r["out"]).read_text()
         integ.append(("grok_seeded", r["status"] == "PASS" and "BRIEF-BODY" in out
                       and f"HOME={Path(r['cwd']).parent / '_home_ig'}" in out and not home_after, r["status"]))
+        integ.append(("grok_served", r["served_model"] == "g-served" and not out.lstrip().startswith("{"),
+                      r["served_model"]))
+        (fake_home / ".grok" / "auth.json").unlink()   # signed out: rc 0 + JSON error envelope
+        r = run_one("grok", A(name="iu", model="g"), "x")
+        integ.append(("grok_signed_out", r["status"] == "STDOUT_ERROR" and r["served_model"] is None, r["status"]))
+        (fake_home / ".grok" / "auth.json").write_text('{"fixture": true}')
         shutil.rmtree(fake_home / ".grok" / "sessions", ignore_errors=True)
         os.environ["HOME"] = str(d / "no-such-home")   # rsync source missing → seed fails inside build()
         r = run_one("grok", A(name="is", model="g"), "x")
