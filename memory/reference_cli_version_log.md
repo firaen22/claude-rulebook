@@ -23,6 +23,28 @@ Edit in **`~/.cursor/rulebook/memory/`** in this order:
 
 | Date | Component | Change | Notes |
 |---|---|---|---|
+| 2026-10-27 | uv | 0.13.5 → **0.13.6** | not a subordinate |
+| 2026-10-27 | Claude Code (native) | 2.1.310 → **2.1.311** | not a routing-map subordinate |
+| 2026-10-27 | codex / grok / opencode / agy | unchanged | already latest |
+| 2026-10-27 | npm (global) | `npm update -g`; vercel **65.3.1** | not subordinates |
+| 2026-10-27 | brew | gh 2.103.3, python@3.14 3.14.10 | not subordinates |
+| 2026-10-26 | fleet (subordinates) | unchanged | codex 0.164.0, grok 1.0.70, opencode 2.1.4, agy 1.4.7, uv 0.13.5 |
+| 2026-10-26 | npm (global) | `npm update -g`; npm **12.2.1** after node bottle reset | not subordinates |
+| 2026-10-26 | brew | node 26.12.1_1, openssl@4 4.1.0, harfbuzz, icu4c@78, simdutf, tesseract, z3 | not subordinates |
+| 2026-10-25 | grok | 1.0.67 → **1.0.70** | patch; UNVERIFIED on 1.0.70 |
+| 2026-10-25 | agy | 1.4.6 → **1.4.7** | stamp catch-up; already on disk |
+| 2026-10-25 | Claude Code (native) | 2.1.309 → **2.1.310** | not a routing-map subordinate |
+| 2026-10-25 | codex / opencode / uv / node | unchanged | 0.164.0 / 2.1.4 / 0.13.5 / 26.12.1 |
+| 2026-10-25 | npm (global) | `npm update -g` | not subordinates |
+| 2026-10-25 | brew | gh 2.103.2, openjdk 27.0.1.0.3, ollama-app 0.40.11 | not subordinates |
+| 2026-10-23 | codex | 0.163.0 → **0.164.0** | MINOR; UNVERIFIED on 0.164.x |
+| 2026-10-23 | opencode | 2.1.2 → **2.1.4** | patch (via 2.1.3); UNVERIFIED on 2.1.x |
+| 2026-10-23 | agy | 1.4.5 → **1.4.6** | patch; UNVERIFIED on 1.4.x |
+| 2026-10-23 | Claude Code (native) | 2.1.308 → **2.1.309** | not a routing-map subordinate |
+| 2026-10-23 | cursor-agent | → **2026.10.22-27dcf5f** | already latest this pass |
+| 2026-10-23 | npm (global) | mcpvault 0.17.1; vercel 65.2.0 | not subordinates |
+| 2026-10-23 | brew | harfbuzz 15, openjdk 27.0.1, ollama-app 0.40.9 | not subordinates |
+| 2026-10-23 | grok / uv / node | unchanged | 1.0.67 / 0.13.5 / 26.12.1 |
 | 2026-10-22 | Claude Code (native) | 2.1.302 → **2.1.308** | security-priority; not a routing-map subordinate; past recent Claude Code CVEs |
 | 2026-10-22 | agy | 1.4.3 → **1.4.5** | patch (via 1.4.4); UNVERIFIED on 1.4.x |
 | 2026-10-22 | grok | 1.0.62 → **1.0.67** | patch; UNVERIFIED on 1.0.67 |
