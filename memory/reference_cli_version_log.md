@@ -23,6 +23,13 @@ Edit in **`~/.cursor/rulebook/memory/`** in this order:
 
 | Date | Component | Change | Notes |
 |---|---|---|---|
+| 2026-10-28 | codex | 0.164.0 → **0.165.0** | MINOR; UNVERIFIED on 0.165.x |
+| 2026-10-28 | opencode | 2.1.4 → **2.2.0** | MINOR; UNVERIFIED on 2.2.x |
+| 2026-10-28 | agy | 1.4.7 → **1.4.9** | patch (via 1.4.8); UNVERIFIED on 1.4.x |
+| 2026-10-28 | Claude Code (native) | 2.1.311 → **2.1.312** | not a routing-map subordinate |
+| 2026-10-28 | grok / uv / node | unchanged | 1.0.70 / 0.13.6 / 26.12.1 |
+| 2026-10-28 | npm (global) | vercel **65.5.0**; `npm update -g` | not subordinates |
+| 2026-10-28 | brew | cmake, openjdk@17/@21/@25, simdjson, simdutf, ollama-app | not subordinates |
 | 2026-10-27 | uv | 0.13.5 → **0.13.6** | not a subordinate |
 | 2026-10-27 | Claude Code (native) | 2.1.310 → **2.1.311** | not a routing-map subordinate |
 | 2026-10-27 | codex / grok / opencode / agy | unchanged | already latest |

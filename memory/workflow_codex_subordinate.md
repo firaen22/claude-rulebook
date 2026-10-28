@@ -7,7 +7,7 @@ metadata:
   originSessionId: 909ab1a7-504d-490d-976b-c8b1450aec01
 ---
 
-> 📌 **CLI VERSION (2026-10-23):** codex-cli **0.164.0** at `~/.local/bin/codex` (was 0.163.0). **MINOR — no re-bench.** Every rc/ceiling claim below stays **UNVERIFIED on 0.164.x**. Last `dispatch.py --pong` PASS on luna + 6.1-sol was on 0.163.x (2026-10-11). Canonical stamp: `~/.cursor/rulebook/memory/reference_subordinate_routing_map.md`. Log: `reference_cli_version_log.md`.
+> 📌 **CLI VERSION (2026-10-28):** codex-cli **0.165.0** at `~/.local/bin/codex` (was 0.164.0). **MINOR — no re-bench.** Every rc/ceiling claim below stays **UNVERIFIED on 0.165.x**. Last `dispatch.py --pong` PASS on luna + 6.1-sol was on 0.163.x (2026-10-11). Canonical stamp: `~/.cursor/rulebook/memory/reference_subordinate_routing_map.md`. Log: `reference_cli_version_log.md`.
 
 Codex CLI (`/Users/yauch/.local/bin/codex`, v0.153.4 as of 2026-09-06; playbook default `-m gpt-5.6-luna` — always pass it, the bare config default is NOT the measured model) as a coding subordinate.
 
