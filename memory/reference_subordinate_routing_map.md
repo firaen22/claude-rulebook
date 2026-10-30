@@ -6,7 +6,7 @@ metadata:
   type: reference
 ---
 
-# Subordinate routing map — 2026-10-30
+# Subordinate routing map — 2026-10-30 (eve)
 
 Per-tool operating detail lives in the playbooks; this file is ROUTING only.
 [[workflow-codex-subordinate]] [[workflow-agy-subordinate]] [[workflow-grok-subordinate]]
