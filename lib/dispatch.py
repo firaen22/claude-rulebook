@@ -84,8 +84,11 @@ def build(tool, a, prompt_text, cwd):
     """Return (argv, env, stdin_text). Playbook-derived invocations."""
     env = dict(os.environ)
     if tool == "codex":
+        sandbox = getattr(a, "sandbox", None) or "read-only"
+        if sandbox not in ("read-only", "workspace-write", "danger-full-access"):
+            raise SystemExit(f"invalid codex sandbox: {sandbox}")
         argv = ["codex", "exec", "-m", a.model, "-c", f"model_reasoning_effort={a.effort}",
-                "--sandbox", "read-only", "--skip-git-repo-check",
+                "--sandbox", sandbox, "--skip-git-repo-check",
                 "-o", str(Path(a.outdir) / f"{a.name}-final.txt"), "-"]
         return argv, env, prompt_text
     if tool == "agy":
@@ -344,7 +347,8 @@ def selftest():
     # (2026-09-22: agy's missing --effort shipped through 11/11 green because nothing exercised build)
     shape = [
         ("codex_stdin",   "codex",    A(model="m"),        lambda v, s: v[:2] == ["codex", "exec"] and v[-1] == "-"
-                                                            and "model_reasoning_effort=medium" in v and s == "P"),
+                                                            and "model_reasoning_effort=medium" in v and s == "P"
+                                                            and "read-only" in v),
         ("agy_bare",      "agy",      A(model="g-flash"),  lambda v, s: v[v.index("--effort")+1] == "medium" and v[-2:] == ["-p", "P"]),
         ("agy_suffixed",  "agy",      A(model="g-flash-high"), lambda v, s: "--effort" not in v and v[-2:] == ["-p", "P"]),
         ("opencode_f_last","opencode",A(model="m", files=["x.md"]), lambda v, s: v.index("-f") > v.index("-m") + 2
@@ -427,6 +431,9 @@ def main():
     ap.add_argument("--effort", default="medium")
     ap.add_argument("--files", nargs="*", default=[])
     ap.add_argument("--pong", action="store_true")
+    ap.add_argument("--sandbox", default="read-only",
+                    choices=("read-only", "workspace-write", "danger-full-access"),
+                    help="codex exec sandbox (ignored for other tools)")
     a = ap.parse_args()
     a.name = a.name or a.tool
     if not a.pong and not a.prompt_file:
