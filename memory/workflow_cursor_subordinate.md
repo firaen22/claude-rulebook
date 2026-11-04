@@ -11,6 +11,16 @@ metadata:
 > (alias `agent`). Auth: Cursor account login (`cursor-agent status`). Self-updates (see
 > `reference_cli_version_log.md`). Added as a subordinate 2026-10-15 on user order.
 
+> 📌 **GROK FALLBACK LANE (2026-11-04, owner order "use grok in cursor CLI"):** when the grok CLI
+> is out of credit (`402 Grok Build usage balance exhausted`), run the grok gate lens as
+> `cursor-agent -p --trust --mode ask --model grok-4.7-medium --output-format text "<prompt>"`
+> with cwd = the `git archive` packet. Used as a hunter and as the pre-commit gate in TG-bot-helper R12:
+> 2 loops, real FIX findings in loop 1, PROCEED in loop 2 (rc 0, non-empty body). Identity rests on the
+> requested slug only; cursor prints no served-model field → record it as an unconfirmed-identity gap.
+> **Gemini is NOT run here:** cursor's Gemini models hit the monthly usage limit the same day —
+> owner order "use gemini in agy": Gemini lenses go through agy (`gemini-4-argon-medium` review pin,
+> [[workflow-agy-subordinate]]).
+
 ## TL;DR
 
 - **Status: available, UNROUTED.** Benched 2026-10-15 on the free-pool task set (below):

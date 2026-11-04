@@ -6,6 +6,11 @@ metadata:
   type: reference
 ---
 
+> 📌 **CREDIT EXHAUSTED → cursor lane (2026-11-04):** `402 Grok Build usage balance exhausted` is a
+> billing stop, not a transient error — do not retry. Run the grok lens via cursor-agent
+> `--model grok-4.7-medium --mode ask` (owner order; [[workflow-cursor-subordinate]] GROK FALLBACK LANE)
+> until the balance is restored.
+
 > 📌 **CLI VERSION (2026-10-25):** grok **1.0.70** at `~/.grok/bin/grok` (was 1.0.67). Patch-only via `grok update` — no re-bench. Every rc/edge/schema claim below stays **UNVERIFIED on 1.0.70** (measured through 1.0.13). Canonical stamp: `~/.cursor/rulebook/memory/reference_subordinate_routing_map.md`. Log: `reference_cli_version_log.md`.
 
 Grok CLI (`~/.grok/bin/grok`, **v1.0.13 (5e9a58528b76) as of 2026-08-31** — was v1.0.5; every rc/signature claim below is version-bound, re-probe before trusting) as a subordinate.
