@@ -25,6 +25,11 @@ it reads excerpts and misses content past its window — so it is not the substi
 Agent tool: `{ subagent_type: "general-purpose", model: "fable", effort: "medium", prompt: <review brief> }`.
 **Default effort is `medium`** (owner order, 2026-11-06) — pass `effort: "medium"` on every
 Fable call; raise it only when the owner asks for a higher level for that dispatch.
+**Also via cursor-agent CLI** (2026-11-06): `cursor-agent -p --trust --mode ask --model
+claude-fable-5-1-medium …` — read-only via `--mode ask` (it can still read files under its cwd,
+so run it from a scratch dir), **NO ZDR** (never send private data), and its JSON has
+no served-model field, so identity stays requested-only (unlike the Agent-tool transcript
+check below). Same Claude family either way. Slugs: `workflow_cursor_subordinate.md` § Models.
 The brief carries the same review contract as any T5 dispatch — GOAL, the specific
 claim to REFUTE, the cost asymmetry (which failure direction is expensive), a rubric
 demanding input→expected written BEFORE actual, `[verified: ran/read X]` tags, an

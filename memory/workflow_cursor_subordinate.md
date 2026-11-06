@@ -80,6 +80,11 @@ route magnitude-sensitive implementation away from Composer (unstated bound → 
 `gpt-5.6-sol-high`, `claude-opus-5-thinking-high`, `claude-sonnet-5-thinking-high`,
 `claude-fable-5-thinking-high` (**NO ZDR** — never send private data), `grok-4.7-*`,
 `gemini-3.7-flash-high`. Pin `--model`; `auto` makes runs non-reproducible.
+2026-11-06 catalog adds **Fable 5.1**: `claude-fable-5-1-{low,medium,high,xhigh,max}` and
+`claude-fable-5-1-thinking-{low,medium,high,xhigh,max}` (all **NO ZDR**; bare `-5-1` with no
+suffix is not listed — `-high` is the unlabeled default tier). Fable default effort is medium
+(owner order 2026-11-06) → `--model claude-fable-5-1-medium`. Dry run 2026-11-06: rc 0, exact
+`PONG 7`, 5.6 s; the JSON carries no served-model field → identity is requested-only.
 
 **Cross-family review caveat:** a Claude-family model via Cursor is NOT a different family
 from this session. For `cross-model-review`, pick a non-Anthropic slug and record it.
