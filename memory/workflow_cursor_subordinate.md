@@ -7,7 +7,7 @@ metadata:
 
 # cursor-agent CLI Subordinate Playbook
 
-> 📌 **CLI VERSION (2026-10-23):** cursor-agent **2026.10.22-27dcf5f** at `~/.local/bin/cursor-agent` (already latest this pass).
+> 📌 **CLI VERSION (2026-11-06):** cursor-agent **2026.11.05-86047df** at `~/.local/bin/cursor-agent` (was 2026.10.22-27dcf5f). Patch via self-update — not a §2 subordinate version bind for route scores.
 > (alias `agent`). Auth: Cursor account login (`cursor-agent status`). Self-updates (see
 > `reference_cli_version_log.md`). Added as a subordinate 2026-10-15 on user order.
 
