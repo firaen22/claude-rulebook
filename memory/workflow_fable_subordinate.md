@@ -22,7 +22,9 @@ commands, but none that change the artifact) (`Explore` is read-only but is docu
 it reads excerpts and misses content past its window — so it is not the substitute).
 
 ## Invocation
-Agent tool: `{ subagent_type: "general-purpose", model: "fable", prompt: <review brief> }`.
+Agent tool: `{ subagent_type: "general-purpose", model: "fable", effort: "medium", prompt: <review brief> }`.
+**Default effort is `medium`** (owner order, 2026-11-06) — pass `effort: "medium"` on every
+Fable call; raise it only when the owner asks for a higher level for that dispatch.
 The brief carries the same review contract as any T5 dispatch — GOAL, the specific
 claim to REFUTE, the cost asymmetry (which failure direction is expensive), a rubric
 demanding input→expected written BEFORE actual, `[verified: ran/read X]` tags, an

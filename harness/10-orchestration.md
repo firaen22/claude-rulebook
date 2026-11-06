@@ -7,7 +7,8 @@ instead of trusting this file if anything errors.**
 ## §0 — What is actually available (verify, don't assume)
 
 **Internal (Agent tool):** `model` parameter accepts `sonnet`, `opus`, `haiku`, and
-(availability varies by session/plan) `fable`. **Omitting `model:` is not neutral,
+(availability varies by session/plan) `fable` (Fable default `effort: "medium"` — owner order
+2026-11-06; see `memory/workflow_fable_subordinate.md`). **Omitting `model:` is not neutral,
 and the served tier is not a nameable default:** measured 2026-09-11 an omitted
 `model:` served `haiku` — NOT §2's `sonnet`, NOT the orchestrator's model — and the
 subagent `.meta.json` then had no `model` key. When identity is load-bearing (§5),
