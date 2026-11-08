@@ -73,6 +73,15 @@ tokens/call) vs bare → **8/10 ×2 both arms, edge 0/4 both** — no lift on th
 P2 `size<=0` edge **4/4 vs 0/4** (design probe), held-out scale **16/40 both** (past 2^53, deep, wide unmoved) → **not adopted**;
 route magnitude-sensitive implementation away from Composer (unstated bound → gpt-6-sol + astra v2; both sizes and the exact Number/BigInt contract stated → bare gpt-5.6-luna).
 
+**Composer patches the cited case, not the mechanism (2026-11-08, N=1 per arm, not benched):**
+TG-bot-helper scan-crop F2 — Composer and luna both passed the single repro + 50 unit tests +
+fuzz, yet a variant-family sweep found Composer **59/1056 silent** (its fix sat on the tolerance
+boundary of one grid alignment, e.g. `>` → `>=`) and luna 0/1056 adjacent but 1360/2592 on an
+unspecced "gap from boundary" variant. For threshold/alignment fixes, hand the implementer a
+variant sweep (offset vs grid, side, size, distance from boundary, amplitude to tolerance) with
+`silent: 0` as the bar, re-run it yourself, and prefer a second arm. Full rule: `cursor-pack/AGENTS.md`
+§3 + §9 (lab repo branch `cursor-pack/variant-family-oracle`, uncommitted as of 2026-11-08).
+
 ## Models
 
 `cursor-agent --list-models` is the live source — slugs churn; never hard-code from memory.
