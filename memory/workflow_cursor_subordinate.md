@@ -73,9 +73,15 @@ tokens/call) vs bare → **8/10 ×2 both arms, edge 0/4 both** — no lift on th
 P2 `size<=0` edge **4/4 vs 0/4** (design probe), held-out scale **16/40 both** (past 2^53, deep, wide unmoved) → **not adopted**;
 route magnitude-sensitive implementation away from Composer (unstated bound → gpt-6-sol + astra v2; both sizes and the exact Number/BigInt contract stated → bare gpt-5.6-luna).
 
-**Composer patches the cited case, not the mechanism (2026-11-08, N=1 per arm, not benched):** evidence and the
-Composer routing note moved to lab `cursor-pack/AGENTS.md` §9; the sweep rule itself is §3 there and, model-agnostic,
-`delegation-and-review §2` "One repro is not the acceptance — sweep its variant family" (rulebook `ad89897`).
+**Composer patches the cited case, not the mechanism (2026-11-08, N=1 per arm, not benched):**
+TG-bot-helper PR #212 scan-crop F2 — Composer and luna both passed the single repro + 50 unit tests +
+fuzz, yet a variant-family sweep found Composer **59/1056 silent** (its fix sat on the tolerance
+boundary of one grid alignment, e.g. `>` → `>=`) and luna 0/1056 adjacent but 1360/2592 on an
+unspecced "gap from boundary" variant [relayed: the PR #212 session; no sweep artifact committed].
+Rule-facing note (no counts): lab `cursor-pack/AGENTS.md` §9; the sweep rule is §3 there (merged via
+lab PR #47, 3892cb0) and, model-agnostic, `delegation-and-review §2` "One repro is not the acceptance —
+sweep its variant family" (rulebook `ad89897`). The lab review gate rejects these counts in the pack
+until a sweep artifact is committed, so they live here.
 
 ## Models
 
