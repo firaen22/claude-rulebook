@@ -79,7 +79,9 @@ fuzz, yet a variant-family sweep found Composer **59/1056 silent** (its fix sat 
 boundary of one grid alignment, e.g. `>` → `>=`) and luna 0/1056 adjacent but 1360/2592 on an
 unspecced "gap from boundary" variant. For threshold/alignment fixes, hand the implementer a
 variant sweep (offset vs grid, side, size, distance from boundary, amplitude to tolerance) with
-`silent: 0` as the bar, re-run it yourself, and prefer a second arm. Full rule: `cursor-pack/AGENTS.md`
+`silent: 0` as the bar, re-run it yourself, and prefer a second arm. Shipped rule (model-agnostic):
+`delegation-and-review §2` "One repro is not the acceptance — sweep its variant family" (rulebook
+`ad89897`; opus-pack PR F-e-u-e-r/skills#305, open as of 2026-11-08). Cursor-side copy: `cursor-pack/AGENTS.md`
 §3 + §9 (lab repo branch `cursor-pack/variant-family-oracle`, uncommitted as of 2026-11-08).
 
 ## Models
