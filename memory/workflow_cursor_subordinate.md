@@ -82,7 +82,9 @@ variant sweep (offset vs grid, side, size, distance from boundary, amplitude to 
 `silent: 0` as the bar, re-run it yourself, and prefer a second arm. Shipped rule (model-agnostic):
 `delegation-and-review §2` "One repro is not the acceptance — sweep its variant family" (rulebook
 `ad89897`; opus-pack PR F-e-u-e-r/skills#305, open as of 2026-11-08). Cursor-side copy: `cursor-pack/AGENTS.md`
-§3 + §9 (lab repo branch `cursor-pack/variant-family-oracle`, uncommitted as of 2026-11-08).
+§3 only (lab repo commit `0afcc76` on branch `cursor-pack/variant-family-oracle`, pushed 2026-11-08; Sol 6.1 +
+grok-4.7 PROCEED on gate run 7). It requires the full cartesian product including the repro; the §2 rule
+above still allows a declared subset — divergence open.
 
 ## Models
 
