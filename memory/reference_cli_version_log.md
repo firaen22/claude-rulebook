@@ -23,6 +23,10 @@ Edit in **`~/.cursor/rulebook/memory/`** in this order:
 
 | Date | Component | Change | Notes |
 |---|---|---|---|
+| 2026-11-09 | codex / grok / opencode / agy / uv | unchanged | already latest |
+| 2026-11-09 | Claude Code / cursor-agent | unchanged | 2.1.319; 2026.11.05 |
+| 2026-11-09 | npm (global) | `npm update -g` refresh | vercel 65.12.1; firebase-tools 15.35.0 |
+| 2026-11-09 | brew | none upgraded | `brew upgrade` no-op |
 | 2026-11-08 | codex | 0.166.0 → **0.167.0** | MINOR; UNVERIFIED on 0.167.x |
 | 2026-11-08 | opencode | 2.2.5 → **2.2.6** | patch; UNVERIFIED on 2.2.x |
 | 2026-11-08 | agy | 1.5.1 → **1.5.3** | stamp catch-up; UNVERIFIED on 1.5.x |
