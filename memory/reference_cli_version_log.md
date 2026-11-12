@@ -23,6 +23,20 @@ Edit in **`~/.cursor/rulebook/memory/`** in this order:
 
 | Date | Component | Change | Notes |
 |---|---|---|---|
+| 2026-11-13 | codex / grok / opencode / agy / cursor-agent | unchanged | §2 stamp unchanged |
+| 2026-11-13 | uv | 0.13.7 → **0.13.8** | `uv self update` patch |
+| 2026-11-13 | Claude Code (native) | 2.1.322 → **2.1.323** | not a routing-map subordinate |
+| 2026-11-13 | node (Homebrew) | v26.13.0 → **v26.13.1** | npm reset → **12.2.2** |
+| 2026-11-13 | npm (global) | vercel **65.15.0**; `npm update -g` | firebase-tools 15.36.0 |
+| 2026-11-13 | brew | node, z3 5.4.1, little-cms2 2.20 | llvm not upgraded |
+| 2026-11-12 | codex | 0.167.0 → **0.167.2** | patch; UNVERIFIED on 0.167.x |
+| 2026-11-12 | opencode | 2.2.6 → **2.2.7** | patch; UNVERIFIED on 2.2.x |
+| 2026-11-12 | agy | 1.5.3 → **1.5.7** | patch; UNVERIFIED on 1.5.x |
+| 2026-11-12 | Claude Code (native) | 2.1.321 → **2.1.322** | not a routing-map subordinate |
+| 2026-11-12 | cursor-agent | 2026.11.05 → **2026.11.11-b912975** | not a routing-map subordinate |
+| 2026-11-12 | grok / uv / node | unchanged | grok 1.0.77; node v26.13.0 |
+| 2026-11-12 | npm (global) | firebase-tools **15.36.0**; `npm update -g` | vercel 65.14.0 |
+| 2026-11-12 | brew | upgrade **interrupted** (llvm) | node 26.13.1 pending |
 | 2026-11-10 | Claude Code (native) | 2.1.319 → **2.1.321** | not a routing-map subordinate |
 | 2026-11-10 | codex / grok / opencode / agy / uv / cursor-agent | unchanged | already latest |
 | 2026-11-10 | npm (global) | vercel **65.14.0**; `npm update -g` | firebase-tools 15.35.0 |
