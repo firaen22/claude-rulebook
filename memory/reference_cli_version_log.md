@@ -23,6 +23,14 @@ Edit in **`~/.cursor/rulebook/memory/`** in this order:
 
 | Date | Component | Change | Notes |
 |---|---|---|---|
+| 2026-11-14 | codex | 0.167.2 → **0.169.0** | MINOR; UNVERIFIED on 0.169.x |
+| 2026-11-14 | opencode | 2.2.7 → **2.3.0** | MINOR; UNVERIFIED on 2.3.x |
+| 2026-11-14 | agy | 1.5.7 → **1.5.8** | patch; UNVERIFIED on 1.5.x |
+| 2026-11-14 | Claude Code (native) | 2.1.323 → **2.1.325** | not a routing-map subordinate |
+| 2026-11-14 | cursor-agent | 2026.11.11 → **2026.11.13-eacade1** | not a routing-map subordinate |
+| 2026-11-14 | grok / uv / node | unchanged | node v26.13.1 |
+| 2026-11-14 | npm (global) | `npm update -g` refresh | vercel 65.15.0; firebase 15.36.0 |
+| 2026-11-14 | brew | llvm, gh, cmake, ggml, llama.cpp, … | 7 formulae |
 | 2026-11-13 | codex / grok / opencode / agy / cursor-agent | unchanged | §2 stamp unchanged |
 | 2026-11-13 | uv | 0.13.7 → **0.13.8** | `uv self update` patch |
 | 2026-11-13 | Claude Code (native) | 2.1.322 → **2.1.323** | not a routing-map subordinate |

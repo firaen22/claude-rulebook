@@ -7,7 +7,7 @@ metadata:
 
 # opencode CLI Subordinate Playbook
 
-> 📌 **CLI VERSION (2026-11-12):** opencode **v2.2.7** at `~/.opencode/bin/opencode` (was 2.2.6). Patch within 2.2.x; scores measured on **1.x** remain **UNVERIFIED on 2.0.x / 2.1.x / 2.2.x**. Use `opencode run --standalone` with `</dev/null>` (§Operational guardrails #3a; `build-and-env`). Canonical stamp: `~/.cursor/rulebook/memory/reference_subordinate_routing_map.md`. Log: `reference_cli_version_log.md`.
+> 📌 **CLI VERSION (2026-11-14):** opencode **v2.3.0** at `~/.opencode/bin/opencode` (was 2.2.7). **MINOR** within 2.x — no re-bench; scores measured on **1.x** remain **UNVERIFIED on 2.0.x / 2.1.x / 2.2.x / 2.3.x**. Use `opencode run --standalone` with `</dev/null>` (§Operational guardrails #3a; `build-and-env`). Canonical stamp: `~/.cursor/rulebook/memory/reference_subordinate_routing_map.md`. Log: `reference_cli_version_log.md`.
 
 ## TL;DR — the delegation decision (benchmarked, 3 rounds, 2026-06-11)
 
