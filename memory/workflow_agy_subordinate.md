@@ -1,6 +1,6 @@
 ---
 name: workflow-agy-subordinate
-description: "Playbook for calling the Antigravity CLI (`agy`, Gemini 3.8 Flash family) as a subordinate tool from Claude sessions to offload pattern-discovery and decode-reading work. Established 2026-05-20 after empirical experiment on BF67. DEFAULT 2026-10-09: gemini-3.8-flash-medium; review-dispatch pin gemini-4-argon-medium with the no-tool preamble and a >=300 s wall, falling back to gemini-3.8-flash-medium on RATE_LIMIT (2026-10-31; was 3.8-flash-medium); unstated-edge pick gemini-3.8-flash-low (3.6/3.7 IDs retired — see finding-agy-flash-38-only-catalog-2026-10-09)."
+description: "Playbook for calling the Antigravity CLI (`agy`, Gemini 3.8 Flash family) as a subordinate tool from Claude sessions to offload pattern-discovery and decode-reading work. Established 2026-05-20 after empirical experiment on BF67. DEFAULT 2026-10-09: gemini-3.8-flash-medium; review-dispatch pin gemini-4-argon-medium with the no-tool preamble and a >=300 s wall, falling back on RATE_LIMIT to gemini-4-neon-high (600 s wall), then gemini-3.8-flash-medium (2026-11-19; was 3.8-flash-medium alone); unstated-edge pick gemini-3.8-flash-low (3.6/3.7 IDs retired — see finding-agy-flash-38-only-catalog-2026-10-09)."
 metadata: 
   node_type: memory
   type: workflow
@@ -14,7 +14,7 @@ metadata:
 > 📌 **CATALOG (2026-10-09; Gemini 4 added by 2026-10-23):** agy lists Gemini 3.8 Flash (`gemini-3.8-flash-{low,medium,high}`)
 > and Gemini 4 Argon (`gemini-4-argon-{low,medium,high}`).
 > **Default dispatch:** `--model gemini-3.8-flash-medium`. **Review lens (if used):**
-> `gemini-4-argon-medium` with a 3.8-flash-medium fallback on RATE_LIMIT (2026-10-31, was `gemini-3.8-flash-medium`; see REVIEW PIN below). **Unstated-edge exposure:** `gemini-3.8-flash-low`. Re-run `agy models`
+> `gemini-4-argon-medium` with a RATE_LIMIT fallback chain neon-high → 3.8-flash-medium (2026-11-19; pin 2026-10-31, was `gemini-3.8-flash-medium`; see REVIEW PIN below). **Unstated-edge exposure:** `gemini-3.8-flash-low`. Re-run `agy models`
 > before dispatch if you get unknown-model errors (3.6/3.7 may still list until EOL).
 
 > 📌 **REVIEW PIN (2026-10-31, agy 1.4.12): `gemini-4-argon-medium` + no-tool preamble + wall ≥ 300 s.**
@@ -23,9 +23,12 @@ metadata:
 > D +18 [+13, +24]. Both BETTER, 0 dead. Auto-only (no adjudication) D is +6 [+3, +10] in both windows, so the direction
 > holds without human judgment, but the BETTER label rests on the blind adjudication. Argon-medium median 32–37 s vs 171–189 s.
 > **FALLBACK, required:** Argon's individual quota on this account has locked out for 67–155 h when used up. If
-> `dispatch.py` returns `RATE_LIMIT` on Argon, re-dispatch the same prompt once with `gemini-3.8-flash-medium` (same preamble,
-> same wall), record which model answered, and do not retry Argon until the reset time in the 429 message.
-> → [[finding-agy-gemini4-argon-review-pin-2026-10-31]]
+> `dispatch.py` returns `RATE_LIMIT` on Argon, re-dispatch the same prompt once with `gemini-4-neon-high` (same preamble,
+> wall 600 s — median 250 s, max 376 s measured), and if that also returns `RATE_LIMIT`, once with
+> `gemini-3.8-flash-medium` (same preamble, wall ≥ 300 s). Record which model answered, and retry neither quota-hit
+> model until the reset time in its 429 message. Neon-high: NON-INFERIOR to Argon, 43 vs 42 /50 (+1 [−4, +6]),
+> one window, N=5, agy 1.5.12; it missed P4-a in 5/5 reps (Argon 4/5). Fallback order set by owner 2026-11-19.
+> → [[finding-agy-gemini4-argon-review-pin-2026-10-31]], [[finding-agy-gemini4-neon-review-2026-11-19]]
 >
 > **Superseded (2026-10-16, agy 1.4.0): `gemini-3.8-flash-medium` + no-tool preamble + wall ≥ 300 s.** Kept for the fallback's timing:
 > Grid with the preamble, P1/P2/P3/P6 × 2 reps, N=8 per arm, one window: medium/240 s 1/8 dead, medium/600 s
@@ -219,7 +222,7 @@ agy --model gemini-3.8-flash-medium --dangerously-skip-permissions -p "<prose pr
   `gpt-oss-120b-medium`. Measured tiers: **3.5-flash-medium** (the playbook baseline)
   and **3.6-flash-medium** (2026-07-21 N=60 probe — see regression section). Everything
   else was unmeasured as of 07-21; 3.6-low/medium/high were later measured N=140
-  (2026-07-22, see below); review-dispatch pin was **`gemini-3.8-flash-high`** (2026-10-09), then **`gemini-3.8-flash-medium`** (2026-10-16), now **`gemini-4-argon-medium`** with a 3.8-flash-medium fallback (2026-10-31).
+  (2026-07-22, see below); review-dispatch pin was **`gemini-3.8-flash-high`** (2026-10-09), then **`gemini-3.8-flash-medium`** (2026-10-16), now **`gemini-4-argon-medium`** (2026-10-31) with a neon-high → 3.8-flash-medium fallback chain (2026-11-19).
   The claude-* / gpt-oss entries route non-Gemini models through agy — untested on this
   path; first-party Claude delegation stays on native subagents, not agy.
 - **STALE (pre-v1.1.5, corrected 2026-07-21):** the old rule "model switching only works in
@@ -564,7 +567,7 @@ overlapping surface, every finding adjudicated by execution/read-back.
   cross-file contract claims** (invented a callee's lookup key; claimed a locale key missing
   that exists — both about files NOT in the packet, despite instructions not to speculate).
 - **Rules:** for agy review dispatches use `--model gemini-4-argon-medium` with the no-tool preamble
-  and a ≥ 300 s wall, falling back to `gemini-3.8-flash-medium` on RATE_LIMIT (2026-10-31; 3.6-high numbers below are historical). Treat ANY
+  and a ≥ 300 s wall, falling back on RATE_LIMIT to `gemini-4-neon-high` (600 s wall), then `gemini-3.8-flash-medium` (2026-11-19; 3.6-high numbers below are historical). Treat ANY
   agy claim about a file not inlined in the packet as fabricated until read yourself —
   3.6 did not fix this. The 2026-07-19 "route agy PRE-impl" discount stands for medium;
   high earned a partial exception (2/5 adopted) but still below codex precision.
