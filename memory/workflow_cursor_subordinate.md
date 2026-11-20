@@ -23,9 +23,12 @@ metadata:
 
 ## TL;DR
 
-- **Status: available, UNROUTED.** Benched 2026-10-15 on the free-pool task set (below):
+- **Status: available; one routed shape since 2026-11-20.** Small multi-file JS implementation (4–6 files changed,
+  edges named in the packet) is split with codex `gpt-5.6-luna` in [[reference-subordinate-routing-map]] §2.
+  Owner decision on a SATURATED bench (composer 199 vs luna 200/200, ~4× faster; one live-iteration miss in 20;
+  `claude-code-technique` `experiments/cursor-composer25-impl-2026-11-20/`). Every other shape stays unrouted (ASK USER).
+  Single-file bench 2026-10-15 on the free-pool task set (below):
   **8/10 ×2 blocks = the pool's modal profile**, no edge over free `big-pickle`, ~2× slower.
-  It owns no task shape in [[reference-subordinate-routing-map]] — routing it is an ASK USER change.
 - **Distinct value:** Cursor-native `composer-2.5`, plus one CLI reaching several vendor
   families under one login. Same weakness as every tier: **unstated edge cases** — spec them.
 - **Self-report is not evidence** (global R0): read files back, run the oracle yourself.
