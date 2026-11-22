@@ -148,6 +148,58 @@ objection is not re-litigated — but a *reproduced* correctness or safety defec
 stays must-fix (§3 triage): it may be deferred only with the owner's explicit
 acceptance, never closed by the reviewers on their own.
 
+**A recurring defect class earns a deterministic check** (`unprobed` —
+see Provenance). When you reproduce a must-fix, name its class: the wrong
+construct, never a file, symbol, or site, narrow enough that one check
+catches every instance and little else. Reuse a recorded class whenever
+that check would catch this instance, even if the words differ. Write the
+class and the instance in the finding's disposition and, where the
+project keeps a durable record (instructions, memory, review log), there
+too. With no such record, say so in your report: the count is then this
+review only, and never invent a record file.
+- **Count instances, not sightings.** Count distinct instances you
+  reproduced: a different site, or a later re-introduction. One instance
+  counts once, however many reviewers report it, rounds re-check it, or
+  merge-base runs repeat it. A prior instance counts only from this review
+  or from a durable-record entry that records it as reproduced. A
+  reviewer's or packet's unreproduced claim and session recall do not.
+- **At two instances, the class is due a check.** Encode it as a project
+  check: a lint rule, a type, a static or architecture check, or a
+  behavioral test (ground-truth-gates owns how). With its oracle
+  unchanged, it must fail on the unfixed defect, pass on the fix, and fail
+  on a fresh instance planted at a new site (in a fixture, or reverted
+  before landing; a plant never ships). A test pinned to the known
+  sites, or one that passes because the fix text appeared, is not a class
+  check. Adding a gate outside this change's scope is proposed in your
+  report, not landed.
+- **The fix comes first.** Fix the defect per §3 triage either way
+  (deferral only with the owner's explicit acceptance); the check never
+  delays or replaces it. If the check is too large or out of scope, defer
+  it with the owner's explicit acceptance, recorded as above. Every other
+  instance the check would flag is its own §3 finding, whether or not the
+  check is deferred. Suppressing, baselining, or narrowing the check needs
+  the owner's explicit acceptance, recorded in the disposition.
+- **The hunt retires only behind a working check.** The rubric may stop
+  asking reviewers to hunt the class, no wider than the check covers, only
+  when: the check scans the project's own code in the validation path
+  that rejects a change before it lands; a recorded run (command and
+  failing output) shows it failing on each reproduced instance and on the
+  planted one, via the pre-fix tree or a fixture;
+  and the retirement (class, check, that run) is recorded as above and
+  reported to the owner. The hunt returns whenever the check is deferred,
+  disabled, baselined, made non-blocking, or misses a reproduced instance.
+- **A gated class is still reviewed on merit.** Reproduce any instance in
+  a gated class from the artifact, independently of the check; the check
+  passing is never counter-evidence. If it reproduces, the check has a
+  hole: triage the defect under §3, fix the check, and re-prove it as
+  above before the hunt retires again.
+- **Some classes stay review items.** When no check can catch a class
+  without becoming a pinned or fix-text check, or flagging much sound
+  code (intent fit, product judgment, a wording defect only a string match
+  could catch), it stays a review item; say why in its disposition. That
+  is not a closed objection: a later round may still add a check. This
+  rule never removes the review gate.
+
 **Pre-existing is a disposition you establish, not assume — reproduce the
 finding on the merge-base too** (`unprobed` — see Provenance). On a
 behavior-preserving refactor branch a

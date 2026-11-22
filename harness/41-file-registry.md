@@ -538,7 +538,10 @@ Ships three in-body `unprobed` markers (two-remedies cross-check, baseline
 classification, runtime-state adjudication) — these are upstream's contributor-reported
 rules, not locally verified; do not cite them as measured here. The repo-relative
 provenance paths in the file (`reviews/…`, PR #30/#32, commit SHAs) are opus-pack, not
-this machine.
+this machine. LOCAL fold 2026-11-22 (owner-approved, not upstream): §3 gained "a recurring
+defect class earns a deterministic check", marked `unprobed`; source in
+`references/provenance.md`. The "three markers" count above was already stale before this. A re-port from opus-pack must carry it forward or drop it
+on purpose.
 
 ## `~/.claude/skills/skill-vetting/SKILL.md` + `~/.local/share/opus-pack/skill_snapshot.py`
 

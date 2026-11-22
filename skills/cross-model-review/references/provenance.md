@@ -104,3 +104,21 @@ proposal, were owner-rejected as duplicating existing fix-disposition
 full contributor derivation trail (packets, verdicts, three review rounds)
 stays in PR #235 and is not recopied here; underlying reproduced episode:
 PR #233. Ships `unprobed` per the covenant.
+
+The §3 defect-class-to-check rule (2026-11-22) is a LOCAL fold, not an
+upstream port. Source: Lauren Tan on YC's Lightcone podcast, "The Rise Of
+AI Coworkers" (published 2026-11-14), 44:32–49:11. She said she uses less
+cross-family adversarial review because reviewers lack the project's
+intent, which leads to over-fitting. Her alternative is to encode recurring
+review concerns into the codebase (lint rules, static and architecture
+checks). That account is anecdotal and gives no numbers. The "twice"
+threshold, swapping a check in for the reviewer hunt, and the check
+criteria are the owner's design, made the same day. Review history:
+two same-family rounds, then three capped rounds with gpt-6.1-sol and
+grok-4.7 (cross-family) plus claude-fable-5.2 (the author's family, an
+extra lens only). Rounds 1 and 2: all three FIX, each revised in response.
+Round 3: sol PROCEED; grok and fable FIX with small gaps (plant cleanup, a
+check that never scans project code, the planted instance missing from the
+retirement proof), fixed in the shipped text but NOT re-reviewed, per the
+round cap. Not measured here, so
+the rule ships with an in-body `unprobed` marker.
