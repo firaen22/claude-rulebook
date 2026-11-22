@@ -160,7 +160,7 @@ Implementation or multi-file agentic work via Splash Qwen: **not routed** — us
 (free pool / opencode / codex; small multi-file JS → the composer/luna split row; other multi-file → **none of them — do it yourself**); coding
 quality unmeasured.
 
-### 2c. Optional local Strata implementer (available, not routed)
+### 2c. Optional Strata implementers (local: available, not routed; Colab Flash-Next NVFP4: owner-routed 2026-11-23)
 
 **Not a sixth subordinate**: it is not in `dispatch.py` and is never a default route. Added 2026-10-16 on the
 owner's order. Harness artifact: `claude-code-technique` `experiments/strata-local-bench-2026-10-16/`.
@@ -168,6 +168,7 @@ owner's order. Harness artifact: `claude-code-technique` `experiments/strata-loc
 | Task | Optional lane (not dispatch.py) | Basis |
 |---|---|---|
 | **Private / offline** single-file implementation with a tight spec, or a short "is this code correct?" check, when Strata is already up | **Local Strata, single-shot**: `POST http://127.0.0.1:8080/v1/chat/completions`, model `qwen3.8-flash-next-q2_0`, `reasoning_effort=medium`. Inline the seed files and ask for `FILE: name` plus a fence. You apply the files (`bench_strata.py` `apply_files`) and run the tests yourself. | MEASURED 2026-10-16: S1 P1–P4 4/4, happy 24/24, 0 stray files or protocol violations, median 25.6 s. **Effectively N=1** (greedy, byte-identical reps). Edge 0/4 and scale 16/40 = bare Composer: spec every edge and magnitude bound. ~12 tok/s, 8k context, no tools. Server down ⇒ fail closed → [[finding-strata-local-bench-2026-10-16]] |
+| Single-file **Python or TypeScript** implementation, tight spec with every edge case named, when a Colab A100 Strata session is already up (or the owner asks for one) | **Colab Strata Qwen3.8-Flash-Next NVFP4** (`Maximilian228/Qwen3.8-Flash-Next-NVFP4-GPTQ-Strata`, Strata commit `622cca8`): on the VM, `serve/server.py --engine strata --config strata-qwen-gptq-nvfp4.json --port 8091 --offline`, then `POST http://127.0.0.1:8091/v1/chat/completions` via `colab ssh` (never tunnel it publicly). Sampling 0.6 / 0.95, max_tokens ≥ 12000. Ask for exactly one fenced block. You extract it and run the tests yourself | **OWNER ORDER 2026-11-23 on a TIE result, not measured superiority.** N = 12 (4 tasks × 3 reps): 12/12 all-pass, ~9.4k tokens, ~150 s per cell. 27B-FP8 @ 32k 0.910 and Inkling 2 Mini GGUF 0.917 are both pre-registered TIEs with it. Its edge is efficiency: ~2.2× fewer tokens and ~3.4× faster than the 27B. Costs ~25 min of setup per session and ~6.7 CU/h. Unmeasured: unstated edges, multi-file, agentic or tool use. Server or session down ⇒ fail closed → `claude-code-technique` project memory `finding-flashnext-vs-27bfp8-coding-2026-11-22.md`, harness `experiments/qwen-flashnext-vs-27b-2026-11-21/` (git-ignored, local) |
 
 Unstated edges, magnitude-sensitive work, multi-file or agent work, or more than ~6k tokens of context through
 Strata: **not routed**. Use the §2 rows.
