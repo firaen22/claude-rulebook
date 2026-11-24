@@ -9,7 +9,7 @@ metadata:
 
 # Calling `agy` (Gemini 3.8 Flash) as a subordinate
 
-> 📌 **CLI VERSION (2026-11-22):** agy **1.5.14** at `~/.local/bin/agy` (was 1.5.13). Patch within 1.5.x — no re-bench on 3.8 pins; metrics **UNVERIFIED on 1.5.x**. Every measured score on **3.6/3.7 Flash IDs** is **historical**; operational pins are **3.8** — canonical stamp `~/.cursor/rulebook/memory/reference_subordinate_routing_map.md` + [[finding-agy-flash-38-only-catalog-2026-10-09]]. Log: `reference_cli_version_log.md`.
+> 📌 **CLI VERSION (2026-11-25):** agy **1.5.16** at `~/.local/bin/agy` (was 1.5.14). Patch within 1.5.x — no re-bench on 3.8 pins; metrics **UNVERIFIED on 1.5.x**. Every measured score on **3.6/3.7 Flash IDs** is **historical**; operational pins are **3.8** — canonical stamp `~/.cursor/rulebook/memory/reference_subordinate_routing_map.md` + [[finding-agy-flash-38-only-catalog-2026-10-09]]. Log: `reference_cli_version_log.md`.
 
 > 📌 **CATALOG (2026-10-09; Gemini 4 added by 2026-10-23):** agy lists Gemini 3.8 Flash (`gemini-3.8-flash-{low,medium,high}`)
 > and Gemini 4 Argon (`gemini-4-argon-{low,medium,high}`).

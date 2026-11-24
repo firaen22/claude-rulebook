@@ -23,6 +23,14 @@ Edit in **`~/.cursor/rulebook/memory/`** in this order:
 
 | Date | Component | Change | Notes |
 |---|---|---|---|
+| 2026-11-25 | codex | 0.171.0 → **0.172.0** | MINOR; UNVERIFIED on 0.172.x |
+| 2026-11-25 | opencode | 2.3.2 → **2.4.1** | MINOR; UNVERIFIED on 2.4.x |
+| 2026-11-25 | agy | 1.5.14 → **1.5.16** | patch; UNVERIFIED on 1.5.x |
+| 2026-11-25 | uv | 0.13.9 → **0.13.10** | patch |
+| 2026-11-25 | grok / cursor-agent | unchanged | 1.0.92; 2026.11.22-e9042b2 |
+| 2026-11-25 | Claude Code (native) | 2.1.330 → **2.1.331** | not a routing-map subordinate |
+| 2026-11-25 | npm (global) | update **failed** | `File exists: /opt/homebrew/bin/npm`; vercel 66.6.0; firebase 15.37.0 |
+| 2026-11-25 | brew | node 26.13.1_4, ffmpeg 9.1, simdjson 5.3.0, … | brew 7.0.16 |
 | 2026-11-23 | codex / grok / opencode / agy / uv / claude / cursor-agent | unchanged | fleet already latest |
 | 2026-11-23 | npm (global) | vercel **66.6.0**; firebase **15.37.0** | `npm update -g` refresh |
 | 2026-11-23 | brew | none upgraded | refresh only |
