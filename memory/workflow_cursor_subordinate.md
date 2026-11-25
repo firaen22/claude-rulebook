@@ -18,7 +18,7 @@ metadata:
 > 2 loops, real FIX findings in loop 1, PROCEED in loop 2 (rc 0, non-empty body). Identity rests on the
 > requested slug only; cursor prints no served-model field → record it as an unconfirmed-identity gap.
 > **Gemini is NOT run here:** cursor's Gemini models hit the monthly usage limit the same day —
-> owner order "use gemini in agy": Gemini lenses go through agy (`gemini-4-argon-medium` review pin,
+> owner order "use gemini in agy": Gemini lenses go through agy (`gemini-4-neon-high` review pin,
 > [[workflow-agy-subordinate]]).
 
 ## TL;DR
