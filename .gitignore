@@ -37,6 +37,14 @@
 # scans every packet before launch, and its own `scan_secrets([source])` is [] —
 # the selftest fixture key is built at runtime so the file can itself travel as a packet.
 !lib/dispatch.py
+# Colab Inkling lane scripts (cited by memory/workflow_colab_inkling_subordinate.md)
+!scripts/
+!scripts/colab_put_inkling_25_mini.sh
+!scripts/colab_inkling_code_help.sh
+!scripts/colab_vm_start_inkling_25_mini.py
+!scripts/colab_vm_ping_inkling.py
+!scripts/colab_vm_inkling_code_help.py
+!scripts/colab_vm_inkling_cleanup.py
 
 # Hooks: sources + tests only. hooks.log is a runtime log, *.bak* are snapshots,
 # settings.json is machine-specific (absolute paths, permissions, MCP) — ship the
